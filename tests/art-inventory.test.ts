@@ -77,7 +77,7 @@ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
   'tex-shore-battery': 'redraw-new', 'tex-shore-gun': 'redraw-new', // IP1b（U4「沿岸砲もリメイク」: 平らな赤い四角＝Graphics の塗りを絵に。鍵は新しい＝v0.6.11 は Graphics で鍵なし）
 };
 /** 艇の絵の鍵（Boot が遊べる任務の自艇・僚艇・隼艇から作る 5 枚） */
-const BOAT_IDS = ['jp_h38_hayabusa', 'jp_t14', 'jp_t38', 'us_elco77', 'us_elco80'];
+const BOAT_IDS = ['jp_h38_hayabusa', 'jp_t14', 'jp_t38', 'us_elco77', 'us_elco80', 'us_higgins78']; // v0.8.5 S0: us_07 の自艇 Higgins（形は表に無い艇の既定＝elco80 の形。Higgins の形は S2）
 const KEY_VALUES = Object.values(TEXTURE_KEYS) as string[];
 
 describe('TEXTURE_KEYS の棚卸し（v0.7.0 S0）', () => {
@@ -95,7 +95,7 @@ describe('TEXTURE_KEYS の棚卸し（v0.7.0 S0）', () => {
     for (const v of KEY_VALUES) expect(v.startsWith('tex-boat-') || v.startsWith('tex-evac-cover-art-') || v === 'tex-evac-cave-art').toBe(false);
     for (const v of Object.keys(PLANNED_NEW)) expect(v.startsWith('tex-boat-') || v.startsWith('tex-evac-')).toBe(false);
   });
-  it('艇の絵の鍵は tex-boat-<艇の id>（v0.6.0）で、Boot が作るのは 5 枚（自艇・僚艇・ハードの隼艇）', () => {
+  it('艇の絵の鍵は tex-boat-<艇の id>（v0.6.0）で、Boot が作るのは 6 枚（自艇・僚艇・ハードの隼艇。v0.8.5 S0 から us_07 の Higgins）', () => {
     expect(GAME_CONFIG).toContain('export function boatTextureKey(boatId: string): string {\n  return `tex-boat-${boatId}`;\n}');
     expect(bootBoatIds()).toEqual(BOAT_IDS);
   });
@@ -187,6 +187,7 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
     got['tex-searchlight'] = px(searchlightTexSize(s.coneDeg, SEARCHLIGHT_TEX_LENGTH_UNITS, K_15));
     expect(got).toEqual({
       'tex-boat-jp_h38_hayabusa': '10x40', 'tex-boat-jp_t14': '8x33', 'tex-boat-jp_t38': '10x40', 'tex-boat-us_elco77': '14x52', 'tex-boat-us_elco80': '14x54',
+      'tex-boat-us_higgins78': '14x52', // v0.8.5 S0 の新しい鍵（us_07 の Higgins 23.8 × 6.1 m。f5563ab に無い＝式の値。実物は tex-ab の「新しい鍵」）
       'tex-destroyer': '24x258', 'tex-transport': '35x262', 'tex-barge': '8x33', 'tex-barge-friendly': '8x33', 'tex-pt-boat': '14x54',
       'tex-transport-friendly': '35x262', 'tex-destroyer-friendly': '20x225', 'tex-torpedo': '4x14', 'tex-wake-dot': '8x8', 'tex-explosion-ring': '96x96',
       'tex-aircraft': '66x53', 'tex-starshell': '282x282', 'tex-smoke-puff': '142x142', 'tex-searchlight': '61x280',

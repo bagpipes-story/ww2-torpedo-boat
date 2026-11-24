@@ -266,7 +266,11 @@ describe('data と遊べる任務の規則（v0_1_prototype.dawn_withdraw）', (
     }
     // 遊べない任務は v0_1_prototype が無いので退く先は持たない（us_07。v0.8.1 S0 までの例は us_06・v0.8.2 S0 までは us_05）。us_04 は v0.8.0 S0 から v0_1_prototype（S5 から遊べる）で、東京急行は西へ退く。
     // us_06 は v0.8.1 S0 から v0_1_prototype（S4 から遊べる）で、日本の艦は東へ退く。us_05 は v0.8.2 S0 から v0_1_prototype（S4 から遊べる）で、片道の列の日本の艦隊は向かう東（スリガオ海峡）へ退く
-    expect(getDawnAir(gameData, 'us_07').retireEdge).toBeNull();
+    // v0.8.5 S0: us_07 も v0_1_prototype を持つ（遊べるのは S5 から。S ボートは去る＝none なので退く先は持たない）。遊べない任務が無くなるので、data を写して us_07 の v0_1_prototype を消した fixture で同じことを確かめる
+    const noProto = JSON.parse(JSON.stringify(gameData)) as typeof gameData;
+    delete ((noProto.missionsSeed.missions as unknown as Record<string, unknown>[]).find((m) => m['id'] === 'us_07')!)['v0_1_prototype'];
+    expect(getDawnAir(noProto, 'us_07').retireEdge).toBeNull();
+    expect([getDawnAir(gameData, 'us_07').shipsAtDawn, getDawnAir(gameData, 'us_07').retireEdge]).toEqual(['none', null]);
     expect([getDawnAir(gameData, 'us_05').retireEdge, getDawnAir(gameData, 'us_05').retireForceJa]).toEqual(['east', '日本の艦隊']);
     expect([getDawnAir(gameData, 'us_06').retireEdge, getDawnAir(gameData, 'us_06').retireForceJa]).toEqual(['east', '日本の艦']);
     expect([getDawnAir(gameData, 'us_04').retireEdge, getDawnAir(gameData, 'us_04').retireForceJa]).toEqual(['west', '東京急行']);

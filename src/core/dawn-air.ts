@@ -123,6 +123,14 @@ export interface DawnTelemetry {
   dayStart: boolean;
 }
 
+/**
+ * 昼から始まる任務か（v0.8.5 S0・spec-v0850 §4.5）: 空襲下の退避（evac。jp_03 の day_start）か、生存者の救助（rescue。us_07）のある世界。海の色を最初から昼にし（systems/world-dawn・world-art）、
+ * 夜明けのテレメトリの dayStart にする（systems/dawn-telemetry。救助の言葉「救助 残り」は v0.8.5 S4 の ui/dawn-lines の rescue の枝）。setup の鍵は足さない（ほかの任務の setup の snapshot が変わらない）
+ */
+export function setupDayStart(s: { readonly evac?: { readonly dayStart: boolean }; readonly rescue?: object }): boolean {
+  return s.evac ? s.evac.dayStart : s.rescue !== undefined;
+}
+
 export function createDawnTelemetry(): DawnTelemetry {
   return {
     reached: false,

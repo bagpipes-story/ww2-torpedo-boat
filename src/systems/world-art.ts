@@ -9,6 +9,7 @@
 // v0.8.2 S2b（D-A4・L31）: 弾薬庫の誘爆の見た目（systems/magazine-fx。隊に弾薬庫のある世界＝us_05 だけ。無い任務は null＝毎フレームの仕事も物も増えない）。爆発のプールの後・沈没の段の前に進める。
 import type Phaser from 'phaser';
 import { SEA_LIGHT_STEPS } from '../config/dawn-config';
+import { setupDayStart } from '../core/dawn-air';
 import { BackdropFx, type BackdropFxWorldView } from './backdrop-fx';
 import { CoastFx } from './coast-fx';
 import { ExplosionFx } from './explosion-fx';
@@ -48,7 +49,7 @@ export class WorldArt {
   private readonly magazine: MagazineFx | null;
 
   constructor(scene: Phaser.Scene, w: ArtWorldView) {
-    this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
+    this.sea = new SeaFx(scene, w.setup.mission.moon, setupDayStart(w.setup), w.setup.mission.bounds); // v0.8.5 S0: 救助（rescue。us_07）も昼から
     this.wake = new WakeFx(scene, w);
     this.sparks = new SparkFx(scene);
     registerSparkFx(this.sparks); // 世界の作成前・破棄後の水柱・砲口・火の粉の火花は何もしない（R12 と同じ）

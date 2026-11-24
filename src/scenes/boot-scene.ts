@@ -67,6 +67,10 @@ import { validateColumnMissions } from '../config/column-mission-data';
 import { validateReconMissions } from '../config/recon-mission-data';
 import { validateMagazineRecords } from '../config/magazine-data';
 import { validateLoadouts } from '../config/loadout-data';
+import { validateShoreGunsMissions } from '../config/shore-guns-mission-data';
+import { validateRescueMissions } from '../config/rescue-mission-data';
+import { validateMinefieldMissions } from '../config/minefield-mission-data';
+import { US_PT_BOAT_REF } from '../config/pt-config';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
 
@@ -94,6 +98,7 @@ export class BootScene extends Phaser.Scene {
       if (pm.escort) boatIds.add(pm.escort.boat);
       getEngineParams(gameData, m['id']); // 機関の不調（v0.6.5）の data と同居の検査（壊れていれば Boot で止まる。不調の無い任務は null）
       getPatrolAirParams(gameData, m['id']); // 夜の哨戒機（v0.6.7。jp_02）の data・置き場・夜の出撃の検査（壊れていれば Boot で止まる。無い任務は null）
+      getPtParams(gameData, pm, gameData.hitRateModel.world.time_scale); // 米PT の隊（v0.8.5 S0 からノーマルも。us_07 の S ボートの「出発で見つからない」を昼の倍率で＝V-U1。無い任務は null）
       const hm = hasHardVariant(gameData, m['id']) ? getPrototypeMission(gameData, m['id'], true) : null; // ハード（v0.6.6）も 1 回組んで米PT と輸送隊を検査（3 本目の哨戒線の出発点・ノルマ。壊れていれば Boot で止まる）
       if (hm) { getPtParams(gameData, hm, gameData.hitRateModel.world.time_scale); getConvoyParams(gameData, hm); }
       const gb = hm ? getGunboatParams(gameData, hm) : null; // 隼艇（v0.6.6。jp_01 のハード）の data と同居の検査、艇の絵
@@ -146,7 +151,8 @@ export class BootScene extends Phaser.Scene {
     const convoy = convoyMission ? getConvoyParams(gameData, getPrototypeMission(gameData, convoyMission.id)) : null;
     if (convoy) generateFriendlyBargeTexture(this, { lengthUnits: convoy.params.boundsMarginM * 2, beamUnits: (convoy.params.halfBeamM * 2 * spriteScale) / gameData.hitRateModel.world.hit_scale });
     // 米PT（v0.6.3）: 米PT の隊を持つ最初の任務の値から（us_elco80 の寸法 × sprite_scale）。getPtParams は米PT の data の検査も兼ねる（壊れていれば Boot で止まる）
-    const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats']);
+    // v0.8.5 S0（spec-v0850 §4.4）: PT の記録の boat_ref が us_elco80（US_PT_BOAT_REF）の最初の任務から（種の配列で jp_* より前の us_07 の S ボートの寸法に変わらない。S ボートの絵は S2 の別の鍵）
+    const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats'] && ptBoatRefOf(m as Record<string, unknown>) === US_PT_BOAT_REF);
     const pt = ptMission ? getPtParams(gameData, getPrototypeMission(gameData, ptMission.id), gameData.hitRateModel.world.time_scale) : null;
     if (pt) generatePtBoatTexture(this, { lengthUnits: pt.spriteLengthUnits, beamUnits: pt.spriteBeamUnits });
     // 味方の輸送船（v0.6.9。jp_04）: 揚陸の任務（ハードも）の data・置き場・幾何と V12（艇に煙幕なし）の検査（壊れていれば Boot で止まる）、最初の揚陸の任務の輸送船の絵（薄い青）
@@ -169,6 +175,10 @@ export class BootScene extends Phaser.Scene {
     validateColumnMissions(gameData);
     validateReconMissions(gameData);
     validateMagazineRecords(gameData);
+    // D-Day・生存者救助（v0.8.5 S0。us_07）: 任務ごとの沿岸砲の値（V-U2）・救助（V-Q1〜V-Q8・V-D1〜V-D2・V-U1）・機雷原（V-X1・V-X3〜V-X5）をハードも 1 回（世界の配線は S2）
+    validateShoreGunsMissions(gameData);
+    validateRescueMissions(gameData);
+    validateMinefieldMissions(gameData);
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
@@ -188,10 +198,20 @@ function allyMissionId(shipId: string): string {
   return m ? String(m['id']) : '';
 }
 
-/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない） */
+/** 任務の PT の隊の記録（v0_1_prototype.enemies の最初の id の enemies.json の記録）の boat_ref（無ければ ''） */
+function ptBoatRefOf(m: Record<string, unknown>): string {
+  const ids = (m['v0_1_prototype'] as Record<string, unknown>)['enemies'];
+  const id = Array.isArray(ids) ? ids[0] : undefined;
+  const rec = (gameData.enemies.enemies as readonly Record<string, unknown>[]).find((e) => e['id'] === id);
+  return typeof rec?.['boat_ref'] === 'string' ? rec['boat_ref'] : '';
+}
+
+/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない）。v0.8.5 S0: 救助（rescue）の世界はまだ無い（S2 で配線）ので us_07 も us_02 へ */
 function debugMissionId(): string {
   try {
     getPrototypeMission(gameData, DEBUG_MISSION_ID);
+    const m = (gameData.missionsSeed.missions as readonly Record<string, unknown>[]).find((x) => x['id'] === DEBUG_MISSION_ID);
+    if ((m?.['v0_1_prototype'] as Record<string, unknown> | undefined)?.['rescue'] !== undefined) throw new Error('救助の世界は v0.8.5 S2 で配線する');
     return DEBUG_MISSION_ID;
   } catch (e) {
     console.warn(`?debug&mission=${DEBUG_MISSION_ID} は出撃できない（${e instanceof Error ? e.message : String(e)}）。${PROTOTYPE_MISSION_ID} で始める`);

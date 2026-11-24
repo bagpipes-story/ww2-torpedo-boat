@@ -7,6 +7,7 @@
 import { getBoatDamageParams, getBoatRecord, getGunBatteryParams, getVisibilityParams, type GameData } from './game-data';
 import type { PrototypeMission } from './mission-data';
 import { getDawnAir } from './dawn-data';
+import { rescueMoonFactor } from './rescue-mission-data';
 import { PT_ATTACK_KEYS, isPtDataRecord, ptParamsFromData, ptStartAt, type PtParams } from '../core/pt-data';
 import type { NightBlock } from '../core/night';
 import { clamp, degToRad } from '../core/units';
@@ -32,7 +33,8 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   const hp = getBoatDamageParams(data, mission.playerBoatId).maxHp;
   if (!(a.rounds_per_pass * gun.damage < hp)) bad(`rounds_per_pass × damage（${a.rounds_per_pass * gun.damage}）は自艇の HP（${hp}）未満（1 回の航過では砲だけで沈まない）`);
   if (!(rec.chase.burst_rounds * gun.damage < hp)) bad(`chase.burst_rounds × damage（${rec.chase.burst_rounds * gun.damage}）は自艇の HP（${hp}）未満（1 回の連射では砲だけで沈まない）`);
-  const vis = getVisibilityParams(data, mission.moon, false);
+  const daylight = rescueMoonFactor(data, mission); // 昼の倍率（v0.8.5 S0。us_07 の rescue.daylight。無い任務は undefined＝今の月の係数＝V-U1 はこの値で下の検査が回る）
+  const vis = getVisibilityParams(data, mission.moon, false, daylight);
   const visM = playerVisRangeM(vis);
   if (!(gun.effective_night_m <= visM)) bad(`effective_night_m（${gun.effective_night_m} m）は自艇の視程（${visM} m）以下（見えない PT から撃たない）`);
   const own = getGunBatteryParams(data, mission);
@@ -45,7 +47,7 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
   }
   // 出発で見つからない: 今夜の揺らぎの取りうる出発点（線に沿って ±x・南北 ±y・東西反転）のどれも、巡航で見つかる距離より遠い。
   // 距離はノーマルと史実モード（Title の切り替え。見つかる距離に enemy_detection_multiplier を掛ける）の遠い方（v0.6.3 レビュー: ノーマルだけ見ていたので、史実モードの 3 夜に 1 夜は出発で見つかった）
-  const histVis = getVisibilityParams(data, mission.moon, true);
+  const histVis = getVisibilityParams(data, mission.moon, true, daylight);
   const detectM = Math.max(enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false), enemyDetectRangeM(p.baseDetectM, histVis.speedFactor.cruise, histVis, false));
   const nearM = nearestStartM(p, mission.night, mission.playerStart.x, mission.playerStart.y);
   if (!(nearM >= detectM)) bad(`今夜の揺らぎで出発点が自艇の出発点から ${Math.round(nearM)} m（巡航で見つかる ${Math.round(detectM)} m（史実モード込み）より近い。出発で見つかる）`);

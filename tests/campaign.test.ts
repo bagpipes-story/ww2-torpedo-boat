@@ -113,6 +113,7 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     for (const bad of [[], ['us_01', 'us_01'], ['us_01', ''], 'us_01', [1]]) expect(() => parseUnlockMissionIds(bad, 'campaigns.jp_hard'), JSON.stringify(bad)).toThrow(/campaigns\.jp_hard の unlock_mission_ids は空でない・重複の無い任務の id の配列/);
     const notPlayable = clone();
     (notPlayable.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01', 'us_07']; // v0.8.0 S5 から us_04 は遊べるので、まだ遊べない任務で（v0.8.2 S4 から us_05 も遊べる＝us_07）
+    delete ((notPlayable.missionsSeed.missions as unknown as Record<string, unknown>[]).find((m) => m['id'] === 'us_07')!)['playable_from']; // v0.8.5 S0: us_07 は S5 で遊べるので、fixture で遊べない任務のまま（今の data では無い鍵）
     expect(() => getCampaigns(notPlayable)).toThrow(/campaigns\.jp_hard\.unlock_mission_ids（us_01・us_07）は complete_ の相手の遊べる任務（us_01・us_02・us_03・us_04・us_05・us_06）の中だけ/); // v0.8.1 S4: us_06 も遊べる。v0.8.2 S4: us_05 も
     const onDefault = clone();
     (onDefault.missionsSeed.campaigns[0] as Record<string, unknown>)['unlock_mission_ids'] = ['us_01'];

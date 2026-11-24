@@ -63,9 +63,9 @@ describe('us_05 の setup の snapshot（v0.8.2 S0 の木）', () => {
 });
 
 describe('us_05 の種の直し（spec-v0820 §3）と人名・PT の番号（CLAUDE.md §11・spec-v0820 §4.14）', () => {
-  it('場所はボホール島沖・半月・史実の大艦隊（ユーザーの U1）・目的と成功の文・夜明けは own のまま（L1）・題と日付と順と type はそのまま・S4 から遊べる（v0.8.2 S4 で playable_from "v0.8.2"）', () => {
+  it('場所はボホール島沖・半月・史実の大艦隊（ユーザーの U1）・目的と成功の文・夜明けは own のまま（L1）・題と日付と type はそのまま（順は v0.8.5 S0 で年代順に 5 → 6）・S4 から遊べる（v0.8.2 S4 で playable_from "v0.8.2"）', () => {
     const m = missionOf('us_05');
-    expect([m['title_ja'], m['date'], m['order'], m['type'], m['place'], m['moon'], m['moon_label_ja'], m['torpedo_type'], m['player_boat']]).toEqual(['スリガオ海峡・最初の接触', '1944-10-24', 5, 'recon_and_attack', 'ミンダナオ海（ボホール島沖）', 'half', '半月（西に低い）', 'us_mk13', 'us_elco80']);
+    expect([m['title_ja'], m['date'], m['order'], m['type'], m['place'], m['moon'], m['moon_label_ja'], m['torpedo_type'], m['player_boat']]).toEqual(['スリガオ海峡・最初の接触', '1944-10-24', 6, 'recon_and_attack', 'ミンダナオ海（ボホール島沖）', 'half', '半月（西に低い）', 'us_mk13', 'us_elco80']);
     expect(m['enemies']).toEqual(['ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_destroyer', 'ijn_cruiser_mogami', 'ijn_battleship_fuso', 'ijn_battleship_fuso']);
     expect((m['v0_1_prototype'] as Rec)['enemies']).toEqual(m['enemies']);
     expect([m['objective'], m['success']]).toEqual(['戦艦2・重巡1を含む日本艦隊がスリガオ海峡へ向かう。レーダーで捉え、戦艦を目で確かめて報告し、撃たれながら生きて帰れ', '報告して帰投（戦艦を見て、レーダーで20秒追う）']);

@@ -304,7 +304,12 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(s.dawnAir.playAs, id).toBe(want[id]);
       expect(new WorldDawn({ cameras: { main: {} } } as never, s, null).air, id).toBe(want[id] === 'enemy' ? DAWN_AIR_ENEMY : DAWN_AIR_OWN);
     }
-    expect(() => checkPlayableDawn(gameData, 'us_07')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ。v0.8.2 S0: us_05 も v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_07 へ
+    // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ。v0.8.2 S0: us_05 も v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_07 へ。
+    // v0.8.5 S0: us_07 も v0_1_prototype を持つ（遊べるのは S5 から）＝遊べない任務が無くなるので、data を写して us_07 の v0_1_prototype を消した fixture で同じことを確かめる
+    const noProto = clone();
+    delete ((noProto.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!)['v0_1_prototype'];
+    expect(() => checkPlayableDawn(noProto, 'us_07')).toThrow(/遊べる任務でない/);
+    expect(() => checkPlayableDawn(gameData, 'us_07')).not.toThrow(); // 昼の空は味方（own）・空襲なし・S ボートは去る（none）
     expect(() => checkPlayableDawn(gameData, 'us_05')).not.toThrow(); // v0.8.2 S0: 列だけの隊（enemy_start なし・transit.column）も退く駆逐艦の隊（夜明けの空は own のまま＝lead の L1）
     expect(() => checkPlayableDawn(gameData, 'us_06')).not.toThrow();
     expect(() => getDawnAir(gameData, 'nope')).toThrow(/nope/);

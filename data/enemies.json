@@ -1085,21 +1085,110 @@
     {
       "id": "de_sboat_enemy",
       "faction": "KM",
-      "name_ja": "独Sボート（英MTB視点の敵、将来）",
+      "name_ja": "独Sボート（S-100級）",
+      "name_short_ja": "Sボート",
       "boat_ref": "de_s100",
-      "ai": {
-        "patrol_speed_kt": 12,
-        "attack_speed_kt": 38,
-        "detect_m": 2200,
-        "radar_m": 0,
-        "torpedo_launch_range_m": 1200,
-        "gun_range_m": 1500,
-        "retreat_after_salvo": true
+      "torpedo_immune": true,
+      "detection": {
+        "base_detect_m": 2000,
+        "reaction_delay_s": 1.5,
+        "detect_from_s": 60
+      },
+      "patrol": {
+        "speed_kt": 12,
+        "arrive_m": 100
+      },
+      "attack": {
+        "run_in_speed_kt": 40,
+        "pass_speed_kt": 25,
+        "overtake_kt": 6,
+        "commit_max_m": 1050,
+        "commit_tcpa_s": 5.0,
+        "commit_heading_tol_deg": 30,
+        "pass_offset_m": 150,
+        "open_fire_s": 2.5,
+        "pass_max_s": 8,
+        "rounds_per_pass": 10,
+        "dead_cone_deg": 30,
+        "min_range_m": 60,
+        "spread_min_m": 8,
+        "break_off_m": 800,
+        "break_max_s": 5,
+        "run_in_max_s": 25,
+        "pass_gap_s": 3.0,
+        "wingman_delay_s": 3,
+        "hold_off_m": 700,
+        "max_passes": 4,
+        "edge_margin_m": 200,
+        "leave_speed_kt": 30
+      },
+      "guns": [
+        {
+          "id": "sboat_20mm",
+          "count": 1,
+          "range_m": 2000,
+          "effective_night_m": 600,
+          "rof_per_min": 240,
+          "damage": 4,
+          "shell_speed_mps": 500,
+          "dispersion_m": 42,
+          "splash_radius_m": 1.5,
+          "fire_chance": 0.03,
+          "engine_damage_chance": 0.15
+        }
+      ],
+      "tactics": {
+        "station_m": 750,
+        "station_rel_deg": [
+          90,
+          45,
+          135
+        ],
+        "station_tol_deg": 30,
+        "station_close_m": 150,
+        "station_lead_s": 1
+      },
+      "under_fire": {
+        "retreat_hp": 90,
+        "casualty_chance": 0.03,
+        "fire_chance": 0.001
+      },
+      "chase": {
+        "speed_kt": 40,
+        "min_target_kt": 10,
+        "start_aft_deg": 75,
+        "station_m": 170,
+        "station_rel_deg": 135,
+        "held_station_m": 350,
+        "held_rel_deg": 150,
+        "held_guard_m": 150,
+        "commit_m": 350,
+        "burst_rounds": 6,
+        "burst_max_s": 3,
+        "max_bursts": 6,
+        "gap_s": 2,
+        "self_gap_s": 3,
+        "exit_fwd_deg": 45,
+        "slow_exit_s": 2,
+        "bow_rof_factor": 0.4,
+        "cone_quit_s": 2.0,
+        "suppress_hits": 3
       },
       "source": {
-        "all": "design"
+        "boat_ref": "historical (寸法 34.9×5.3 m・最大 41 kt は boats.json の de_s100（S-100 級。39〜42 kt）。旋回 16°/秒・加速 0.9 はその design 値)",
+        "name_short_ja": "design (v0.8.5 S0・spec-v0850 §4.4。HUD の文の名（米PT の記録には無い＝無ければ「米PT」。文に名を渡すのは v0.8.5 S2）)",
+        "torpedo_immune": "historical / design (S-100 級の吃水 約 1.5〜1.7 m は Mk 13 の最小の深さより浅い＝米PT の記録と同じ理由。us_07 には狙う深い船体が無いので魚雷は発射の時に決着＝us_03 と同じ)",
+        "detection": "design (v0.8.5 S0・spec-v0850 §4.4・§4.5。base_detect_m 2000 は us_pt_enemy と同じ。昼は rescue.daylight.moon_factor 1.8 を月の係数の代わりに掛ける（us_07 だけ）＝停止 1,440・静音 1,800・巡航 3,600・全速 5,760 m。detect_from_s 60: 出撃から 60 秒は見つけない（西の縁の哨戒の線から寄って来るまでの間。史実に無い想定の襲撃なので、救助を始める前に襲わない）。reaction_delay_s 1.5 は us_pt_enemy と同じ)",
+        "patrol": "design (v0.8.5 S0・spec-v0850 §4.4。12 kt で西の縁の線を往復（旧 ai.patrol_speed_kt 12 のまま）。arrive_m は us_pt_enemy と同じ)",
+        "attack": "design (v0.8.5 S0・spec-v0850 §4.4。us_pt_enemy の attack の写しで、変えたのは 5 つ: run_in_speed_kt 35 → 40（Higgins の 39 kt より速い＝振り切れない。S-100 の最大 41 kt の内）・有効射程 600 m（20 mm の昼）に合わせて hold_off_m 550 → 700・commit_max_m 900 → 1,050・break_off_m 650 → 800（effective_night_m < hold_off_m < commit_max_m・< break_off_m）・pass_offset_m 120 → 150。ほかは us_pt_enemy と同じ（航過 25 kt・1 回 10 発・1 隻 4 回・予告から 2.5 秒）。S3 の測りで直す)",
+        "guns": "historical (S-100 級は艇首の 20 mm・中央の 20 mm 連装・艇尾の 37 mm／40 mm（boats.json の de_s100.guns）) / design (v0.8.5 S0。1 門にまとめた値。effective_night_m 600: 鍵の名は夜のままで、昼の 20 mm の有効射程（昼の視程 2,700 m の内＝見えない S ボートから撃たない）。damage 4 × rounds_per_pass 10 ＝ 40・burst 6 × 4 ＝ 24 は Higgins の HP 100 未満（1 回の航過・連射では砲だけで沈まない）。dispersion_m 42 は有効射程での半径（us_pt_enemy の 32 m／450 m と同じ角）。range_m 2,000・rof 240・shell_speed 500・fire 0.03・engine 0.15 は us_pt_enemy と同じ)",
+        "tactics": "design (v0.8.5 S0。us_pt_enemy と同じ形で、station_m だけ 600 → 750（hold_off_m 700 < 750 < 2 × 700 − 600 ＝ 800）)",
+        "under_fire": "design (v0.8.5 S0・spec-v0850 §9 の 7。retreat_hp 90（HP 150 の 6 割＝us_pt_enemy の 60/100 と同じ割合）・casualty_chance 0.03 は us_pt_enemy と同じ。fire_chance 0.003 → 0.001: ディーゼルなので燃えにくい（boats.json の de_s100.fire_risk low）)",
+        "chase": "design (v0.8.5 S0。us_pt_enemy の chase の写しで speed_kt 39 → 40 だけ（Higgins の 39 kt より速い＝振り切れない。S-100 の最大 41 kt の内）)",
+        "torpedo_attack": "design (v0.8.5 S0・spec-v0850 §4.4。置かない: 米PT の斉射（core/pt-torpedo）は揚陸する輸送船に結びつく。フィッチへの雷撃は候補（spec §9）。旧 ai.torpedo_launch_range_m 1200・retreat_after_salvo は捨てた)",
+        "history": "historical (S ボート（第5・第9戦隊）は 1944-06-06 の 05:00〜05:15 にシェルブールを出て最大射程で船団へ雷撃し、06:00 ごろには戻っていた。セーヌ湾への襲撃は 6 月 7〜9 日（medium。WebSearch の抜粋のみ・本文未読）。コリーの救助（06:33 以降の昼）の間にユタ沖へ来た記録は無い＝us_07 の襲撃はユーザーの決め（2026-11-24「両方で出す」）による史実に無い想定)"
       },
-      "notes": "v0.6以降。"
+      "notes": "v0.8.5 S0。米PT の記録（core/pt-data の PtDataRecord）の形に書き直した（前は v0.6 の ai の形で、どこからも読まれていなかった）。us_07 の敵（ノーマル 2 隻・ハード 3 隻）。動き（長さ・幅・旋回・加速・最大速力）は boats.json の de_s100。今の米PT の AI（航過と追撃）で自艇を襲う。斉射は付けない"
     }
   ]
 }

@@ -65,7 +65,7 @@ describe('兵装の data（config/loadout-data）', () => {
   });
 
   it('getBoatGunParams: gun_battery の無い艇は null・無い艇は例外・壊れた値は getGunBatteryParams と同じ文（値の誤りには艇の id）', () => {
-    expect(getBoatGunParams(gameData, 'us_higgins78')).toBeNull();
+    expect(getBoatGunParams(gameData, 'it_mas500')).toBeNull(); // v0.8.5 S0: us_higgins78 は us_07 の自艇になり gun_battery を持つので、まだ持たない艇で
     expect(() => getBoatGunParams(gameData, 'no_such_boat')).toThrow(/boats\.json に no_such_boat が無い/);
     const d = clone();
     (boatOf(d, 'us_elco77')['gun_battery'] as Rec)['range_m'] = '600';
