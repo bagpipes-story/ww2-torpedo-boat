@@ -200,6 +200,13 @@ export class DestroyerGroup {
     return n;
   }
 
+  /** 煙幕への乱射（v0.8.4。史実モードだけ）の弾が自艇の近くに落ちた累計（HUD の 2 行目。乱射の無い世界は 0） */
+  get barrageNear(): number {
+    let n = 0;
+    for (const f of this.fires) n += f.barrageOf ? f.barrageOf.state.near : 0;
+    return n;
+  }
+
   /** (x, y) に最も近い浮いている艦（沈み始めた艦と退いた艦を除く）の添字（無ければ -1）。平方根なし */
   nearestAfloatIndex(x: number, y: number): number {
     let best = -1;

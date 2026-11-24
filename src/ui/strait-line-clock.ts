@@ -12,6 +12,7 @@ import { RADAR_EV_FIRST, RADAR_EV_NEW, RADAR_EV_NONE, RADAR_EV_RETURN, RADAR_EV_
 import { AnchorLineClock } from './anchor-lines';
 import { ReconLineClock } from './recon-lines';
 import { UnderLineClock } from './under-lines';
+import { BarrageLineClock } from './barrage-lines';
 
 export class StraitLineClock {
   /** 見たレーダーの出来事（最初の接触・新しい接触と消えた接触の回数）・1 夜に 1 回の 2 つ・最後に「新しい接触」を始めた ms */
@@ -41,6 +42,7 @@ export class StraitLineClock {
   private prevShownMs = 0;
   readonly anchor = new AnchorLineClock(); // 止まった艦の任務の出来事（v0.8.1 S4。us_06。ui/anchor-lines。止まった艦の無い任務は旗 0 のまま）
   readonly recon = new ReconLineClock(); // 報告の任務の出来事（v0.8.2 S4。us_05。ui/recon-lines。報告の無い任務は旗 0 のまま）
+  readonly barrage = new BarrageLineClock(); // 煙の中へ乱射されている（v0.8.4。史実モードだけ。ui/barrage-lines。乱射の無い世界は旗 0 のまま）
   readonly under = new UnderLineClock(); // 近すぎて船体の下を通過（v0.8.2 IP1。全任務。ui/under-lines。武装の前に船体に入った魚雷が無ければ旗 0 のまま）
 
   /** 2 行目のキー（ui/mission-line-keys の lKey）: レーダーの出来事は通し番号、衝突の危険は通し番号と距離の刻み */
@@ -97,7 +99,7 @@ export class StraitLineClock {
       }
     }
     const under = this.under.flags(t, nowMs); // 近すぎて船体の下を通過（v0.8.2 IP1。ほかの時計と独り立ち＝呼ぶ順に依らない）
-    return (this.radarKind !== RADAR_EV_NONE ? MODE_FLAG_RADAR_EVENT : 0) | (this.bowActive ? MODE_FLAG_BOW_ON : 0) | under | this.recon.flags(t, nowMs) | this.anchor.flags(t, nowMs);
+    return (this.radarKind !== RADAR_EV_NONE ? MODE_FLAG_RADAR_EVENT : 0) | (this.bowActive ? MODE_FLAG_BOW_ON : 0) | under | this.barrage.flags(t, nowMs) | this.recon.flags(t, nowMs) | this.anchor.flags(t, nowMs);
   }
 
   /** そのフレームのモードが決まった後（nowMs は flags と同じ時刻）: 前のフレームから今まで出ていた ms を足す */
@@ -111,6 +113,7 @@ export class StraitLineClock {
     this.anchor.shown(mode, nowMs);
     this.recon.shown(mode, nowMs);
     this.under.shown(mode, nowMs);
+    this.barrage.shown(mode, nowMs);
   }
 
   /** 出来事を出す（今出していなければ今から、出している間は後ろに 1 つ。文は今のテレメトリから 1 回だけ組む） */

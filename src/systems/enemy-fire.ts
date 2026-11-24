@@ -1,6 +1,7 @@
 // 駆逐艦の反撃の見た目（v0.2.1）: 探照灯の扇・星弾の照明・砲弾/曳光弾・着弾の水柱・砲口の閃光。
 // 判断と運動は core/gunnery.ts。§7: すべて起動時にプールし、毎フレームは transform/alpha だけ触る。
 // v0.8.0 実機 1 回目: 岸の線のある任務（us_04）だけ、探照灯の絵を岸で切る（setBeamLand。長さが変わった時だけ setCrop。照らす判定は変えない）。
+// v0.8.4: 煙幕への乱射（史実モードだけ。systems/smoke-barrage-fire・core/smoke-barrage）。setBarrage で付けた艦だけ、普段の砲の発射の前に乱射の発射・砲の段の後に着弾の数え（無い艦は null＝普段の道そのまま）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import {
@@ -20,6 +21,7 @@ import { pointIlluminated, updateGunsPair, type GunTarget, type PairShellEvents 
 import type { SeededRng } from '../core/rng';
 import { beamLengthToLand, type LandLine } from '../core/strait-geometry';
 import { radToDeg } from '../core/units';
+import type { ShipBarrage } from './smoke-barrage-fire';
 import type { SplashPool } from './splash-pool';
 
 /** 命中の通知（引数はプリミティブ） */
@@ -54,8 +56,10 @@ export class EnemyFire {
       else if (target === 1) this.onHitEscort(gunIndex, x, y);
     },
   };
-  /** 累計の発砲数（Result の KPI。水上機の照明弾の間の砲撃を数える。v0.4.1） */
+  /** 累計の発砲数（Result の KPI。水上機の照明弾の間の砲撃を数える。v0.4.1。v0.8.4 の乱射の弾も数える） */
   shotsFired = 0;
+  /** 煙幕への乱射（v0.8.4。史実モードで煙幕のある艇と艦の隊のいる世界だけ world-enemies が付ける）。無ければ null */
+  private barrage: ShipBarrage | null = null;
 
   private readonly events: ShellEvents = {
     onFire: (_gunIndex, x, y) => {
@@ -109,6 +113,16 @@ export class EnemyFire {
     this.beamLand = lines.length > 0 ? lines : null;
   }
 
+  /** 煙幕への乱射を付ける（v0.8.4。world-enemies が 1 回） */
+  setBarrage(b: ShipBarrage): void {
+    this.barrage = b;
+  }
+
+  /** 乱射の持ち物（v0.8.4。無ければ null。隊の HUD の数・ヘッドレスの道具が読む） */
+  get barrageOf(): ShipBarrage | null {
+    return this.barrage;
+  }
+
   setHitHandler(h: ShellHitHandler): void {
     this.onHit = h;
   }
@@ -141,7 +155,10 @@ export class EnemyFire {
   ): void {
     this.blocked = losBlocked;
     updateIllumination(this.state, ship, player, detected, this.params, realDt, losBlocked, externalLit);
+    const br = this.barrage;
+    if (br) br.fire(this.state, this.params, ship, player, detected, losBlocked, canFire, false, realDt, this.events);
     updateGuns(this.state, ship, player, canFire, playerHalfLengthM, playerHalfBeamM, this.params, this.rng, realDt, dt, this.events);
+    if (br) br.settle(this.state.shells, this.params, player, playerHalfLengthM, playerHalfBeamM);
   }
 
   /**
@@ -164,7 +181,10 @@ export class EnemyFire {
     const ex = escort.x - player.x;
     const ey = escort.y - player.y;
     b.lit = escortAfloat && !escortBlocked && ((a.lit && ex * ex + ey * ey <= litNearM * litNearM) || pointIlluminated(this.state, ship, escort.x, escort.y, this.params));
+    const br = this.barrage; // 乱射（v0.8.4）は自艇だけを狙う。照らされた僚艇がいれば普段の砲がそちらを撃つので乱射しない
+    if (br) br.fire(this.state, this.params, ship, player, detected, losBlocked, canFire, b.lit, realDt, this.pairEvents);
     updateGunsPair(this.state, ship, a, b, canFire, this.params, this.rng, realDt, dt, this.pairEvents);
+    if (br) br.settle(this.state.shells, this.params, player, playerHalfLengthM, playerHalfBeamM);
   }
 
   /** 毎フレーム: 探照灯の位置と向き、星弾の減衰、砲弾の位置、閃光のフェード（変わるものだけ触る。水柱は世界の SplashPool） */

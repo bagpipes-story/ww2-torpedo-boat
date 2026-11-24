@@ -3,6 +3,47 @@
 書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
 3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
 
+## v0.8.4 — 2026-11-23（史実モード：至近の煙幕へ乱射）
+
+- 目的: 史実モードで、至近（500 m の内）の煙幕に隠れた艇を、敵の艦が見失いながらも煙へ乱射する。当たりは低く、近いほど上がる。
+- Done: (1) 史実モードがオフのどの任務の再生・模擬・世界・HUD も main e769c26（v0.8.3 のマージ）と 1 ビットも同じ（門）、(2) 史実モードでも煙を使わない夜は同じ（門の hist の組。乱射の乱数の系列は別で、撃たなければ引かない）、(3) 探りの表で 1 発の当たる割合が近いほど上がり的の帯に入る（下）、(4) 2 行目に知らせ、(5) docs・CHANGELOG・CLAUDE.md、画面写しで確かめた。
+- ユーザーの言葉（2026-11-23。そのまま）: ④「史実モードをオンにした時に現在の敵回避と不発に加えて、500M以下での至近距離での煙幕発動効果を敵が見失っているものの、煙幕の範囲に無作為に攻撃をしてくるようにしてください。なぜなら現実にそんな至近距離に近づかれていたら煙幕の濃いとこのに向かってとにかく銃撃するからです。見失って煙幕の中に向かって乱射するので命中率は高くない。でも近づくにつれて命中率があがるようにしてください。」
+- 範囲の答え（2026-11-23）: 「敵の艦すべて（推奨）」＝今照らして撃つ艦のすべて（`systems/destroyer-group` が作る EnemyFire: 駆逐艦・列の艦〔us_05 の戦艦・重巡も〕・輸送船・ハードの駆潜艇）。大発・沿岸砲・米PT・機は変えない。
+- 設計の既定（lead の D1〜D10。ユーザー未確認。変えたいと言われたら変える）:
+  - D1 引き金（艦ごと・ステップごとに全部が真）: 史実モード・見つけている（`ai.playerDetected`＝見失うまでの `detect_hold_s` 8 秒込み）・煙幕で線が遮られている（`hiddenBySmoke`＝今までどおり最寄りの艦との線）・艦から自艇まで `max_range_m` 500 の内・撃てる（艦も艇も沈み始めていない・海域の中）・ほかに見えている目標が無い（2 目標の任務＝僚艇が照らされていれば普段の砲がそちらを撃つ）。乱射は自艇だけを狙う（僚艇は今のまま）。
+  - D2 狙いは煙: 最後に見た点（見つけている間に線が開いていた最後のステップの自艇の位置。煙の中で見つけ直した時はその時の位置。見失えば捨てる）から `puff_search_m` 100 の内の生きている煙から一様に 1 つ（無ければ最後に見た点）に、半径 R(d) の円盤に一様（d＝艦から狙う点。100 m 以下で 25 m・500 m 以上で 90 m・間は直線）。見越しなし。弾の飛行・当たり（`pointNearBoat`＋砲の splash 半径）・被害（砲の damage・火災・機関）は普段の砲弾と同じ＝動く艇は古い点から逃れ、煙の中に止まる艇は艦が寄るほど当たる。
+  - D3 速さ: 砲ごとに普段の発射間隔の 1 / `rate_factor`（0.5）倍。撃てない間は負の残りを溜めない（普段の砲と同じ規則・別の冷却）。
+  - D5 乱数: **seed+46**（brief は +21。+21 は「大発の 13mm の予約」として `tests/landing-imports`・`evac-mission-data`・`air-strike` が固定しているので、空いている次の番号にした）。世界に 1 本、史実モード × 煙幕のある艇 × 艦の隊の世界だけ作る（ほかは作らない）。乱射は この系列だけを引き（煙を選ぶ 1 回〔候補があれば〕・散布 2 回）、普段の砲の系列（seed+1）は引かない。
+  - D6 data: `hit_rate_model.historical_mode.smoke_barrage`（新。`max_range_m` 500・`min_range_m` 100・`scatter_max_m` 90・`scatter_min_m` 25・`puff_search_m` 100・`rate_factor` 0.5・`source` design）。今の data の数は 1 つも変えていない。検査（みな有限・0 < min < max・0 ≤ scatter_min ≤ scatter_max・puff_search ≥ 0・0 < rate_factor ≤ 1）は `config/smoke-barrage-data` の `getSmokeBarrageParams`（世界を作るたびに。オフでも）。WorldSetup には入れない（史実モードの setup の snapshot＝us_04・us_05・us_06 などを変えない）＝`buildEnemies` に data を渡す（mission-world の 1 行の中）。brief の「今の史実モードの読み出しの中」は `config/game-data` が 294 行なので別のファイルにした。
+  - D7 純粋な core: `core/smoke-barrage`（Phaser・config を読まない・毎ステップ確保しない。状態は艦ごとに固定長＝砲ごとの冷却 Float64Array と弾の枠ごとの印 Uint8Array）。`noteContact`・`barrageScatterM`・`pickBarrageAim`・`stepSmokeBarrage`（普段の砲弾のプールへ `launchShell` で見越し 0）・`settleBarrageShells`（着いた乱射の弾の数・当たり・近く）。
+  - D8 配線: `EnemyFire` に任意の `ShipBarrage`（`systems/smoke-barrage-fire`。無い艦は null＝普段の道そのまま）。`step`・`stepPair` で照明の後・普段の砲の前に `fire`、普段の砲の段の後に `settle`。弾・閃光・水柱・音は普段の物（乱射の弾は普段の弾。発砲の数 `shotsFired` にも入る）。曲の段は HUD に従うまま。
+  - D9 HUD: 乱射の弾が自艇から 150 m（`config/barrage-hud-config` の `SMOKE_BARRAGE_HUD_NEAR_M`。見せ方の定数）の内に落ちたら 2 行目に「煙の中へ乱射されている」（警告の色・モード 45・旗 8192。`ui/barrage-lines`。`ui/strait-line-clock` が持つ＝近すぎて船体の下を通過と同じ作法: 2 行目に出ていた ms の和が 4 秒に届くまで・上の行に隠れている間は待つ。出ている間に次が近くに落ちれば 4 秒を数え直す・キーは同じ＝setText しない）。順はレーダーの出来事のすぐ上（us_06 の水上機の未確定の接近の下）。テレメトリ `smokeBarrage`（近くに落ちた累計）。Briefing・Result は変えない。音の層は読まない。
+  - D10 記録: 艦ごとの `fired`・`landed`・`hits`・`near`（`EnemyFire.barrageOf.state`。探りとヘッドレスが読む。Result の行は無し）。
+- 探り（`scripts/smoke-barrage-sim.ts`。core と data だけ。止まった Elco 80 が最後に見られた点に止まったまま煙幕を張り続け〔煙は艇尾の 24.4 m 後ろに積もる〕、止まった艦が d m 先から撃つ。200 回 × 30 秒。見つけたままの仮定）。的の帯（lead の D4。全弾の 1 発）は 500 m 1〜3%・300 m 4〜8%・100 m 10〜20%:
+
+  | 距離 | 散布 | 睦月型（`ijn_destroyer_mutsuki_enemy`）乱射 1 発 120mm / 25mm / 全弾 | 照らした普段の 1 発（全弾） | 乱射 30 秒の当たり・HP | 駆逐艦（`ijn_destroyer`）乱射 全弾 | 30 秒の HP |
+  |---|---|---|---|---|---|---|
+  | 500 m | 90 m | 3.4% / 1.6% / 1.7% | 17.6% | 2.1 発・15 | 1.8% | 19 |
+  | 400 m | 74 m | 5.2% / 2.4% / 2.5% | 26.5% | 3.1 発・22 | 2.6% | 29 |
+  | 300 m | 58 m | 8.5% / 3.9% / 4.1% | 44.8% | 5.1 発・36 | 4.2% | 45 |
+  | 200 m | 41 m | 15.9% / 7.5% / 7.9% | 65.3% | 9.8 発・68 | 8.0% | 83 |
+  | 150 m | 33 m | 18.7% / 9.0% / 9.4% | 82.2% | 11.8 発・81 | 9.6% | 102 |
+  | 100 m | 25 m | 23.1% / 10.8% / 11.3% | 100% | 14.1 発・98 | 11.6% | 126 |
+
+  - 照らした普段の砲の 30 秒は 416〜1,360 HP（睦月型）。止まった艇を煙の中で見つける距離は半月・史実で約 312 m なので、それより遠い艦は 8 秒で見失って止む（400・500 m の 30 秒の欄は実際は約 8 / 30）。
+  - 気になる点（lead へ）: 全弾の 1 発は帯の下寄りに入るが、主砲だけは 500 m 3.4%・100 m 23% で帯の上に出る（25mm が弾の 96% なので全弾は 25mm に近い）。100 m の煙に 30 秒止まると 98〜126 HP（Elco 80 は 100）＝ほぼ沈む（火災込みならもっと）。100 m の照らした砲は 2 秒で沈めるので「ほぼ沈む」まで約 30 秒の猶予はある。柔らげるなら `rate_factor` 0.3（同じ 1 発の割合で 30 秒の HP が約 6 割＝100 m で 59〜76）を提案する。値は変えていない。
+- 変更点（ファイルと行数。新／前 → 後）:
+  - 新 `src/core/smoke-barrage.ts`（204）・`src/systems/smoke-barrage-fire.ts`（36）・`src/config/smoke-barrage-data.ts`（10）・`src/config/barrage-hud-config.ts`（6。何も import しない）・`src/ui/barrage-lines.ts`（50）・`scripts/smoke-barrage-sim.ts`（92）。
+  - `src/systems/enemy-fire.ts`（236 → 256。`setBarrage`・`barrageOf`・step と stepPair の `if (br)` の 4 行）・`src/systems/world-enemies.ts`（97 → 112。data の引数・付ける所）・`src/systems/mission-world.ts`（300 → 300。buildEnemies の行に data）・`src/systems/destroyer-group.ts`（268 → 275。`barrageNear`）・`src/core/boat-telemetry.ts`（277 → 279）・`src/systems/telemetry-create.ts`（144 → 145）・`src/systems/mission-telemetry.ts`（221 → 222）・`src/ui/mission-mode.ts`（251 → 253）・`src/ui/strait-line-clock.ts`（135 → 138）・`src/ui/special-line.ts`（24 → 26）・`src/ui/mission-line-keys.ts`（67 → 67）・`src/core/night.ts`（系列の一覧の注に +46）・`data/hit_rate_model.json`（`smoke_barrage` の block）。
+  - ヘッドレス: `scripts/headless/ab-replay.mjs`（246 → 255。`SET=hist`＝史実モードの us_01・us_02・us_06 × seed 1・2 を 200 秒〔煙幕を張らない台本〕＝同じはず・`SET=histsmoke`＝史実モードの us_02 seed 1・2 で魚雷を撃たずに最寄りの艦へ寄り、700 m の内で止まって煙幕を張り続ける台本〔寄ってくる艦が 500 m の内に入る〕＝違うはず・`SET=smokeoff`＝同じ台本を史実モードのオフで＝同じはず。`historical` は両方の側に `&historical`）。
+  - 版 0.8.4（package.json・package-lock.json）。docs/02 §6.3 の史実モードの行に煙幕への乱射。docs/03 の v0.8.4 の行（中身・Done・実機 3 項目）。CLAUDE.md §2 に「史実モード（煙幕への乱射）」、§4 に新しいファイル、変更履歴。
+- tests（＋2 ファイル・＋16 件＝npm test 4,295 通過）: 新 `tests/smoke-barrage`（12 件: data の値と検査・散布の単調と端・狙う点は 100 m の内の生きている煙から一様〔乱数 1 回〕・無ければ最後に見た点〔乱数なし〕・最後に見た点の書き方・引き金の表〔1 つでも偽なら撃たず引かない〕・間隔は普段の半分で負の残りを溜めない・決定的と当たりの数え・源の規則〔Phaser・config・Math.random・確保なし・seed+46〕・世界の配線〔us_02・us_05・us_06 の史実モードだけ全艦に付く・オフ・T-38・data なしは付かない・setup に鍵なし・seed の系列は 1 か所・enemy-fire の順〕）・`tests/smoke-barrage-hud`（4 件: 文と色と幅・時計〔数え直し・キー〕・隠れている間は待つ・レーダーの出来事より上・配線と音の層）。
+- 確かめ（実装者）: 画面写し（W 1280・dpr 2。`scratchpad/v0840/shots/`）: 史実モードの us_02 seed 1 で駆逐艦の真横 400 m・150 m に艇を置いて止め、見つかってから煙幕＝煙の周りに水柱・2 行目「煙の中へ乱射されている」（400 m: 3 秒で 15 発・当たり 0。150 m: 4 秒で 19 発・当たり 1〔HP 96〕。艦は動いて 150 → 304 m）。史実モードのオフの同じ置き方は撃たれず、2 行目は「敵影あり ・ 未発見 ・ 煙幕に隠れている」のまま。
+    - 実装者の門（`run-gates v0840-impl`。基準 main e769c26・今の木も main@e769c26 のビルド番号・JOBS 2）: build・typecheck・lint ✓・npm test 4,295 通過・g2 OK 39 DIFF 0・ab-all（既定・@audio・@noaudio）58/58・ab-jp04base 8/8・ab-jp03 4/4・hud-base（3 つの音の状態）16/16・hud-jp04base 8/8・hud-jp03 4/4・us04（ab・hud・noradar の 2 組）・us06・us05（RECONUI）の組 みな same・ab-hist 6/6・hud-hist 6/6 same・tex-ab ✗ 0・snapshots 触らず。histsmoke は台本を直して回し直し（`v0840-impl-hist`）: 2/2 違う（最初の違いは seed 1 の frame 1,691・seed 2 の 1,577 の 2 行目「煙の中へ乱射されている」＝水上機の接近の行の代わり）・smokeoff 2/2 same。
+    - 門: （lead。`JOBS=2 run-gates v0840-lead`。基準 main e769c26）: build・typecheck・lint ✓・npm test 4,295 件 ✓・g2 OK 39・差 0。ab-replay all 58 は音の 3 つの状態とも 58/58・jp04base 8・jp03 4、hud-ab base 16（3 状態）・jp04base 8・jp03 4、us_04 の 4 組（ノーレーダーの 2 組を含む）・us06 の組・us05 の組がみな同じ。史実モード: hist（us_01・us_02・us_06 × seed 1・2。煙を張らない台本）ab 6/6・hud 6/6 同じ、histsmoke（us_02 seed 1・2。止まって煙幕を張る台本）は設計どおり 2/2 違う（最初の違いは 2 行目「煙の中へ乱射されている」）、smokeoff（同じ煙幕の台本を史実モードのオフで）2/2 同じ。tex-ab CHECK=1 の ✗ 0、スナップショットは変わらない。既知の揺れは出なかった。lead の見直し: data の今ある数は 1 つも変わらない（smoke_barrage の鍵を足しただけ）・触ったファイルはみな 300 行の内・乱射は毎ステップ確保なし（状態は艦ごとに固定長）・乱射の弾の着弾の数えは普段の砲の段の後で、同じステップに枠が使い回されない（updateGuns は発射が飛行より前）。
+- 既知の制約: 線が遮られているかは今までどおり最寄りの艦との 1 本の線（`hiddenBySmoke`）で、隊のほかの艦もそれを使う（遠い艦も 500 m の内なら同じ判定で乱射する）。最後に見た点は艦ごと。模擬（`core/intercept-sim`・`landing-sim`・`hit-rate-sim`）と味方の卯月（`core/ally-destroyer`）は乱射しない（そのまま）。乱射の弾は普段の弾のプール（48）を分け合う。2 行目の「煙の中へ乱射されている」は水上機の接近の行（「静音を保て」）より上（us_06 だけは水上機の未確定の接近の下＝v0.8.1 IP2 の順）。凍結の `core/pt-state.ts` の注の「+21 は大発の 13mm に予約」はそのまま（+21 は使っていない）。
+- 実機テスト結果: （未）
+
 ## v0.8.3 — 2026-11-23（操作の改修：静音ボタン・倍速）
 
 - 目的: どの任務でも使える小さな切り替えボタンを 2 つ足す。「静音」はスティックの全部の倒し量で 0〜艇の静音の上限を操れるようにし、「倍速」はゲームの世界を 2 倍の時間で進める。

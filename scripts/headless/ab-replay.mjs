@@ -27,7 +27,9 @@
 // v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印の濾し（scripts/headless/recon-filter。B が出し側・世界の写しは全部比べる。A は S3 の commit のビルド）。
 // v0.8.3: CTRLUI（既定 1）で両方の側の HUD の写しから「静音」「倍速」の丸と字（B にだけある 4 つの物＝lib.mjs の isCtrl）を除いて比べる（世界の写しは全部比べる）。
 //   結果の行に両方の側で除いた数（ctrl A n B m。A＝基準 b7e9f44 は 0、B＝今の木は写すたびに 4）。CTRLUI=0 で除かない（違いが出るはず）。
-// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.4（煙幕への乱射。史実モードだけ）: SET=hist で史実モード（両方の側に &historical）の us_01・us_02・us_06 × seed 1・2 を 200 秒（&nostrike。台本は煙幕を張らない）＝乱射の系列を作っても
+//   煙を使わない夜は基準と 1 ビットも同じ証。SET=histsmoke は同じ us_02 seed 1・2 で、最寄りの艦へ背を向けずに寄り、700 m の内に入ったら止まって煙幕を張り続ける台本（寄ってくる艦が 500 m の内に入る）（o.smoke）＝違いが出るはずの組（最初の違いを出す）。SET=smokeoff は同じ煙幕の台本を史実モードのオフで＝同じはずの組。
+// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|hist|histsmoke|smokeoff] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { anchorPair } from './anchor-filter.mjs';
@@ -105,6 +107,8 @@ export function abRun(o) {
     const f = w.enemy.focus(b.x, b.y);
     const dist = f ? Math.sqrt(d2(f, b)) : Infinity;
     if (t < 2) hl.steer(NaN, 0);
+    else if (o.smoke && f && (dist < 700 || w.smoke.puffs.some((p) => p.active))) { hl.steer(NaN, 0); w.input.smokeTap = true; } // v0.8.4 の histsmoke: 700 m の内（か煙が残る間）は止まって煙幕を張り続ける（張れる時だけ張れる。寄ってくる艦が 500 m の内に入る）
+    else if (o.smoke && f) hl.steer(hl.bearing(b.x, b.y, f.x, f.y), 0.6); // それまでは背を向けずに寄る
     else if (f && dist < 600) hl.steer(hl.bearing(f.x, f.y, b.x, b.y), o.ptrun ? 1 : 0.8);
     else if (f) hl.steer(hl.bearing(b.x, b.y, f.x, f.y), o.ptrun ? 1 : dist > 1800 ? 0.6 : 0.4);
     else hl.steer((90 + t * 2) % 360, 0.5);
@@ -169,6 +173,11 @@ export function abCases(set, input) {
     us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
     // us_05 のスリガオ海峡・最初の接触（v0.8.2 S2。片道の列・見張り・報告・弾薬庫）: 夜明けの 270 秒まで。S2 は A＝B＝今の木（決定性）・S2b から A は S2 の commit のビルド
     us05: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_05', hard, seed, secs: envNum('SECS', 270), set: 'us05' }))),
+    // 史実モード（v0.8.4）: 煙を使わない夜は基準と同じ（hist）・止まって煙幕を張る夜は違う（histsmoke）
+    hist: () => ['us_01', 'us_02', 'us_06'].flatMap((mission) => [1, 2].map((seed) => ({ ...base, mission, hard: false, seed, nodawn: true, historical: true, secs: envNum('SECS', 200), set: 'hist' }))),
+    histsmoke: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, historical: true, smoke: true, secs: envNum('SECS', 200), set: 'histsm' })),
+    // 同じ煙幕の台本を史実モードのオフで（v0.8.4）: 乱射は作らない＝基準と同じはず
+    smokeoff: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, smoke: true, secs: envNum('SECS', 200), set: 'smkoff' })),
   };
   if (process.env.MISSION) {
     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
@@ -177,7 +186,7 @@ export function abCases(set, input) {
 }
 
 export function query(c, side) {
-  return `mission=${c.mission}&seed=${c.seed}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}${c.noplane && side === 'B' ? '&noplane' : ''}`;
+  return `mission=${c.mission}&seed=${c.seed}${c.historical ? '&historical' : ''}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}${c.noplane && side === 'B' ? '&noplane' : ''}`;
 }
 
 /** S4 の濾しの設定（RADARUI は B・NORADAR は A が出し側。どちらでもなければ null＝今のまま） */
@@ -235,7 +244,7 @@ async function main() {
   await sb.close();
   let bad = 0;
   for (const r of res) {
-    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}${r.ctrl ? ` ctrl A ${r.ctrl[0]} B ${r.ctrl[1]}` : ''}`;
+    const tag = `${r.set.padEnd(6)} ${r.mission}${r.hard ? '&hard' : ''} seed ${r.seed}${r.dawn ? ` dawn ${r.dawn}` : ''}${r.nodawn ? ' nostrike' : ''}${r.ptrun ? ' ptrun' : ''}${r.result ? ' result' : ''}${r.noally ? ' B&noally' : ''}${r.noradar ? ' B&noradar' : ''}${r.noplane ? ' B&noplane' : ''}${r.historical ? ' historical' : ''}${r.smoke ? ' smoke' : ''}${r.radarui ? ' RADARUI' : ''}${r.anchorui ? ' ANCHORUI' : ''}${r.reconui ? ' RECONUI' : ''}${r.filtertest ? ' FILTERTEST' : ''}${r.masked !== undefined ? ` masked ${r.masked}` : ''}${r.ctrl ? ` ctrl A ${r.ctrl[0]} B ${r.ctrl[1]}` : ''}`;
     if (!r.same) bad++;
     console.log(`${tag} same:${r.same} frames ${r.frames}${r.same ? '' : ` 最初の違い frame ${r.at} ${JSON.stringify(r.field)}`}${r.errors.length ? ` page errors ${r.errors.length}: ${r.errors[0]}` : ''}`);
   }
