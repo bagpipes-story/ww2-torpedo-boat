@@ -1,0 +1,466 @@
+careful  h0 s 1 --  del 0 (ret 0) t 75.1 fuel 68% hp 0 shell 1/3 lostShell 0 mines 0/0 cover 1 sink 73.1 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":35.66666666666839,"other":30.299999999998278} | 任務終了 — PTの掃射で沈没 | err 0
+careful  h0 s 3 OK  del 40 (ret 0) t 246.3 fuel 19% hp 80 shell 0/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s 2 OK  del 40 (ret 0) t 262 fuel 28% hp 50 shell 1/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s 4 OK  del 40 (ret 0) t 284 fuel 25% hp 12 shell 2/16 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s 5 OK  del 40 (ret 0) t 260.7 fuel 16% hp 72 shell 0/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s 6 OK  del 40 (ret 0) t 235.6 fuel 20% hp 88 shell 0/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s 7 --  del 20 (ret 0) t 193.5 fuel 45% hp 0 shell 2/11 lostShell 0 mines 0/0 cover 0 sink 191.5 shore hpBy {"shore":68,"mine":0,"sboat":32,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h0 s 8 OK  del 40 (ret 0) t 279 fuel 25% hp 68 shell 0/15 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s 9 OK  del 40 (ret 0) t 226.2 fuel 21% hp 12 shell 0/11 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":79.86666666666486,"other":8.133333333333525} | 任務終了 — 帰投した | err 0
+careful  h0 s10 OK  del 40 (ret 0) t 257.5 fuel 28% hp 80 shell 0/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s11 OK  del 40 (ret 0) t 263.7 fuel 27% hp 88 shell 0/14 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s12 OK  del 40 (ret 0) t 248.7 fuel 17% hp 42 shell 1/14 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s13 --  del 20 (ret 0) t 186.3 fuel 46% hp 0 shell 2/10 lostShell 1 mines 0/0 cover 0 sink 184.3 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h0 s15 OK  del 40 (ret 0) t 241.9 fuel 19% hp 54 shell 1/14 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s14 OK  del 40 (ret 0) t 230.9 fuel 20% hp 34 shell 1/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s16 OK  del 40 (ret 0) t 246.4 fuel 18% hp 18 shell 1/14 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":46.93333333333112,"other":1.066666666666606} | 任務終了 — 帰投した | err 0
+careful  h0 s17 --  del 20 (ret 0) t 215.6 fuel 44% hp 0 shell 1/13 lostShell 1 mines 0/0 cover 1 sink 213.6 shore hpBy {"shore":16.00000000000082,"mine":0,"sboat":70.56666666666516,"other":13.433333333334001} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h0 s18 OK  del 40 (ret 0) t 267.5 fuel 27% hp 8 shell 0/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":84.73333333333147,"other":7.266666666666641} | 任務終了 — 帰投した | err 0
+careful  h0 s19 OK  del 40 (ret 0) t 266.3 fuel 27% hp 34 shell 1/14 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s20 OK  del 40 (ret 0) t 229.1 fuel 21% hp 60 shell 0/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s21 OK  del 40 (ret 0) t 256.4 fuel 28% hp 60 shell 0/13 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s22 OK  del 40 (ret 0) t 260.7 fuel 27% hp 30 shell 1/13 lostShell 2 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s23 OK  del 40 (ret 0) t 237.3 fuel 20% hp 42 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s24 OK  del 40 (ret 0) t 250.4 fuel 29% hp 30 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s25 OK  del 40 (ret 0) t 269 fuel 26% hp 76 shell 0/14 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s26 --  del 20 (ret 0) t 162.3 fuel 42% hp 0 shell 1/8 lostShell 1 mines 0/0 cover 1 sink 160.3 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":28,"other":37.96666666666581} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h0 s27 --  del 20 (ret 0) t 169.8 fuel 41% hp 0 shell 2/10 lostShell 0 mines 0/0 cover 0 sink 167.8 shore hpBy {"shore":40.000000000000036,"mine":0,"sboat":24.19999999999976,"other":35.79999999999967} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h0 s28 OK  del 40 (ret 0) t 230.5 fuel 21% hp 10 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":16,"other":39.9666666666659} | 任務終了 — 帰投した | err 0
+careful  h0 s29 --  del 0 (ret 0) t 77.3 fuel 68% hp 0 shell 1/3 lostShell 0 mines 0/0 cover 1 sink 75.3 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":55.566666666666926,"other":10.399999999999409} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h0 s30 OK  del 40 (ret 0) t 232.8 fuel 21% hp 66 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s31 OK  del 40 (ret 0) t 260.9 fuel 28% hp 32 shell 2/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+careful  h0 s32 --  del 20 (ret 0) t 210 fuel 43% hp 0 shell 3/13 lostShell 1 mines 0/0 cover 1 sink 208 shore hpBy {"shore":80,"mine":0,"sboat":20,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+careful  h1 s 1 --  del 0 (ret 0) t 75.1 fuel 68% hp 0 shell 1/5 lostShell 0 mines 0/0 cover 1 sink 73.1 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":35.66666666666839,"other":30.299999999998278} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+careful  h1 s 2 --  del 0 (ret 0) t 98.9 fuel 65% hp 0 shell 1/10 lostShell 0 mines 0/0 cover 1 sink 96.9 sboat? hpBy {"shore":34,"mine":0,"sboat":55.966666666666214,"other":10.033333333333246} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+careful  h1 s 4 --  del 0 (ret 0) t 84.7 fuel 67% hp 0 shell 2/7 lostShell 0 mines 0/0 cover 1 sink 82.7 sboat? hpBy {"shore":68.06666666666666,"mine":0,"sboat":31.933333333333334,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s 3 OK  del 40 (ret 0) t 247.1 fuel 19% hp 30 shell 1/23 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s 5 --  del 20 (ret 0) t 238 fuel 40% hp 0 shell 2/26 lostShell 1 mines 0/0 cover 2 sink 236 shore hpBy {"shore":48,"mine":0,"sboat":48,"other":4} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s 6 --  del 20 (ret 0) t 170.9 fuel 40% hp 0 shell 2/15 lostShell 1 mines 0/0 cover 1 sink 168.9 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s 7 --  del 20 (ret 0) t 193.5 fuel 45% hp 0 shell 2/17 lostShell 0 mines 0/0 cover 0 sink 191.5 shore hpBy {"shore":68,"mine":0,"sboat":32,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s 8 OK  del 40 (ret 0) t 279 fuel 25% hp 64 shell 0/26 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s 9 OK  del 40 (ret 0) t 226.7 fuel 21% hp 8 shell 0/19 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":91.99999999999773,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s10 OK  del 40 (ret 0) t 258.9 fuel 28% hp 30 shell 1/20 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s12 OK  del 40 (ret 0) t 249.5 fuel 17% hp 10 shell 1/25 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":19.633333333333127,"other":36.3666666666646} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s11 OK  del 40 (ret 0) t 264.2 fuel 27% hp 68 shell 0/24 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":28,"other":4} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s13 --  del 20 (ret 0) t 186.4 fuel 46% hp 0 shell 2/16 lostShell 1 mines 0/0 cover 0 sink 184.4 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s14 OK  del 40 (ret 0) t 230.9 fuel 20% hp 34 shell 1/20 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s16 OK  del 40 (ret 0) t 275.2 fuel 25% hp 40 shell 0/24 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":59.999999999997726,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s15 OK  del 40 (ret 0) t 241.9 fuel 19% hp 54 shell 1/23 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s17 --  del 0 (ret 0) t 104.4 fuel 64% hp 0 shell 0/10 lostShell 1 mines 0/0 cover 1 sink 102.4 sboat? hpBy {"shore":0,"mine":0,"sboat":97.39999999999719,"other":2.600000000000744} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+careful  h1 s18 --  del 0 (ret 0) t 87.1 fuel 67% hp 0 shell 1/7 lostShell 0 mines 0/0 cover 1 sink 85.1 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":65.96666666666542,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+careful  h1 s20 OK  del 40 (ret 0) t 229 fuel 21% hp 56 shell 0/20 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":44,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s19 OK  del 40 (ret 0) t 266.5 fuel 27% hp 34 shell 1/24 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s21 OK  del 40 (ret 0) t 256.4 fuel 28% hp 52 shell 0/21 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":48,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s22 OK  del 40 (ret 0) t 258.1 fuel 28% hp 6 shell 1/20 lostShell 2 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":60,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s23 --  del 0 (ret 0) t 92.8 fuel 66% hp 0 shell 2/9 lostShell 0 mines 0/0 cover 2 sink 90.8 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s24 --  del 0 (ret 0) t 100.8 fuel 61% hp 0 shell 1/8 lostShell 0 mines 0/0 cover 2 sink 98.8 sboat? hpBy {"shore":34,"mine":0,"sboat":63.133333333333155,"other":2.8666666666666476} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+careful  h1 s25 --  del 20 (ret 0) t 195.6 fuel 45% hp 0 shell 1/18 lostShell 1 mines 0/0 cover 1 sink 193.6 shore hpBy {"shore":24.00000000000142,"mine":0,"sboat":70.73333333333136,"other":5.266666666666929} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s26 --  del 20 (ret 0) t 143.9 fuel 44% hp 0 shell 2/11 lostShell 2 mines 0/0 cover 2 sink 141.9 shore hpBy {"shore":68,"mine":0,"sboat":32,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s27 --  del 0 (ret 0) t 85.9 fuel 67% hp 0 shell 1/7 lostShell 0 mines 0/0 cover 0 sink 83.9 sboat? hpBy {"shore":34,"mine":0,"sboat":65.99999999999879,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+careful  h1 s28 --  del 20 (ret 0) t 140.3 fuel 45% hp 0 shell 2/9 lostShell 0 mines 0/0 cover 2 sink 138.3 shore hpBy {"shore":36.03333333333358,"mine":0,"sboat":62.366666666664486,"other":1.5999999999999943} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s29 --  del 0 (ret 0) t 77.3 fuel 68% hp 0 shell 1/5 lostShell 0 mines 0/0 cover 1 sink 75.3 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":55.566666666666926,"other":10.399999999999409} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s30 OK  del 40 (ret 0) t 260.9 fuel 28% hp 20 shell 2/22 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":8,"other":4} | 任務終了 — 帰投した（ハード） | err 0
+careful  h1 s31 --  del 0 (ret 0) t 74.6 fuel 68% hp 0 shell 3/5 lostShell 0 mines 0/0 cover 0 sink 72.6 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+careful  h1 s32 --  del 20 (ret 0) t 210 fuel 43% hp 0 shell 3/21 lostShell 1 mines 0/0 cover 1 sink 208 shore hpBy {"shore":80,"mine":0,"sboat":20,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h0 s 1 --  del 20 (ret 0) t 254 fuel 45% hp 0 shell 2/16 lostShell 0 mines 0/0 cover 2 sink 252 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s 2 --  del 20 (ret 0) t 255 fuel 44% hp 0 shell 2/16 lostShell 1 mines 0/0 cover 1 sink 253 shore hpBy {"shore":56,"mine":0,"sboat":44,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s 3 --  del 34 (ret 0) t 360.4 fuel 25% hp 72 shell 0/21 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した（夜明け後 60 秒） | err 0
+silent   h0 s 4 --  del 20 (ret 0) t 241.7 fuel 46% hp 0 shell 2/14 lostShell 0 mines 0/0 cover 1 sink 239.7 shore hpBy {"shore":44.000000000002274,"mine":0,"sboat":29.133333333332587,"other":26.86666666666514} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s 5 --  del 20 (ret 0) t 284.5 fuel 43% hp 0 shell 3/18 lostShell 1 mines 0/0 cover 1 sink 282.5 shore hpBy {"shore":80,"mine":0,"sboat":20,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s 6 --  del 37 (ret 0) t 359.1 fuel 24% hp 100 shell 0/21 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（夜明け後 59 秒） | err 0
+silent   h0 s 7 --  del 20 (ret 0) t 215.9 fuel 48% hp 0 shell 2/12 lostShell 0 mines 0/0 cover 2 sink 213.9 shore hpBy {"shore":56,"mine":0,"sboat":44,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s 8 OK  del 40 (ret 0) t 333.2 fuel 26% hp 52 shell 0/19 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":48,"other":0} | 任務終了 — 帰投した（夜明け後 33 秒） | err 0
+silent   h0 s10 OK  del 40 (ret 0) t 307.2 fuel 28% hp 68 shell 0/16 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した（夜明け後 7 秒） | err 0
+silent   h0 s 9 OK  del 40 (ret 0) t 299.2 fuel 29% hp 64 shell 0/15 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した | err 0
+silent   h0 s11 OK  del 40 (ret 0) t 316.4 fuel 26% hp 34 shell 1/17 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した（夜明け後 16 秒） | err 0
+silent   h0 s12 OK  del 40 (ret 0) t 340.3 fuel 23% hp 12 shell 0/20 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":77.03333333333168,"other":10.966666666666999} | 任務終了 — 帰投した（夜明け後 40 秒） | err 0
+silent   h0 s14 --  del 20 (ret 0) t 257 fuel 45% hp 0 shell 2/16 lostShell 0 mines 0/0 cover 2 sink 255 shore hpBy {"shore":48,"mine":0,"sboat":52,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s13 --  del 20 (ret 0) t 195.4 fuel 50% hp 0 shell 2/10 lostShell 2 mines 0/0 cover 2 sink 193.4 shore hpBy {"shore":44,"mine":0,"sboat":56,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s15 --  del 37 (ret 0) t 362.3 fuel 25% hp 64 shell 0/20 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した（夜明け後 62 秒） | err 0
+silent   h0 s16 OK  del 40 (ret 0) t 332 fuel 25% hp 12 shell 0/18 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":80.09999999999818,"other":7.90000000000018} | 任務終了 — 帰投した（夜明け後 32 秒） | err 0
+silent   h0 s17 OK  del 40 (ret 0) t 351.3 fuel 25% hp 60 shell 0/21 lostShell 2 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（夜明け後 51 秒） | err 0
+silent   h0 s19 OK  del 40 (ret 0) t 320.3 fuel 26% hp 2 shell 1/18 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":64,"other":0} | 任務終了 — 帰投した（夜明け後 20 秒） | err 0
+silent   h0 s18 --  del 20 (ret 0) t 272.1 fuel 41% hp 0 shell 1/17 lostShell 0 mines 0/0 cover 1 sink 270.1 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":36,"other":29.96666666666613} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s20 OK  del 40 (ret 0) t 305.3 fuel 28% hp 76 shell 0/16 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した（夜明け後 5 秒） | err 0
+silent   h0 s21 OK  del 40 (ret 0) t 304.9 fuel 28% hp 60 shell 0/16 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（夜明け後 5 秒） | err 0
+silent   h0 s22 OK  del 40 (ret 0) t 346 fuel 25% hp 2 shell 1/19 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":58.59999999999803,"other":5.399999999999693} | 任務終了 — 帰投した（夜明け後 46 秒） | err 0
+silent   h0 s23 OK  del 40 (ret 0) t 345.7 fuel 24% hp 72 shell 0/20 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した（夜明け後 46 秒） | err 0
+silent   h0 s24 OK  del 40 (ret 0) t 296.2 fuel 29% hp 18 shell 1/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":48,"other":0} | 任務終了 — 帰投した | err 0
+silent   h0 s25 OK  del 40 (ret 0) t 345.4 fuel 25% hp 22 shell 1/20 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":44,"other":0} | 任務終了 — 帰投した（夜明け後 45 秒） | err 0
+silent   h0 s26 --  del 20 (ret 0) t 217.1 fuel 48% hp 0 shell 2/12 lostShell 0 mines 0/0 cover 0 sink 215.1 shore hpBy {"shore":44.03333333333358,"mine":0,"sboat":16,"other":39.9666666666659} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s27 --  del 20 (ret 0) t 200.6 fuel 49% hp 0 shell 2/10 lostShell 0 mines 0/0 cover 1 sink 198.6 shore hpBy {"shore":56,"mine":0,"sboat":44,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s28 --  del 20 (ret 0) t 182.3 fuel 51% hp 0 shell 1/8 lostShell 1 mines 0/0 cover 1 sink 180.3 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":44,"other":21.966666666666555} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s29 --  del 0 (ret 0) t 85.8 fuel 73% hp 0 shell 1/3 lostShell 0 mines 0/0 cover 1 sink 83.8 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":65.96666666666502,"other":0} | 任務終了 — PTの掃射で沈没 | err 0
+silent   h0 s30 OK  del 40 (ret 0) t 317.1 fuel 28% hp 26 shell 1/17 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（夜明け後 17 秒） | err 0
+silent   h0 s31 --  del 0 (ret 0) t 80.7 fuel 73% hp 0 shell 2/3 lostShell 0 mines 0/0 cover 1 sink 78.7 shore hpBy {"shore":66.5333333333341,"mine":0,"sboat":33.4666666666659,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+silent   h0 s32 OK  del 40 (ret 0) t 315.8 fuel 26% hp 54 shell 1/18 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した（夜明け後 16 秒） | err 0
+silent   h1 s 1 --  del 20 (ret 0) t 234.6 fuel 47% hp 0 shell 2/23 lostShell 0 mines 0/0 cover 3 sink 232.6 shore hpBy {"shore":48,"mine":0,"sboat":52,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s 3 --  del 20 (ret 0) t 218.5 fuel 48% hp 0 shell 1/18 lostShell 2 mines 0/0 cover 3 sink 216.5 shore hpBy {"shore":16,"mine":0,"sboat":84,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s 2 --  del 20 (ret 0) t 255 fuel 44% hp 0 shell 2/25 lostShell 1 mines 0/0 cover 2 sink 253 shore hpBy {"shore":56,"mine":0,"sboat":44,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s 4 --  del 0 (ret 0) t 99.4 fuel 72% hp 0 shell 1/6 lostShell 0 mines 0/0 cover 2 sink 97.4 shore hpBy {"shore":16.000000000000608,"mine":0,"sboat":73.66666666666498,"other":10.333333333333847} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s 5 --  del 0 (ret 0) t 120.8 fuel 70% hp 0 shell 1/10 lostShell 1 mines 0/0 cover 2 sink 118.8 sboat? hpBy {"shore":34,"mine":0,"sboat":33.26666666666637,"other":32.73333333333291} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s 7 --  del 20 (ret 0) t 216.4 fuel 47% hp 0 shell 2/18 lostShell 0 mines 0/0 cover 2 sink 214.4 shore hpBy {"shore":36,"mine":0,"sboat":64,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s 8 --  del 0 (ret 0) t 107.2 fuel 71% hp 0 shell 0/7 lostShell 0 mines 0/0 cover 2 sink 105.2 sboat? hpBy {"shore":0,"mine":0,"sboat":89.39999999999947,"other":10.599999999999865} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s 6 --  del 35 (ret 0) t 359 fuel 25% hp 20 shell 2/33 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した（夜明け後 59 秒）（ハード） | err 0
+silent   h1 s 9 OK  del 40 (ret 0) t 299.8 fuel 29% hp 76 shell 0/24 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+silent   h1 s12 --  del 0 (ret 0) t 97.8 fuel 72% hp 0 shell 0/5 lostShell 0 mines 0/0 cover 2 sink 95.8 sboat? hpBy {"shore":0,"mine":0,"sboat":99.99999999999851,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s10 OK  del 40 (ret 0) t 308.4 fuel 28% hp 26 shell 1/26 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（夜明け後 8 秒）（ハード） | err 0
+silent   h1 s11 OK  del 40 (ret 0) t 317.1 fuel 26% hp 14 shell 1/29 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":52,"other":0} | 任務終了 — 帰投した（夜明け後 17 秒）（ハード） | err 0
+silent   h1 s13 --  del 20 (ret 0) t 195.6 fuel 50% hp 0 shell 2/14 lostShell 2 mines 0/0 cover 2 sink 193.6 shore hpBy {"shore":36,"mine":0,"sboat":64,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s14 --  del 20 (ret 0) t 227.4 fuel 47% hp 0 shell 1/19 lostShell 1 mines 0/0 cover 3 sink 225.4 shore hpBy {"shore":24,"mine":0,"sboat":76,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s15 --  del 37 (ret 0) t 362.8 fuel 25% hp 6 shell 1/33 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":60,"other":0} | 任務終了 — 帰投した（夜明け後 63 秒）（ハード） | err 0
+silent   h1 s16 OK  del 40 (ret 0) t 332 fuel 25% hp 16 shell 0/30 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":83.99999999999773,"other":0} | 任務終了 — 帰投した（夜明け後 32 秒）（ハード） | err 0
+silent   h1 s17 --  del 0 (ret 0) t 120.2 fuel 70% hp 0 shell 0/11 lostShell 1 mines 0/0 cover 1 sink 118.2 sboat? hpBy {"shore":0,"mine":0,"sboat":67.96666666666621,"other":32.03333333333314} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s18 --  del 20 (ret 0) t 244.3 fuel 45% hp 0 shell 2/22 lostShell 1 mines 0/0 cover 2 sink 242.3 shore hpBy {"shore":56,"mine":0,"sboat":44,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s19 --  del 0 (ret 0) t 96.8 fuel 72% hp 0 shell 1/5 lostShell 0 mines 0/0 cover 2 sink 94.8 sboat? hpBy {"shore":34,"mine":0,"sboat":66,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s20 --  del 0 (ret 0) t 114.1 fuel 71% hp 0 shell 0/9 lostShell 0 mines 0/0 cover 2 sink 112.1 sboat? hpBy {"shore":0,"mine":0,"sboat":69.53333333333302,"other":30.46666666666625} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s23 --  del 37 (ret 0) t 360.6 fuel 25% hp 26 shell 1/34 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（夜明け後 61 秒）（ハード） | err 0
+silent   h1 s21 OK  del 40 (ret 0) t 304.8 fuel 28% hp 68 shell 0/25 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した（夜明け後 5 秒）（ハード） | err 0
+silent   h1 s22 --  del 20 (ret 0) t 221.1 fuel 47% hp 0 shell 1/17 lostShell 0 mines 0/0 cover 2 sink 219.1 shore hpBy {"shore":2.2737367544323206e-12,"mine":0,"sboat":99.99999999999773,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s24 OK  del 40 (ret 0) t 296.7 fuel 29% hp 10 shell 1/25 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":56,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+silent   h1 s26 --  del 0 (ret 0) t 120.6 fuel 70% hp 0 shell 2/10 lostShell 0 mines 0/0 cover 2 sink 118.6 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s25 --  del 20 (ret 0) t 231.7 fuel 47% hp 0 shell 2/20 lostShell 1 mines 0/0 cover 2 sink 229.7 shore hpBy {"shore":36,"mine":0,"sboat":64,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s27 --  del 20 (ret 0) t 200.9 fuel 49% hp 0 shell 2/16 lostShell 1 mines 0/0 cover 2 sink 198.9 shore hpBy {"shore":36,"mine":0,"sboat":64,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s28 --  del 0 (ret 0) t 109.3 fuel 71% hp 0 shell 1/7 lostShell 0 mines 0/0 cover 2 sink 107.3 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":52,"other":13.966666666666656} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s29 --  del 0 (ret 0) t 85.7 fuel 73% hp 0 shell 1/3 lostShell 0 mines 0/0 cover 1 sink 83.7 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":65.96666666666509,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+silent   h1 s30 --  del 0 (ret 0) t 121.3 fuel 70% hp 0 shell 2/11 lostShell 0 mines 0/0 cover 3 sink 119.3 shore hpBy {"shore":40,"mine":0,"sboat":60,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s31 --  del 0 (ret 0) t 80.7 fuel 73% hp 0 shell 2/3 lostShell 0 mines 0/0 cover 1 sink 78.7 shore hpBy {"shore":66.5333333333341,"mine":0,"sboat":33.4666666666659,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+silent   h1 s32 OK  del 40 (ret 0) t 330.3 fuel 26% hp 38 shell 1/32 lostShell 2 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した（夜明け後 30 秒）（ハード） | err 0
+smoke    h0 s 3 OK  del 40 (ret 0) t 245.6 fuel 19% hp 100 shell 0/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 1 OK  del 40 (ret 0) t 235.7 fuel 20% hp 10 shell 1/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":25.666666666666757,"other":30.299999999998278} | 任務終了 — 帰投した | err 0
+smoke    h0 s 2 OK  del 40 (ret 0) t 261.5 fuel 28% hp 66 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 4 OK  del 40 (ret 0) t 254.1 fuel 17% hp 66 shell 1/14 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 5 OK  del 40 (ret 0) t 260.6 fuel 16% hp 100 shell 0/13 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 6 OK  del 40 (ret 0) t 236.2 fuel 20% hp 66 shell 1/11 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 7 OK  del 40 (ret 0) t 250.1 fuel 19% hp 66 shell 1/12 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 8 OK  del 40 (ret 0) t 232.4 fuel 19% hp 100 shell 0/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s 9 OK  del 40 (ret 0) t 223.3 fuel 22% hp 96 shell 0/10 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s10 OK  del 40 (ret 0) t 228.9 fuel 21% hp 100 shell 0/11 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s11 OK  del 40 (ret 0) t 234.5 fuel 19% hp 100 shell 0/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s12 OK  del 40 (ret 0) t 248 fuel 17% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s13 OK  del 40 (ret 0) t 252.9 fuel 18% hp 32 shell 2/14 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s15 OK  del 40 (ret 0) t 241.4 fuel 19% hp 100 shell 0/13 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s14 OK  del 40 (ret 0) t 229.9 fuel 20% hp 100 shell 0/10 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s16 OK  del 40 (ret 0) t 244.8 fuel 18% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s17 OK  del 40 (ret 0) t 254.9 fuel 18% hp 100 shell 0/13 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s18 OK  del 40 (ret 0) t 235.8 fuel 19% hp 100 shell 0/11 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s19 OK  del 40 (ret 0) t 236.7 fuel 19% hp 66 shell 1/11 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s20 OK  del 40 (ret 0) t 256 fuel 28% hp 88 shell 0/10 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s22 --  del 20 (ret 0) t 191.2 fuel 36% hp 0 shell 1/11 lostShell 1 mines 0/0 cover 0 sink 189.2 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":30.86666666666605,"other":35.10000000000029} | 任務終了 — 沿岸砲で沈没 | err 0
+smoke    h0 s21 OK  del 40 (ret 0) t 255.7 fuel 28% hp 88 shell 0/11 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s23 OK  del 40 (ret 0) t 236.8 fuel 20% hp 66 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s24 OK  del 40 (ret 0) t 232.3 fuel 22% hp 66 shell 1/9 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s27 OK  del 40 (ret 0) t 243.8 fuel 19% hp 32 shell 2/13 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s26 OK  del 40 (ret 0) t 238.4 fuel 19% hp 26 shell 1/12 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 帰投した | err 0
+smoke    h0 s25 OK  del 40 (ret 0) t 240.1 fuel 19% hp 66 shell 1/12 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s28 OK  del 40 (ret 0) t 228.8 fuel 21% hp 100 shell 0/11 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s29 OK  del 40 (ret 0) t 241.1 fuel 18% hp 26 shell 1/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":29.566666666665625,"other":10.399999999999409} | 任務終了 — 帰投した | err 0
+smoke    h0 s30 OK  del 40 (ret 0) t 232.8 fuel 21% hp 66 shell 1/10 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s31 OK  del 40 (ret 0) t 260.9 fuel 28% hp 32 shell 2/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h0 s32 OK  del 40 (ret 0) t 236.1 fuel 19% hp 32 shell 2/12 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h1 s 1 --  del 20 (ret 0) t 172.6 fuel 42% hp 0 shell 2/14 lostShell 0 mines 0/0 cover 2 sink 170.6 shore hpBy {"shore":44.033333333334966,"mine":0,"sboat":25.666666666666757,"other":30.299999999998278} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s 3 OK  del 40 (ret 0) t 245.9 fuel 19% hp 66 shell 1/19 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s 4 --  del 0 (ret 0) t 98.3 fuel 64% hp 0 shell 2/9 lostShell 1 mines 0/0 cover 1 sink 96.3 shore hpBy {"shore":56.03333333333454,"mine":0,"sboat":43.966666666664395,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s 2 OK  del 40 (ret 0) t 261.5 fuel 28% hp 66 shell 1/20 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s 5 OK  del 40 (ret 0) t 274.1 fuel 16% hp 100 shell 0/22 lostShell 2 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s 6 --  del 20 (ret 0) t 195.3 fuel 38% hp 0 shell 3/16 lostShell 1 mines 0/0 cover 2 sink 193.3 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s 7 OK  del 40 (ret 0) t 250.1 fuel 19% hp 62 shell 1/19 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s 8 OK  del 40 (ret 0) t 233 fuel 19% hp 66 shell 1/18 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s 9 OK  del 40 (ret 0) t 223.5 fuel 22% hp 88 shell 0/15 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s12 OK  del 40 (ret 0) t 248 fuel 17% hp 66 shell 1/21 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s10 OK  del 40 (ret 0) t 256.5 fuel 27% hp 50 shell 1/19 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s11 OK  del 40 (ret 0) t 234.6 fuel 19% hp 100 shell 0/19 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s13 OK  del 40 (ret 0) t 252.9 fuel 18% hp 32 shell 2/23 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s14 OK  del 40 (ret 0) t 229.9 fuel 20% hp 100 shell 0/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s16 OK  del 40 (ret 0) t 245.1 fuel 18% hp 66 shell 1/21 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s15 OK  del 40 (ret 0) t 241.4 fuel 19% hp 100 shell 0/21 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s18 OK  del 40 (ret 0) t 236.5 fuel 19% hp 66 shell 1/19 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s17 OK  del 40 (ret 0) t 254.9 fuel 18% hp 100 shell 0/22 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s19 OK  del 40 (ret 0) t 236.7 fuel 19% hp 66 shell 1/17 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s20 OK  del 40 (ret 0) t 256.2 fuel 28% hp 72 shell 0/15 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s21 OK  del 40 (ret 0) t 227.4 fuel 21% hp 100 shell 0/16 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s23 OK  del 40 (ret 0) t 237.2 fuel 20% hp 32 shell 2/19 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s22 --  del 20 (ret 0) t 188.2 fuel 38% hp 0 shell 1/17 lostShell 1 mines 0/0 cover 1 sink 186.2 shore hpBy {"shore":32.000000000002274,"mine":0,"sboat":63.16666666666467,"other":4.833333333333059} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s24 OK  del 40 (ret 0) t 232.3 fuel 22% hp 66 shell 1/13 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s25 --  del 20 (ret 0) t 216.9 fuel 27% hp 0 shell 2/19 lostShell 0 mines 0/0 cover 2 sink 214.9 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":0,"other":31.966666666666022} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s27 OK  del 40 (ret 0) t 243.8 fuel 19% hp 32 shell 2/21 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s26 --  del 20 (ret 0) t 153.5 fuel 43% hp 0 shell 2/12 lostShell 2 mines 0/0 cover 1 sink 151.5 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":12,"other":19.96666666666666} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s28 OK  del 40 (ret 0) t 229.9 fuel 21% hp 26 shell 1/16 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s29 OK  del 40 (ret 0) t 241.1 fuel 18% hp 26 shell 1/20 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":29.566666666665625,"other":10.399999999999409} | 任務終了 — 帰投した（ハード） | err 0
+smoke    h1 s31 --  del 0 (ret 0) t 77.1 fuel 68% hp 0 shell 3/5 lostShell 0 mines 0/0 cover 0 sink 75.1 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+smoke    h1 s30 OK  del 40 (ret 0) t 233.4 fuel 21% hp 32 shell 2/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h0 s 1 OK  del 40 (ret 0) t 237.6 fuel 25% hp 88 shell 0/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+smoke    h1 s32 OK  del 40 (ret 0) t 236.1 fuel 19% hp 32 shell 2/20 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h0 s 2 --  del 20 (ret 0) t 219.3 fuel 43% hp 0 shell 2/14 lostShell 1 mines 0/0 cover 2 sink 217.3 shore hpBy {"shore":60,"mine":0,"sboat":40,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+direct   h0 s 3 OK  del 40 (ret 0) t 254.2 fuel 23% hp 46 shell 1/15 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s 5 OK  del 40 (ret 0) t 259.3 fuel 20% hp 76 shell 0/16 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s 4 OK  del 40 (ret 0) t 236 fuel 25% hp 54 shell 1/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s 6 OK  del 40 (ret 0) t 245.9 fuel 22% hp 50 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s 7 --  del 20 (ret 0) t 185 fuel 48% hp 0 shell 2/11 lostShell 0 mines 0/0 cover 0 sink 183 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+direct   h0 s 8 OK  del 40 (ret 0) t 254.8 fuel 32% hp 48 shell 0/13 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":52,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s 9 OK  del 40 (ret 0) t 251.4 fuel 32% hp 64 shell 0/13 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s11 OK  del 40 (ret 0) t 265.2 fuel 31% hp 46 shell 1/15 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s10 OK  del 40 (ret 0) t 262.6 fuel 31% hp 96 shell 0/14 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s12 OK  del 40 (ret 0) t 243.1 fuel 24% hp 36 shell 0/14 lostShell 2 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":59.766666666664634,"other":4.233333333333093} | 任務終了 — 帰投した | err 0
+direct   h0 s13 OK  del 40 (ret 0) t 264.6 fuel 31% hp 16 shell 2/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s15 OK  del 40 (ret 0) t 248.1 fuel 22% hp 58 shell 1/15 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s14 OK  del 40 (ret 0) t 267.1 fuel 30% hp 26 shell 1/14 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s17 --  del 20 (ret 0) t 232.1 fuel 44% hp 0 shell 1/15 lostShell 1 mines 0/0 cover 1 sink 230.1 shore hpBy {"shore":16.00000000000079,"mine":0,"sboat":71.0333333333318,"other":12.966666666667312} | 任務終了 — 沿岸砲で沈没 | err 0
+direct   h0 s16 OK  del 40 (ret 0) t 277.5 fuel 28% hp 44 shell 0/15 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":55.999999999997726,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s18 OK  del 40 (ret 0) t 258 fuel 32% hp 76 shell 0/13 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s19 --  del 0 (ret 0) t 87.8 fuel 69% hp 0 shell 1/5 lostShell 0 mines 0/0 cover 0 sink 85.8 sboat? hpBy {"shore":34,"mine":0,"sboat":65.99999999999902,"other":0} | 任務終了 — PTの掃射で沈没 | err 0
+direct   h0 s20 OK  del 40 (ret 0) t 256 fuel 32% hp 48 shell 0/13 lostShell 0 mines 1/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":52,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s21 OK  del 40 (ret 0) t 254.2 fuel 32% hp 72 shell 0/12 lostShell 0 mines 1/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s23 OK  del 40 (ret 0) t 228.7 fuel 25% hp 92 shell 0/13 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s22 OK  del 40 (ret 0) t 247.8 fuel 33% hp 34 shell 1/12 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s24 OK  del 40 (ret 0) t 267.9 fuel 30% hp 18 shell 1/14 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":48,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s25 OK  del 40 (ret 0) t 287.3 fuel 28% hp 32 shell 0/17 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":37.866666666666106,"other":30.13333333333162} | 任務終了 — 帰投した | err 0
+direct   h0 s27 OK  del 40 (ret 0) t 240.3 fuel 24% hp 28 shell 2/14 lostShell 0 mines 1/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s26 OK  del 40 (ret 0) t 236.4 fuel 24% hp 2 shell 1/13 lostShell 1 mines 0/0 cover 0 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":24,"other":39.9666666666661} | 任務終了 — 帰投した | err 0
+direct   h0 s28 OK  del 40 (ret 0) t 256.5 fuel 32% hp 6 shell 1/13 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":20,"other":39.9666666666661} | 任務終了 — 帰投した | err 0
+direct   h0 s29 --  del 20 (ret 0) t 181 fuel 49% hp 0 shell 2/10 lostShell 0 mines 0/0 cover 1 sink 179 shore hpBy {"shore":40.03333333333498,"mine":0,"sboat":47.86666666666525,"other":12.09999999999947} | 任務終了 — 沿岸砲で沈没 | err 0
+direct   h0 s31 OK  del 40 (ret 0) t 247.3 fuel 24% hp 66 shell 1/14 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s30 OK  del 40 (ret 0) t 234.4 fuel 25% hp 100 shell 0/13 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+direct   h0 s32 OK  del 40 (ret 0) t 272.8 fuel 29% hp 46 shell 1/15 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した | err 0
+direct   h1 s 1 OK  del 40 (ret 0) t 264.8 fuel 31% hp 30 shell 1/22 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":32,"other":4} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s 2 OK  del 40 (ret 0) t 261.7 fuel 30% hp 20 shell 0/24 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":71.0666666666649,"other":8.933333333333778} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s 3 OK  del 40 (ret 0) t 254.8 fuel 23% hp 12 shell 2/27 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s 4 --  del 0 (ret 0) t 92.8 fuel 68% hp 0 shell 1/9 lostShell 0 mines 1/0 cover 1 sink 90.8 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":65.96666666666638,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+direct   h1 s 6 --  del 20 (ret 0) t 173 fuel 43% hp 0 shell 3/17 lostShell 1 mines 0/0 cover 3 sink 171 shore hpBy {"shore":72,"mine":0,"sboat":28,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s 7 --  del 20 (ret 0) t 185 fuel 48% hp 0 shell 2/17 lostShell 0 mines 0/0 cover 1 sink 183 shore hpBy {"shore":64,"mine":0,"sboat":36,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s 5 OK  del 40 (ret 0) t 260 fuel 20% hp 30 shell 1/28 lostShell 3 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s 8 OK  del 40 (ret 0) t 254.6 fuel 32% hp 52 shell 0/21 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":48,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s 9 OK  del 40 (ret 0) t 251.7 fuel 32% hp 56 shell 0/21 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":44,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s10 OK  del 40 (ret 0) t 263.4 fuel 30% hp 62 shell 1/25 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s11 OK  del 40 (ret 0) t 265.2 fuel 31% hp 38 shell 1/25 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":28,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s12 --  del 0 (ret 0) t 113.7 fuel 64% hp 0 shell 0/11 lostShell 0 mines 0/0 cover 0 sink 111.7 sboat? hpBy {"shore":0,"mine":0,"sboat":89.2999999999972,"other":10.700000000002083} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+direct   h1 s13 OK  del 40 (ret 0) t 264.6 fuel 31% hp 12 shell 2/23 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s14 OK  del 40 (ret 0) t 267.2 fuel 30% hp 26 shell 1/24 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s15 OK  del 40 (ret 0) t 248.4 fuel 22% hp 50 shell 1/25 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s16 OK  del 40 (ret 0) t 277.5 fuel 28% hp 44 shell 0/27 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":55.999999999997726,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s17 --  del 20 (ret 0) t 232.2 fuel 44% hp 0 shell 1/26 lostShell 2 mines 0/0 cover 1 sink 230.2 shore hpBy {"shore":16.00000000000079,"mine":0,"sboat":83.73333333333107,"other":0.26666666666667993} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s19 --  del 0 (ret 0) t 87.8 fuel 69% hp 0 shell 1/8 lostShell 0 mines 0/0 cover 0 sink 85.8 sboat? hpBy {"shore":34,"mine":0,"sboat":65.99999999999902,"other":0} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+direct   h1 s18 OK  del 40 (ret 0) t 258.6 fuel 31% hp 42 shell 1/23 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":34,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s20 OK  del 40 (ret 0) t 256 fuel 32% hp 48 shell 0/21 lostShell 0 mines 1/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":52,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s21 OK  del 40 (ret 0) t 255.2 fuel 32% hp 36 shell 0/20 lostShell 0 mines 1/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":64,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s22 --  del 20 (ret 0) t 200.3 fuel 47% hp 0 shell 2/19 lostShell 0 mines 0/0 cover 1 sink 198.3 shore hpBy {"shore":56,"mine":0,"sboat":40,"other":4} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s23 OK  del 40 (ret 0) t 256.4 fuel 32% hp 30 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":36,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s24 OK  del 40 (ret 0) t 268.2 fuel 30% hp 6 shell 1/24 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":60,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s25 --  del 20 (ret 0) t 180.3 fuel 48% hp 0 shell 1/17 lostShell 1 mines 0/0 cover 2 sink 178.3 shore hpBy {"shore":32.000000000002274,"mine":0,"sboat":63.43333333333132,"other":4.566666666666407} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s26 --  del 20 (ret 0) t 146.4 fuel 48% hp 0 shell 2/11 lostShell 0 mines 0/0 cover 1 sink 144.4 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":24,"other":7.966666666666657} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s27 OK  del 40 (ret 0) t 267.1 fuel 30% hp 12 shell 2/25 lostShell 1 mines 1/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":16,"other":4} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s28 --  del 0 (ret 0) t 91 fuel 67% hp 0 shell 1/7 lostShell 0 mines 0/0 cover 0 sink 89 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":65.9666666666661,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s29 --  del 20 (ret 0) t 181 fuel 49% hp 0 shell 2/17 lostShell 0 mines 0/0 cover 1 sink 179 shore hpBy {"shore":40.03333333333498,"mine":0,"sboat":50.83333333333175,"other":9.133333333332814} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s30 OK  del 40 (ret 0) t 262.9 fuel 31% hp 12 shell 2/22 lostShell 0 mines 1/0 cover 0 sink NaN  hpBy {"shore":68,"mine":0,"sboat":16,"other":4} | 任務終了 — 帰投した（ハード） | err 0
+direct   h1 s31 --  del 20 (ret 0) t 149.9 fuel 47% hp 0 shell 3/13 lostShell 0 mines 0/0 cover 2 sink 147.9 shore hpBy {"shore":84,"mine":0,"sboat":16,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+direct   h1 s32 OK  del 40 (ret 0) t 273.3 fuel 29% hp 26 shell 1/27 lostShell 0 mines 0/0 cover 0 sink NaN  hpBy {"shore":34,"mine":0,"sboat":40,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h0 s 1 --  del 24 (ret 0) t 227.3 fuel 18% hp 0 shell 2/13 lostShell 0 mines 0/0 cover 1 sink 225.3 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":9.666666666666757,"other":30.299999999998278} | 任務終了 — 沿岸砲で沈没 | err 0
+fleec    h0 s 2 OK  del 40 (ret 0) t 302.6 fuel 11% hp 32 shell 2/16 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（夜明け後 3 秒） | err 0
+fleec    h0 s 3 OK  del 40 (ret 0) t 273.4 fuel 5% hp 100 shell 0/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s 4 OK  del 40 (ret 0) t 279.2 fuel 1% hp 66 shell 1/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s 6 OK  del 40 (ret 0) t 265 fuel 5% hp 100 shell 0/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s 5 --  del 20 (ret 0) t 221.3 fuel 25% hp 0 shell 2/14 lostShell 0 mines 0/0 cover 2 sink 219.3 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":16.799999999999045,"other":23.16666666666599} | 任務終了 — 沿岸砲で沈没 | err 0
+fleec    h0 s 7 --  del 0 (ret 0) t 116.7 fuel 52% hp 0 shell 3/7 lostShell 0 mines 0/0 cover 2 sink 114.7 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没 | err 0
+fleec    h0 s10 OK  del 40 (ret 0) t 274.3 fuel 4% hp 100 shell 0/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s 8 OK  del 40 (ret 0) t 270 fuel 3% hp 100 shell 0/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s 9 OK  del 40 (ret 0) t 275.8 fuel 2% hp 88 shell 0/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":8,"other":4} | 任務終了 — 帰投した | err 0
+fleec    h0 s11 OK  del 40 (ret 0) t 274.1 fuel 3% hp 100 shell 0/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s14 OK  del 40 (ret 0) t 265.7 fuel 4% hp 66 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s12 OK  del 40 (ret 0) t 288.6 fuel 3% hp 100 shell 0/17 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s13 OK  del 40 (ret 0) t 271.5 fuel 5% hp 100 shell 0/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s15 OK  del 40 (ret 0) t 266.6 fuel 6% hp 100 shell 0/15 lostShell 2 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s16 OK  del 40 (ret 0) t 281.4 fuel 3% hp 66 shell 1/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s18 OK  del 40 (ret 0) t 273.6 fuel 3% hp 100 shell 0/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s17 OK  del 40 (ret 0) t 331 fuel 8% hp 58 shell 1/18 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した（夜明け後 31 秒） | err 0
+fleec    h0 s19 OK  del 40 (ret 0) t 271 fuel 5% hp 66 shell 1/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s20 OK  del 40 (ret 0) t 268.8 fuel 1% hp 92 shell 0/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":4,"other":4} | 任務終了 — 帰投した | err 0
+fleec    h0 s21 OK  del 40 (ret 0) t 299.5 fuel 13% hp 62 shell 1/14 lostShell 0 mines 1/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s23 --  del 40 (ret 0) t 284.3 fuel 0% hp 66 shell 1/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+fleec    h0 s22 OK  del 40 (ret 0) t 258.7 fuel 8% hp 66 shell 1/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s24 OK  del 40 (ret 0) t 263.7 fuel 5% hp 66 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s25 OK  del 40 (ret 0) t 273.2 fuel 3% hp 100 shell 0/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s27 OK  del 40 (ret 0) t 278.4 fuel 4% hp 32 shell 2/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s26 OK  del 40 (ret 0) t 277 fuel 3% hp 26 shell 1/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 帰投した | err 0
+fleec    h0 s28 OK  del 40 (ret 0) t 270.9 fuel 3% hp 26 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 帰投した | err 0
+fleec    h0 s29 OK  del 40 (ret 0) t 288.4 fuel 1% hp 26 shell 1/17 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":26.899999999998826,"other":13.066666666666208} | 任務終了 — 帰投した | err 0
+fleec    h0 s30 OK  del 40 (ret 0) t 286.2 fuel 2% hp 62 shell 1/16 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s31 OK  del 40 (ret 0) t 298.7 fuel 17% hp 32 shell 2/15 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+fleec    h0 s32 --  del 0 (ret 0) t 103.3 fuel 52% hp 0 shell 2/5 lostShell 0 mines 0/0 cover 2 sink 101.3 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":0,"other":31.966666666666022} | 任務終了 — 沿岸砲で沈没 | err 0
+fleec    h1 s 1 --  del 24 (ret 0) t 227.5 fuel 18% hp 0 shell 2/21 lostShell 0 mines 0/0 cover 2 sink 225.5 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":9.666666666666757,"other":30.299999999998278} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s 2 OK  del 40 (ret 0) t 304 fuel 6% hp 32 shell 2/24 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（夜明け後 4 秒）（ハード） | err 0
+fleec    h1 s 3 --  del 40 (ret 0) t 285.2 fuel 0% hp 66 shell 1/25 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s 4 --  del 4 (ret 0) t 139 fuel 45% hp 0 shell 2/11 lostShell 0 mines 0/0 cover 3 sink 137 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":0,"other":31.966666666666022} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s 5 --  del 22 (ret 0) t 225.2 fuel 18% hp 0 shell 2/20 lostShell 1 mines 0/0 cover 3 sink 223.2 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":24.0666666666653,"other":15.899999999999736} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s 6 --  del 40 (ret 0) t 278.3 fuel 0% hp 32 shell 2/25 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s 7 --  del 22 (ret 0) t 239.8 fuel 17% hp 0 shell 3/24 lostShell 0 mines 0/0 cover 3 sink 237.8 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s 8 OK  del 40 (ret 0) t 269.4 fuel 0% hp 100 shell 0/21 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h1 s 9 --  del 40 (ret 0) t 273.3 fuel 0% hp 88 shell 0/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s10 OK  del 40 (ret 0) t 275.5 fuel 0% hp 100 shell 0/24 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h1 s11 --  del 40 (ret 0) t 274 fuel 0% hp 66 shell 1/22 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s12 --  del 40 (ret 0) t 292.1 fuel 0% hp 100 shell 0/29 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s13 --  del 40 (ret 0) t 279.8 fuel 0% hp 66 shell 1/26 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s14 --  del 40 (ret 0) t 275.9 fuel 0% hp 32 shell 2/21 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s15 OK  del 40 (ret 0) t 274.4 fuel 0% hp 100 shell 0/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h1 s16 --  del 40 (ret 0) t 291.2 fuel 0% hp 100 shell 0/27 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s17 OK  del 40 (ret 0) t 334.9 fuel 6% hp 24 shell 2/30 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した（夜明け後 35 秒）（ハード） | err 0
+fleec    h1 s19 OK  del 40 (ret 0) t 273.4 fuel 0% hp 66 shell 1/24 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h1 s18 OK  del 40 (ret 0) t 271.2 fuel 0% hp 66 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h1 s20 OK  del 40 (ret 0) t 308.8 fuel 4% hp 58 shell 1/26 lostShell 3 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した（夜明け後 9 秒）（ハード） | err 0
+fleec    h1 s21 OK  del 40 (ret 0) t 302.5 fuel 12% hp 62 shell 1/22 lostShell 0 mines 1/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した（夜明け後 3 秒）（ハード） | err 0
+fleec    h1 s23 --  del 40 (ret 0) t 285.6 fuel 0% hp 32 shell 2/26 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s22 --  del 40 (ret 0) t 275.7 fuel 0% hp 66 shell 1/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s24 OK  del 40 (ret 0) t 264.7 fuel 1% hp 100 shell 0/22 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+fleec    h1 s25 --  del 40 (ret 0) t 284.5 fuel 0% hp 26 shell 1/26 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s26 --  del 3 (ret 0) t 127.4 fuel 46% hp 0 shell 3/8 lostShell 1 mines 0/0 cover 3 sink 125.4 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s27 --  del 40 (ret 0) t 286.2 fuel 0% hp 32 shell 2/26 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+fleec    h1 s28 --  del 6 (ret 0) t 148 fuel 44% hp 0 shell 2/12 lostShell 1 mines 0/0 cover 3 sink 146 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s29 --  del 4 (ret 0) t 128.1 fuel 46% hp 0 shell 2/9 lostShell 0 mines 0/0 cover 3 sink 126.1 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":29.566666666665625,"other":10.399999999999409} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s31 --  del 0 (ret 0) t 108.4 fuel 57% hp 0 shell 3/7 lostShell 0 mines 0/0 cover 2 sink 106.4 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s30 --  del 0 (ret 0) t 121.5 fuel 56% hp 0 shell 3/9 lostShell 0 mines 0/0 cover 3 sink 119.5 shore hpBy {"shore":92,"mine":0,"sboat":8,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+fleec    h1 s32 --  del 4 (ret 0) t 114 fuel 47% hp 0 shell 2/6 lostShell 0 mines 0/0 cover 3 sink 112 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":0,"other":31.966666666666022} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h0 s 1 --  del 24 (ret 0) t 234.6 fuel 11% hp 0 shell 2/13 lostShell 0 mines 0/0 cover 2 sink 232.6 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":9.666666666666757,"other":30.299999999998278} | 任務終了 — 沿岸砲で沈没 | err 0
+flee     h0 s 2 --  del 23 (ret 0) t 256 fuel 0% hp 100 shell 0/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 3 --  del 22 (ret 0) t 259.4 fuel 0% hp 100 shell 0/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 4 --  del 24 (ret 0) t 277.8 fuel 0% hp 66 shell 1/18 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 5 --  del 22 (ret 0) t 278.1 fuel 0% hp 32 shell 2/17 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 6 --  del 24 (ret 0) t 253.2 fuel 0% hp 100 shell 0/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 7 --  del 22 (ret 0) t 265 fuel 0% hp 66 shell 1/16 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 8 --  del 24 (ret 0) t 252.3 fuel 0% hp 100 shell 0/13 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s 9 --  del 24 (ret 0) t 248.9 fuel 0% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s10 --  del 24 (ret 0) t 256.2 fuel 0% hp 100 shell 0/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s11 --  del 24 (ret 0) t 249.8 fuel 0% hp 66 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s12 --  del 24 (ret 0) t 275.8 fuel 0% hp 66 shell 1/16 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s13 --  del 24 (ret 0) t 254.1 fuel 0% hp 66 shell 1/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s14 --  del 24 (ret 0) t 251.5 fuel 0% hp 66 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s16 --  del 24 (ret 0) t 255.6 fuel 0% hp 100 shell 0/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s15 --  del 23 (ret 0) t 253.7 fuel 0% hp 66 shell 1/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s17 --  del 22 (ret 0) t 281.6 fuel 0% hp 32 shell 2/17 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s18 --  del 24 (ret 0) t 255.7 fuel 0% hp 100 shell 0/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s19 --  del 23 (ret 0) t 251.1 fuel 0% hp 66 shell 1/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s20 --  del 24 (ret 0) t 249.8 fuel 0% hp 100 shell 0/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s21 --  del 24 (ret 0) t 254.3 fuel 0% hp 100 shell 0/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s22 --  del 24 (ret 0) t 250.8 fuel 0% hp 66 shell 1/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s24 --  del 40 (ret 0) t 254.8 fuel 0% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s23 --  del 24 (ret 0) t 259.7 fuel 0% hp 66 shell 1/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s25 --  del 24 (ret 0) t 259.4 fuel 0% hp 66 shell 1/15 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s26 --  del 3 (ret 0) t 140.3 fuel 38% hp 0 shell 2/7 lostShell 1 mines 0/0 cover 2 sink 138.3 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":0,"other":31.966666666666022} | 任務終了 — 沿岸砲で沈没 | err 0
+flee     h0 s27 --  del 24 (ret 0) t 260.5 fuel 0% hp 66 shell 1/15 lostShell 2 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s28 --  del 26 (ret 0) t 259 fuel 0% hp 66 shell 1/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s29 --  del 4 (ret 0) t 95.6 fuel 43% hp 0 shell 2/3 lostShell 0 mines 0/0 cover 2 sink 93.6 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":26.93333333333216,"other":13.033333333332873} | 任務終了 — 沿岸砲で沈没 | err 0
+flee     h0 s30 --  del 24 (ret 0) t 259.9 fuel 0% hp 66 shell 1/15 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s32 --  del 24 (ret 0) t 256.4 fuel 0% hp 66 shell 1/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流 | err 0
+flee     h0 s31 OK  del 40 (ret 0) t 301.6 fuel 10% hp 32 shell 2/14 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（夜明け後 2 秒） | err 0
+flee     h1 s 1 --  del 24 (ret 0) t 234.6 fuel 11% hp 0 shell 2/22 lostShell 0 mines 0/0 cover 3 sink 232.6 shore hpBy {"shore":60.033333333334966,"mine":0,"sboat":9.666666666666757,"other":30.299999999998278} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s 2 --  del 23 (ret 0) t 253 fuel 0% hp 92 shell 0/24 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":4,"other":4} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s 3 --  del 22 (ret 0) t 256.7 fuel 0% hp 66 shell 1/25 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s 4 --  del 4 (ret 0) t 139.7 fuel 33% hp 0 shell 2/9 lostShell 0 mines 0/0 cover 3 sink 137.7 sboat? hpBy {"shore":68.06666666666666,"mine":0,"sboat":4,"other":27.9333333333329} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s 5 --  del 22 (ret 0) t 250.4 fuel 3% hp 0 shell 2/23 lostShell 1 mines 0/0 cover 3 sink 248.4 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":4,"other":27.966666666666235} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s 6 --  del 24 (ret 0) t 250.9 fuel 0% hp 28 shell 2/24 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s 7 --  del 22 (ret 0) t 277.9 fuel 0% hp 66 shell 1/29 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s 8 --  del 24 (ret 0) t 245.6 fuel 0% hp 100 shell 0/21 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s 9 --  del 24 (ret 0) t 245.8 fuel 0% hp 62 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s10 --  del 24 (ret 0) t 251.2 fuel 0% hp 100 shell 0/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s11 --  del 24 (ret 0) t 246.7 fuel 0% hp 66 shell 1/22 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s12 --  del 24 (ret 0) t 266 fuel 0% hp 66 shell 1/28 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s13 --  del 24 (ret 0) t 251.3 fuel 0% hp 58 shell 1/25 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":8,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s15 --  del 23 (ret 0) t 249.4 fuel 0% hp 62 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":4} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s14 --  del 24 (ret 0) t 247.2 fuel 0% hp 32 shell 2/22 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s17 --  del 22 (ret 0) t 271.9 fuel 0% hp 24 shell 2/29 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":4,"other":4} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s16 --  del 24 (ret 0) t 263.8 fuel 0% hp 96 shell 0/26 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s19 --  del 23 (ret 0) t 247.4 fuel 0% hp 62 shell 1/23 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s18 --  del 24 (ret 0) t 247.4 fuel 0% hp 62 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s21 --  del 40 (ret 0) t 309.3 fuel 0% hp 62 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（夜明け後 9 秒）（ハード） | err 0
+flee     h1 s20 --  del 24 (ret 0) t 276 fuel 0% hp 62 shell 1/23 lostShell 3 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s22 --  del 24 (ret 0) t 248 fuel 0% hp 58 shell 1/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":8,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s23 --  del 24 (ret 0) t 257.9 fuel 0% hp 32 shell 2/25 lostShell 3 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s24 --  del 40 (ret 0) t 300 fuel 0% hp 28 shell 2/22 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":4} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+flee     h1 s25 --  del 24 (ret 0) t 258.3 fuel 12% hp 0 shell 2/21 lostShell 0 mines 0/0 cover 3 sink 256.3 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":4,"other":27.966666666666235} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s27 --  del 4 (ret 0) t 179.2 fuel 27% hp 0 shell 3/17 lostShell 0 mines 0/0 cover 3 sink 177.2 shore hpBy {"shore":74.63333333333337,"mine":0,"sboat":12,"other":13.366666666666633} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s26 --  del 3 (ret 0) t 130.2 fuel 34% hp 0 shell 3/8 lostShell 1 mines 0/0 cover 3 sink 128.2 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s28 --  del 6 (ret 0) t 154 fuel 29% hp 0 shell 2/12 lostShell 1 mines 0/0 cover 3 sink 152 shore hpBy {"shore":40.03333333333337,"mine":0,"sboat":16,"other":43.9666666666659} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s29 --  del 4 (ret 0) t 136.9 fuel 38% hp 0 shell 2/8 lostShell 0 mines 0/0 cover 3 sink 134.9 shore hpBy {"shore":56.033333333334966,"mine":0,"sboat":33.566666666665625,"other":10.399999999999409} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s30 --  del 4 (ret 0) t 131.4 fuel 46% hp 0 shell 3/9 lostShell 0 mines 0/0 cover 3 sink 129.4 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s31 --  del 4 (ret 0) t 121 fuel 47% hp 0 shell 3/6 lostShell 0 mines 0/0 cover 3 sink 119 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+flee     h1 s32 --  del 24 (ret 0) t 253.2 fuel 0% hp 62 shell 1/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 燃料切れで漂流（ハード） | err 0
+straight h0 s 1 OK  del 40 (ret 0) t 206.8 fuel 6% hp 88 shell 0/12 lostShell 2 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":12,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s 2 OK  del 40 (ret 0) t 216.8 fuel 10% hp 66 shell 1/12 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s 3 OK  del 40 (ret 0) t 210.2 fuel 5% hp 100 shell 0/12 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s 5 --  del 20 (ret 0) t 153.9 fuel 31% hp 0 shell 2/9 lostShell 1 mines 0/0 cover 2 sink 151.9 shore hpBy {"shore":52.033333333334966,"mine":0,"sboat":8,"other":39.966666666664395} | 任務終了 — 沿岸砲で沈没 | err 0
+straight h0 s 4 OK  del 40 (ret 0) t 226.2 fuel 13% hp 18 shell 1/12 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":9.83333333333323,"other":38.1666666666645} | 任務終了 — 帰投した | err 0
+straight h0 s 6 OK  del 40 (ret 0) t 207 fuel 5% hp 100 shell 0/12 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s 7 OK  del 40 (ret 0) t 209.9 fuel 6% hp 16 shell 2/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s 8 OK  del 40 (ret 0) t 194.5 fuel 8% hp 100 shell 0/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s 9 OK  del 40 (ret 0) t 200.4 fuel 8% hp 84 shell 0/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":16,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s10 OK  del 40 (ret 0) t 223.7 fuel 3% hp 100 shell 0/14 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s11 OK  del 40 (ret 0) t 201.6 fuel 8% hp 32 shell 2/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s12 OK  del 40 (ret 0) t 223.2 fuel 4% hp 32 shell 0/13 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":25.83333333333323,"other":42.1666666666645} | 任務終了 — 帰投した | err 0
+straight h0 s13 OK  del 40 (ret 0) t 214.2 fuel 5% hp 100 shell 0/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s14 OK  del 40 (ret 0) t 211.4 fuel 6% hp 76 shell 0/12 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s15 OK  del 40 (ret 0) t 215.6 fuel 5% hp 100 shell 0/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s16 OK  del 40 (ret 0) t 223.7 fuel 5% hp 100 shell 0/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s17 OK  del 40 (ret 0) t 212.1 fuel 5% hp 100 shell 0/13 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s18 OK  del 40 (ret 0) t 200.1 fuel 7% hp 100 shell 0/11 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s19 OK  del 40 (ret 0) t 215.2 fuel 4% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s21 OK  del 40 (ret 0) t 220.8 fuel 2% hp 100 shell 0/13 lostShell 0 mines 1/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s20 OK  del 40 (ret 0) t 202.6 fuel 6% hp 92 shell 0/12 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s22 OK  del 40 (ret 0) t 192.7 fuel 7% hp 100 shell 0/10 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s23 OK  del 40 (ret 0) t 210.4 fuel 6% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s24 OK  del 40 (ret 0) t 216.6 fuel 3% hp 66 shell 1/13 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s25 OK  del 40 (ret 0) t 228.5 fuel 3% hp 100 shell 0/14 lostShell 0 mines 0/0 cover 1 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s26 OK  del 40 (ret 0) t 207.2 fuel 8% hp 14 shell 1/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":12,"other":39.966666666665475} | 任務終了 — 帰投した | err 0
+straight h0 s27 OK  del 40 (ret 0) t 241.3 fuel 10% hp 8 shell 2/14 lostShell 1 mines 0/0 cover 1 sink NaN  hpBy {"shore":68,"mine":0,"sboat":20,"other":4} | 任務終了 — 帰投した | err 0
+straight h0 s28 OK  del 40 (ret 0) t 199.8 fuel 7% hp 100 shell 0/11 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s29 --  del 0 (ret 0) t 73.5 fuel 50% hp 0 shell 1/5 lostShell 1 mines 0/0 cover 0 sink 71.5 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":26.000000000001634,"other":39.966666666664395} | 任務終了 — PTの掃射で沈没 | err 0
+straight h0 s30 OK  del 40 (ret 0) t 207.3 fuel 6% hp 66 shell 1/12 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s31 OK  del 40 (ret 0) t 208.7 fuel 5% hp 62 shell 1/12 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した | err 0
+straight h0 s32 --  del 0 (ret 0) t 75 fuel 49% hp 0 shell 2/5 lostShell 1 mines 0/0 cover 0 sink 73 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":23.766666666666012,"other":8.200000000000408} | 任務終了 — PTの掃射で沈没 | err 0
+straight h1 s 1 OK  del 40 (ret 0) t 232.3 fuel 12% hp 62 shell 1/22 lostShell 3 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":4,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s 2 OK  del 40 (ret 0) t 217.6 fuel 10% hp 32 shell 2/22 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s 4 --  del 0 (ret 0) t 89 fuel 40% hp 0 shell 1/9 lostShell 0 mines 0/0 cover 2 sink 87 sboat? hpBy {"shore":34.03333333333333,"mine":0,"sboat":28.466666666666356,"other":37.49999999999945} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+straight h1 s 3 OK  del 40 (ret 0) t 210.7 fuel 5% hp 66 shell 1/22 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s 5 --  del 20 (ret 0) t 153.9 fuel 31% hp 0 shell 2/15 lostShell 1 mines 0/0 cover 2 sink 151.9 shore hpBy {"shore":52.033333333334966,"mine":0,"sboat":8,"other":39.966666666664395} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+straight h1 s 6 OK  del 40 (ret 0) t 227.6 fuel 10% hp 58 shell 1/20 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s 7 OK  del 40 (ret 0) t 210 fuel 6% hp 12 shell 2/22 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s 8 OK  del 40 (ret 0) t 194.5 fuel 8% hp 100 shell 0/19 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s 9 OK  del 40 (ret 0) t 201.3 fuel 8% hp 46 shell 1/20 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":20,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s10 OK  del 40 (ret 0) t 224.8 fuel 3% hp 66 shell 1/26 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s12 OK  del 40 (ret 0) t 223.3 fuel 4% hp 32 shell 0/23 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":31.93333333333311,"other":36.06666666666462} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s11 OK  del 40 (ret 0) t 201.6 fuel 8% hp 32 shell 2/19 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s13 OK  del 40 (ret 0) t 214.3 fuel 5% hp 100 shell 0/24 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s14 OK  del 40 (ret 0) t 211.4 fuel 6% hp 76 shell 0/22 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":24,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s15 OK  del 40 (ret 0) t 215.6 fuel 5% hp 100 shell 0/23 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s16 OK  del 40 (ret 0) t 223.7 fuel 5% hp 100 shell 0/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s17 OK  del 40 (ret 0) t 212.1 fuel 5% hp 100 shell 0/23 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s18 OK  del 40 (ret 0) t 200.8 fuel 7% hp 66 shell 1/19 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s19 OK  del 40 (ret 0) t 215.3 fuel 4% hp 66 shell 1/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s21 OK  del 40 (ret 0) t 220.8 fuel 2% hp 100 shell 0/24 lostShell 0 mines 1/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s20 OK  del 40 (ret 0) t 202.6 fuel 6% hp 92 shell 0/20 lostShell 1 mines 0/0 cover 2 sink NaN  hpBy {"shore":0,"mine":0,"sboat":8,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s22 OK  del 40 (ret 0) t 192.7 fuel 7% hp 100 shell 0/18 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":0,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s23 OK  del 40 (ret 0) t 211.3 fuel 6% hp 32 shell 2/23 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s24 OK  del 40 (ret 0) t 216.6 fuel 3% hp 66 shell 1/23 lostShell 0 mines 0/0 cover 3 sink NaN  hpBy {"shore":34,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s25 OK  del 40 (ret 0) t 229.5 fuel 3% hp 26 shell 1/27 lostShell 0 mines 0/0 cover 2 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s26 --  del 20 (ret 0) t 138.2 fuel 28% hp 0 shell 2/14 lostShell 0 mines 0/0 cover 3 sink 136.2 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":8,"other":23.96666666666645} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+straight h1 s27 --  del 20 (ret 0) t 161.8 fuel 28% hp 0 shell 2/17 lostShell 1 mines 0/0 cover 2 sink 159.8 shore hpBy {"shore":52,"mine":0,"sboat":44,"other":4} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+straight h1 s28 OK  del 40 (ret 0) t 227.2 fuel 3% hp 26 shell 1/24 lostShell 2 mines 0/0 cover 3 sink NaN  hpBy {"shore":34.03333333333333,"mine":0,"sboat":0,"other":39.966666666664395} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s29 --  del 0 (ret 0) t 55.4 fuel 51% hp 0 shell 2/6 lostShell 1 mines 0/0 cover 0 sink 53.4 sboat? hpBy {"shore":68.06666666666666,"mine":0,"sboat":0,"other":31.933333333332687} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+straight h1 s30 OK  del 40 (ret 0) t 207.9 fuel 6% hp 32 shell 2/21 lostShell 1 mines 0/0 cover 3 sink NaN  hpBy {"shore":68,"mine":0,"sboat":0,"other":0} | 任務終了 — 帰投した（ハード） | err 0
+straight h1 s31 --  del 0 (ret 0) t 71.5 fuel 47% hp 0 shell 3/10 lostShell 1 mines 0/0 cover 0 sink 69.5 shore hpBy {"shore":100,"mine":0,"sboat":0,"other":0} | 任務終了 — 沿岸砲で沈没（ハード） | err 0
+straight h1 s32 --  del 0 (ret 0) t 75 fuel 49% hp 0 shell 2/10 lostShell 1 mines 0/0 cover 0 sink 73 sboat? hpBy {"shore":68.03333333333333,"mine":0,"sboat":23.766666666666012,"other":8.200000000000408} | 任務終了 — PTの掃射で沈没（ハード） | err 0
+
+| 台本 | 難 | 夜 | 達成 | 渡した（平均・最小〜最大） | 沈没（砲台・機雷・S ボート・火災） | 漂流 | 終わりの秒（平均） | 燃料の残り（達成の夜の平均・最小） | 砲台の命中（平均） | 触雷（平均） | 砲撃で失った（平均） | フィッチの砲火で退いた（平均） |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| careful | normal | 32 | 24/32（75%） | 33.8（0〜40） | 8（7・0・1・0） | 0 | 229 | 23%・16% | 0.88 | 0.00 | 0.3 | 0.94 |
+| careful | hard | 32 | 14/32（44%） | 22.5（0〜40） | 18（12・0・6・0） | 0 | 185 | 24%・17% | 1.19 | 0.00 | 0.5 | 1.22 |
+| silent | normal | 32 | 16/32（50%） | 30.3（0〜40） | 13（12・0・1・0） | 0 | 281 | 26%・23% | 0.97 | 0.00 | 0.4 | 1.19 |
+| silent | hard | 32 | 7/32（22%） | 18.4（0〜40） | 22（15・0・7・0） | 0 | 212 | 27%・25% | 1.13 | 0.00 | 0.6 | 1.97 |
+| smoke | normal | 32 | 31/32（97%） | 39.4（20〜40） | 1（1・0・0・0） | 0 | 241 | 20%・16% | 0.72 | 0.00 | 0.4 | 0.88 |
+| smoke | hard | 32 | 25/32（78%） | 34.4（0〜40） | 7（7・0・0・0） | 0 | 224 | 20%・16% | 1.16 | 0.00 | 0.6 | 1.25 |
+| direct | normal | 32 | 27/32（84%） | 36.3（0〜40） | 5（4・0・1・0） | 0 | 243 | 28%・20% | 0.75 | 0.00 | 0.4 | 0.78 |
+| direct | hard | 32 | 20/32（63%） | 30.0（0〜40） | 12（9・0・3・0） | 0 | 221 | 29%・20% | 1.16 | 0.00 | 0.4 | 1.38 |
+| fleec | normal | 32 | 27/32（84%） | 36.4（0〜40） | 4（4・0・0・0） | 1 | 265 | 5%・1% | 0.88 | 0.00 | 0.3 | 1.94 |
+| fleec | hard | 32 | 10/32（31%） | 30.3（0〜40） | 10（10・0・0・0） | 12 | 245 | 3%・0% | 1.41 | 0.00 | 0.7 | 2.94 |
+| flee | normal | 32 | 1/32（3%） | 23.4（3〜40） | 3（3・0・0・0） | 28 | 250 | 10%・10% | 0.91 | 0.00 | 0.6 | 2.00 |
+| flee | hard | 32 | 0/32（0%） | 20.3（3〜40） | 10（10・0・0・0） | 22 | 233 | - | 1.47 | 0.00 | 0.7 | 2.97 |
+| straight | normal | 32 | 29/32（91%） | 36.9（0〜40） | 3（1・0・2・0） | 0 | 202 | 6%・2% | 0.59 | 0.00 | 0.4 | 1.69 |
+| straight | hard | 32 | 25/32（78%） | 33.1（0〜40） | 7（5・0・2・0） | 0 | 190 | 6%・2% | 1.06 | 0.00 | 0.8 | 2.44 |
+ERRORS 0
