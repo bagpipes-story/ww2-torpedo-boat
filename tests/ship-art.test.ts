@@ -33,6 +33,7 @@ const SHIPS: { key: string; kind: ShipArtKind; L: number; B: number }[] = [
   { key: 'tex-subchaser', kind: 'subchaser', ...dims('ijn_subchaser') },
   { key: 'tex-battleship-fuso', kind: 'fuso', ...dims('ijn_battleship_fuso') }, // v0.8.2 S2b（D-A1。425.5 × 66.2 単位）
   { key: 'tex-cruiser-mogami', kind: 'mogami', ...dims('ijn_cruiser_mogami') }, // v0.8.2 S2b（D-A2。401.2 × 40.4 単位）
+  { key: 'tex-destroyer-ally-us', kind: 'fletcher', ...dims('us_destroyer') }, // v0.8.5 S2（us_07 のフィッチとコリー＝フレッチャー級を味方の色で）
 ];
 const hsv = (c: number): { h: number; s: number } => {
   const r = (c >> 16) & 255; const g = (c >> 8) & 255; const b = c & 255;

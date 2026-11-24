@@ -25,6 +25,8 @@ export function updateWorldVisuals(w: MissionWorld, realDt: number): void {
   w.landing?.updateVisuals(realDt, w); // 味方の輸送船と敵の魚雷（v0.6.9 S5a。jp_04 だけ。最後に足した＝ほかの絵の順は v0.6.8 のまま）・▼「雷撃」（S6b）
   w.landing?.ally?.updateVisuals(realDt); // 味方の駆逐艦 卯月の扇・探照灯・砲弾（v0.6.10 S5a。jp_04 だけ・?debug&noally は無い。揚陸の絵の後）
   w.evac?.updateVisuals(realDt); // 空襲下の退避の編隊・18 隻（v0.6.11 S4。jp_03 だけ。最後）
+  w.shoreGuns?.updateVisuals(realDt); // 大発の無い任務の沿岸砲（v0.8.5 S2。us_07）
+  w.rescue?.updateVisuals(realDt, w); // 生存者・機雷・コリーの沈み・フィッチの砲火（v0.8.5 S2。us_07。読むだけ）
   w.radar?.updateVisuals(w.stepTimeS); // レーダーの輝点（v0.8.0 S2。us_04 だけ。掃引が変わった時だけ置き直す・薄れの段が変わった時だけ α）
   w.art.update(realDt, w); // 世界の絵＝海の模様・夜明けの光・きらめき（v0.7.0 S3a。systems/world-art。全任務。夜明けの段の後＝最後）
 }
@@ -51,5 +53,7 @@ export function destroyWorldVisuals(w: MissionWorld): void {
   w.evac?.destroy(); // v0.6.11 S4（jp_03。最後）
   w.radar?.destroy(); // v0.8.0 S2（us_04。レーダーの輝点）
   w.recon?.destroy(); // v0.8.2 S2（us_05。中継の輪）
+  w.shoreGuns?.destroy(); // v0.8.5 S2（us_07。沿岸砲）
+  w.rescue?.destroy(); // v0.8.5 S2（us_07。救助の絵）
   w.art.destroy(); // v0.7.0 S3a（世界の絵。最後）
 }

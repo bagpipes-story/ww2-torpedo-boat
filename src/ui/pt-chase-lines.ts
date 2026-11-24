@@ -7,7 +7,7 @@
 // 追ってくる PT が 13mm の射程の外なら「600 m まで引きつけよ」（ux-8）、連射の結果は「計 n 回」（上限は撃退・制圧で減って逆戻りに見えた。ux-7）
 // v0.6.6（隼艇。jp_01 のハード）: 隼艇を狙う連射・追ってくる PT・連射の結果は ui/gunboat-lines（連射の撃ったビット K_BURST_FIRED を共有）。Result の制圧の句は自艇の分を渡す
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
-import { PT_DISTANCE_STEP_M } from '../config/pt-config';
+import { PT_DISTANCE_STEP_M, PT_NAME_DEFAULT_JA } from '../config/pt-config';
 import { bearingJa } from '../core/briefing';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { GUN_OUT_OF_ARC } from '../core/gun-battery';
@@ -53,11 +53,11 @@ export function burstKey(t: BoatTelemetry, dir: number): number {
  * 連射の行（key は burstKey）: 撃つ前は「追撃！」、撃ち始めたら「連射！」で末尾は「針路そのまま撃ち返せ」（射界の外なら「針路そのまま 艇尾は撃てない」。PT は艇尾の円錐の外の
  * 135° へ自分で出る）。黙ったら味方の青: 撃退は航過と同じ「被弾で沈黙！ もう撃ってこない」、制圧は「連射をやめた」（撃つ前に黙った連射にも本当。また追ってくるので「もう」とは言わない）
  */
-export function burstLine(key: number): HudLine {
-  if ((key & K_BURST_SILENCED) !== 0) return { text: (key & K_BURST_RETIRED) !== 0 ? '米PT 被弾で沈黙！ もう撃ってこない' : '米PT 制圧！ 連射をやめた', color: HOME_COLOR_TEXT };
+export function burstLine(key: number, nm = PT_NAME_DEFAULT_JA): HudLine {
+  if ((key & K_BURST_SILENCED) !== 0) return { text: (key & K_BURST_RETIRED) !== 0 ? `${nm} 被弾で沈黙！ もう撃ってこない` : `${nm} 制圧！ 連射をやめた`, color: HOME_COLOR_TEXT };
   const what = (key & K_BURST_FIRED) !== 0 ? '連射' : '追撃';
   const tail = (key & K_BURST_ARC) === 0 ? '針路そのまま撃ち返せ' : `針路そのまま ${(key & K_BURST_BOW) !== 0 ? '艇首' : '艇尾'}は撃てない`;
-  return { text: `米PT ${what}！ ${bearingJa(((key >> K_BURST_DIR) & 7) * 45)}から ・ ${tail}`, color: HUD_COLOR_WARN };
+  return { text: `${nm} ${what}！ ${bearingJa(((key >> K_BURST_DIR) & 7) * 45)}から ・ ${tail}`, color: HUD_COLOR_WARN };
 }
 
 /** 追ってくる PT の接触のキー: 種類 | 方位 << 3 | 距離の刻み << 6（見えているときだけ。見えなければ 0）| hint（13mm を撃つ前の勧めのビット。pt-lines の K_FIRE_HINT） */
@@ -69,10 +69,10 @@ export function chaseKey(dir: number, distStep: number, hint: number): number {
  * 追ってくる PT の接触の行（key は chaseKey、hint はその勧めのビットが立っている、rangeM は 13mm の射程。砲の無い任務は NaN）: 方角と距離（見えなければ距離なし）・
  * 13mm を撃つ前は「右下の機銃で撃ち返せ」、撃った後は「撃ち返せ」。見えている距離が射程の外なら「600 m まで引きつけよ」（ux-8: 射程外を言わずに「撃ち返せ」と言っていた）
  */
-export function chaseLine(key: number, hint: boolean, rangeM: number): HudLine {
+export function chaseLine(key: number, hint: boolean, rangeM: number, nm = PT_NAME_DEFAULT_JA): HudLine {
   const d = ((key >> 6) & 63) * PT_DISTANCE_STEP_M;
   const tail = d > rangeM ? `${rangeM} m まで引きつけよ` : hint ? '右下の機銃で撃ち返せ' : '撃ち返せ';
-  return { text: `米PT ${bearingJa(((key >> 3) & 7) * 45)}から追ってくる${d > 0 ? ` ${d} m` : ''} ・ ${tail}`, color: HUD_COLOR_WARN };
+  return { text: `${nm} ${bearingJa(((key >> 3) & 7) * 45)}から追ってくる${d > 0 ? ` ${d} m` : ''} ・ ${tail}`, color: HUD_COLOR_WARN };
 }
 
 /**

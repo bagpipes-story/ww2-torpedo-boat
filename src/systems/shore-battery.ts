@@ -58,6 +58,7 @@ export class ShoreBattery {
     onImpact: (x, y, hit) => {
       if (hit) this.onBoatHit(this.p.hit, this.rng, x, y);
       else this.splashes.splash(x, y, false);
+      this.onLand?.(x, y); // 着弾の点（v0.8.5 S2。us_07 の systems/shore-guns だけ＝生存者の群を奪う。us_03 の大発の狩りは null）
     },
   };
 
@@ -71,6 +72,8 @@ export class ShoreBattery {
     private readonly splashes: SplashPool,
     /** 砲弾が艇に当たった（世界が boat-damage で適用。終了理由は shore_battery） */
     private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number) => void,
+    /** 着弾ごと（艇への命中も。v0.8.5 S2。乱数なし）。無ければ何もしない */
+    private readonly onLand: ((x: number, y: number) => void) | null = null,
   ) {
     this.state = createShoreBattery(BATTERY_SHELL_POOL_SIZE);
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, boatAfloat: true, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, bargesAlerted: false, flashM: 0 };

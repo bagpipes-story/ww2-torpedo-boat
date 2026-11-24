@@ -1,7 +1,7 @@
 // 救助と機雷原の組み立て（v0.8.5 S1。us_07。spec-v0850 §4.0）: seed+47 の 1 本だけの系列で、群の位置のずれ（2 × 群の数）→ 機雷の置き方（2 × ハードの数）の順に 1 回だけ引く。
 // 引く回数は難易度・今夜の置ける・置けないに依らず 2 × (群の数 ＋ maxCount)＝us_07 は 2 × (12 ＋ 32) ＝ 88 回。ステップの中では引かない。
 // 置かない所（core/minefield の MineKeepOut）は今夜の群の中心（ずれ込み）・コリー・フィッチの輪・帰投の輪・出発・浅瀬（それぞれに clear_m の余白は layMines が足す）。
-// 呼ぶのは世界の組み立て（v0.8.5 S2）と tests。Phaser 非依存（確保は組み立ての時だけ）。
+// 呼ぶのは世界の組み立て（v0.8.5 S2 の systems/rescue-field-setup。S3 の模擬も同じ関数）と tests。触雷の火災・機関の判定は返す rng（同じ系列の続き）から触れた時だけ引く。Phaser 非依存（確保は組み立ての時だけ）。
 import { createMinefield, layMines, type MineKeepOut, type MinefieldRules, type MinefieldState } from './minefield';
 import { createRescueState, rollRescueGroups, RESCUE_FIELD_SEED_OFFSET, type RescueRules, type RescueState } from './rescue';
 import { SeededRng } from './rng';
@@ -19,6 +19,8 @@ export interface RescueField {
   rescue: RescueState;
   mines: MinefieldState | null;
   keep: MineKeepOut;
+  /** seed+47 の系列（組み立ての 88 回の後の続き。v0.8.5 S2・lead の決め 1: 触雷の火災・機関の判定は触れた時だけこの続きから引く＝ほかの系列は変わらない） */
+  rng: SeededRng;
 }
 
 /** 置かない所: 今夜の群の中心（extraGroupR は群の円に足す半径。検査で ±jitter を足すとき）・コリー・フィッチの輪・帰投の輪・出発と浅瀬 */
@@ -44,5 +46,5 @@ export function rollRescueField(seed: number, r: RescueRules, m: MinefieldRules 
     mines = createMinefield(m);
     layMines(mines, m, keep, rng);
   }
-  return { rescue, mines, keep };
+  return { rescue, mines, keep, rng };
 }

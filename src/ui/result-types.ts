@@ -5,6 +5,7 @@
 // v0.8.1 S4: 止まった艦の任務（us_06）の記録 AnchorResult（ui/anchor-result）を海峡の夜の鍵の入れ物 StraitNightResult に足した（result-scene の MissionResult が継ぐ＝scene は変えない）。
 import type { AnchorResult } from './anchor-result';
 import type { ReconResult } from './recon-result';
+import type { RescueResult } from '../core/rescue-telemetry';
 import type { RadarResult } from './radar-result';
 import type { StraitResult } from './strait-result';
 import type { BlindKind } from '../core/arms-cue';
@@ -57,6 +58,8 @@ export interface EscortResult {
 export interface PtResult {
   /** 米PT の enemies.json の id（撃沈の点 scoring.json の kill.points_by_enemy のキー。v0.6.3 実機 1 回目） */
   enemyId: string;
+  /** 隊の名（v0.8.5 S2。記録に name_short_ja のある隊＝us_07 の「Sボート」だけ。無ければ「米PT」） */
+  nameJa?: string;
   total: number;
   out: number;
   alive: number;
@@ -181,4 +184,5 @@ export interface StraitNightResult {
   strait?: StraitResult; // 列の通過（ui/strait-result。straitResultPart）
   anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06。ui/anchor-result。systems/anchor-result-part の anchorResultPart）
   recon?: ReconResult; // 報告の任務（v0.8.2 S4。us_05。ui/recon-result。systems/recon-result-part の reconResultPart）
+  rescue?: RescueResult; // 救助の任務（v0.8.5 S2。us_07。core/rescue-telemetry の型・systems/rescue-result-part。本文の行は S4 の ui/rescue-result）
 }

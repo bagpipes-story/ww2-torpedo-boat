@@ -44,6 +44,9 @@ import { generateFxTextures } from '../assets/fx-art';
 import { generateEvacRingTexture, generateImpactRingTexture } from '../assets/impact-ring-placeholder';
 import { generateBargeTextures, generateFriendlyBargeTexture } from '../assets/barge-placeholder';
 import { generatePtBoatTexture } from '../assets/pt-placeholder';
+import { paintSboatTexture } from '../assets/boat-art';
+import { generateRescueTextures } from '../assets/rescue-art';
+import { PT_TEXTURE_KEY_BY_BOAT, SBOAT_TEXTURE_KEY } from '../config/pt-look-data';
 import { generateFriendlyTransportTexture } from '../assets/ally-ship-placeholder';
 import { generateAllyDestroyerTextures } from '../assets/ally-destroyer-placeholder';
 import { allyFanFor } from '../ui/ally-fan';
@@ -155,6 +158,12 @@ export class BootScene extends Phaser.Scene {
     const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats'] && ptBoatRefOf(m as Record<string, unknown>) === US_PT_BOAT_REF);
     const pt = ptMission ? getPtParams(gameData, getPrototypeMission(gameData, ptMission.id), gameData.hitRateModel.world.time_scale) : null;
     if (pt) generatePtBoatTexture(this, { lengthUnits: pt.spriteLengthUnits, beamUnits: pt.spriteBeamUnits });
+    // v0.8.5 S2（us_07）: 米PT でない PT の隊（S ボート tex-sboat）の絵は、その boat_ref の最初の任務の寸法から 1 枚（config/pt-look-data の鍵の表。米PT の絵は上のまま）
+    const sbMission = gameData.missionsSeed.missions.find((m) => ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown> | undefined)?.['pt_boats'] && PT_TEXTURE_KEY_BY_BOAT[ptBoatRefOf(m as Record<string, unknown>)] === SBOAT_TEXTURE_KEY);
+    const sb = sbMission ? getPtParams(gameData, getPrototypeMission(gameData, sbMission.id), gameData.hitRateModel.world.time_scale) : null;
+    if (sb) paintSboatTexture(this, { lengthUnits: sb.spriteLengthUnits, beamUnits: sb.spriteBeamUnits });
+    // 生存者・機雷・ブイ・味方のフレッチャー級（v0.8.5 S2。救助の任務のある時だけ 1 回。assets/rescue-art）
+    if (gameData.missionsSeed.missions.some((m) => ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown> | undefined)?.['rescue'])) generateRescueTextures(this, gameData, spriteScale);
     // 味方の輸送船（v0.6.9。jp_04）: 揚陸の任務（ハードも）の data・置き場・幾何と V12（艇に煙幕なし）の検査（壊れていれば Boot で止まる）、最初の揚陸の任務の輸送船の絵（薄い青）
     const landing = validateLandingMissions(gameData, gameData.hitRateModel.world.time_scale);
     if (landing) generateFriendlyTransportTexture(this, { lengthUnits: landing.lengthM * spriteScale, beamUnits: landing.beamM * spriteScale });
@@ -206,12 +215,10 @@ function ptBoatRefOf(m: Record<string, unknown>): string {
   return typeof rec?.['boat_ref'] === 'string' ? rec['boat_ref'] : '';
 }
 
-/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない）。v0.8.5 S0: 救助（rescue）の世界はまだ無い（S2 で配線）ので us_07 も us_02 へ */
+/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない）。v0.8.5 S2 から救助（us_07）の世界もある（S0 の除けを外した。Title に出すのは S5） */
 function debugMissionId(): string {
   try {
     getPrototypeMission(gameData, DEBUG_MISSION_ID);
-    const m = (gameData.missionsSeed.missions as readonly Record<string, unknown>[]).find((x) => x['id'] === DEBUG_MISSION_ID);
-    if ((m?.['v0_1_prototype'] as Record<string, unknown> | undefined)?.['rescue'] !== undefined) throw new Error('救助の世界は v0.8.5 S2 で配線する');
     return DEBUG_MISSION_ID;
   } catch (e) {
     console.warn(`?debug&mission=${DEBUG_MISSION_ID} は出撃できない（${e instanceof Error ? e.message : String(e)}）。${PROTOTYPE_MISSION_ID} で始める`);

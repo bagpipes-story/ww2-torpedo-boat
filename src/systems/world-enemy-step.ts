@@ -6,6 +6,8 @@
 // v0.6.9 S5a（spec-v069 §4.1）: 米PT の隊の段の直後・機関の不調の前に揚陸の段（systems/world-landing の stepAfterPts。jp_04 だけ。ほかの任務は w.landing が null で何もしない）。
 // v0.8.0 S2（spec-v0800 §6 の S2）: 最後にレーダー（systems/world-radar。us_04 だけ。掃引の時だけ艦の位置を読む＝世界には書かない。ほかの任務は w.radar が null で何もしない）。
 // v0.8.2 S2（spec-v0820 §4.5・lead の L22）: その後に報告（systems/world-recon。us_05 だけ。ほかの任務は w.recon が null で何もしない）。
+// v0.8.5 S2（spec-v0850 §4.0・tests/rescue-step-order）: 米PT の隊の段の直後に S ボートの退き（systems/world-rescue の stepCover）→ 大発の無い任務の沿岸砲（systems/shore-guns）→
+// 生存者と機雷（world-rescue の step）。us_07 だけ（ほかの任務は w.rescue・w.shoreGuns が null で何もしない）。
 import type { BoatState } from '../core/boat-motion';
 import type { DestroyerGroup } from './destroyer-group';
 import { stepDestroyerSide } from './destroyer-step';
@@ -23,6 +25,9 @@ export function stepEnemySide(w: MissionWorld, g: DestroyerGroup | null, dt: num
   }
   if (!g) stepFreeTorpedoes(w, dt, feelDt); // 駆逐艦のいない任務の魚雷（v0.6.8。駆逐艦の任務は destroyer-step が進める）
   w.pts?.step(dt, feelDt, w, w.input.gunHeld); // 米PT の隊（v0.6.3。艇の 13mm が先）は自艇・速力帯・発見距離の後、火災の前（模擬 core/pt-pass-sim と同じ順）。米PT の無い任務は何もしない
+  w.rescue?.stepCover(w, feelDt); // フィッチの砲火で S ボートが退く（v0.8.5 S2。us_07。凍結の隊の段の後）
+  w.shoreGuns?.step(w, feelDt, dt); // 大発の無い任務の沿岸砲（v0.8.5 S2。us_07 の 210 mm。着弾で救助の群を奪う）
+  w.rescue?.step(w, feelDt); // 救助の時間の終わり → 拾う・移す → 機雷（見える・触雷）（v0.8.5 S2。us_07）
   w.landing?.stepAfterPts(w, dt, feelDt); // 米PT の雷撃 → 敵の魚雷 → 揚陸の時計（v0.6.9。jp_04 だけ。systems/world-landing。凍結の隊の段の直後＝模擬 core/landing-sim と同じ順）。揚陸の無い任務は何もしない
   w.engine?.step(w, feelDt); // 機関の熱と不調（v0.6.5）は米PT の段の直後（このステップに固めた赤い線も見る）・火災の前（模擬 core/pt-sim-engine と同じ順・同じ時計）
   w.arms?.stepAir(w, dt, feelDt); // 対空（v0.6.8）は最後: 艦艇の標的が無いときだけ機へ。撃墜の後は毎ステップ順番を飛ばす（夜明けの空襲の段の前）

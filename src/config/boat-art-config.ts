@@ -50,8 +50,9 @@ export const PALETTE_TRANSPORT_MID = 0x9e8484;
 export const PALETTE_ALLY_MID = 0x6fa0cc;
 
 /** 艇の絵の形の種類（S1。spec §4.1）。boatTextureKey の id → 形。表に無い id（遊べない任務の艇）は既定 */
-export type BoatArtKind = 'elco80' | 'elco77' | 't38' | 't14' | 'h38';
-export const BOAT_ART_KIND_BY_ID: Readonly<Record<string, BoatArtKind>> = { us_elco80: 'elco80', us_elco77: 'elco77', jp_t38: 't38', jp_t14: 't14', jp_h38_hayabusa: 'h38' };
+// v0.8.5 S2（us_07。spec-v0850 §7 S2）: 初期の Higgins 78 ft（自艇 higgins78）と独 S ボート（S-100 級。敵の sboat＝tex-sboat。艇の id ではなく config/pt-look-data の鍵から描く）
+export type BoatArtKind = 'elco80' | 'elco77' | 't38' | 't14' | 'h38' | 'higgins78' | 'sboat';
+export const BOAT_ART_KIND_BY_ID: Readonly<Record<string, BoatArtKind>> = { us_elco80: 'elco80', us_elco77: 'elco77', jp_t38: 't38', jp_t14: 't14', jp_h38_hayabusa: 'h38', us_higgins78: 'higgins78' };
 export const BOAT_ART_DEFAULT_KIND: BoatArtKind = 'elco80';
 
 /**
@@ -73,6 +74,10 @@ export interface BoatArtLayout {
 const HULL_PT: BoatArtLayout['hull'] = [[0, 0], [0.06, 0.28], [0.15, 0.62], [0.3, 0.88], [0.55, 1], [0.8, 0.98], [1, 0.9]];
 /** 日本の小艇（乙型・隼艇）の船形: 同じく尖るが艇尾はやや狭い 0.88B */
 const HULL_JP: BoatArtLayout['hull'] = [[0, 0], [0.07, 0.3], [0.18, 0.66], [0.35, 0.92], [0.55, 1], [0.8, 0.96], [1, 0.88]];
+/** 初期の Higgins 78 ft の船形: Elco よりやや角張った艇首（前の肩が広い）・最大幅は 55%・艇尾は 0.92B（v0.8.5 S2） */
+const HULL_HIGGINS: BoatArtLayout['hull'] = [[0, 0], [0.05, 0.34], [0.13, 0.7], [0.28, 0.93], [0.55, 1], [0.8, 0.98], [1, 0.92]];
+/** S ボート（S-100 級）の船形: 丸い艇首楼の細長い船体・最大幅は 50%・艇尾は丸みのある 0.8B（v0.8.5 S2） */
+const HULL_SBOAT: BoatArtLayout['hull'] = [[0, 0], [0.05, 0.36], [0.13, 0.72], [0.28, 0.94], [0.5, 1], [0.78, 0.96], [0.92, 0.88], [1, 0.8]];
 export const BOAT_ART_LAYOUTS: Readonly<Record<BoatArtKind, BoatArtLayout>> = {
   // Elco 80: 前甲板の 20 mm・操舵室と海図室 38〜52%・左右の連装 .50 の銃座 53%・発射管 4 本（前の組 28〜50%・後ろの組 56〜82%）・艇尾の 40 mm 86%・煙幕の発生機
   elco80: { hull: HULL_PT, cabin: [0.38, 0.52, 0.45], tubes: [[0.28, 0.5, 0.24], [0.56, 0.82, 0.3]], guns: [[0.12, 0, 1.4], [0.53, 0.28, 1.4], [0.53, -0.28, 1.4], [0.86, 0, 1.6]], sternBoxes: [[0.93, 0.975, 0.22, 0]] },
@@ -84,6 +89,10 @@ export const BOAT_ART_LAYOUTS: Readonly<Record<BoatArtKind, BoatArtLayout>> = {
   t14: { hull: HULL_JP, cabin: [0.48, 0.62, 0.5], tubes: [[0.64, 0.9, 0.185]], guns: [[0.55, 0, 1.1]], sternBoxes: [] },
   // H-38 隼艇（jp_01 ハード。青の tint）: 魚雷なし・前と後ろの 25 mm の丸い銃座 22%・78%・中央の船室 40〜60%
   h38: { hull: HULL_JP, cabin: [0.4, 0.6, 0.5], tubes: [], guns: [[0.22, 0, 1.6], [0.78, 0, 1.6], [0.5, 0, 1]], sternBoxes: [] },
+  // 初期の Higgins 78（us_07 の自艇。v0.8.5 S2）: 操舵室 34〜49%・左右の連装 .50 の銃座 52%・艇尾の 40 mm 87%・前甲板の 20 mm 12%・魚雷は架台 4 本（前 26〜46%・後ろ 58〜82%。初期の艇の管か架台かは未確認＝spec §9 の 9）・煙幕の発生機
+  higgins78: { hull: HULL_HIGGINS, cabin: [0.34, 0.49, 0.48], tubes: [[0.26, 0.46, 0.25], [0.58, 0.82, 0.3]], guns: [[0.12, 0, 1.4], [0.52, 0.28, 1.4], [0.52, -0.28, 1.4], [0.87, 0, 1.6]], sternBoxes: [[0.93, 0.975, 0.22, 0]] },
+  // S ボート（S-100 級。us_07 の敵。v0.8.5 S2）: 艇首楼の中の発射管 2 本（6〜26%・甲板の上に口）・装甲の艦橋 33〜45%・中央の 20 mm 連装 55%・艇尾の 37 mm 85%・艇首の 20 mm 4%
+  sboat: { hull: HULL_SBOAT, cabin: [0.33, 0.45, 0.42], tubes: [[0.07, 0.26, 0.2]], guns: [[0.04, 0, 1.1], [0.55, 0, 1.4], [0.85, 0, 1.5]], sternBoxes: [] },
 };
 /** 中心線の明るい筋: 長さの 10〜95%・半幅は max(1 単位, この割合 × B)（枕の陰影。回転に依らない） */
 export const BOAT_ART_CENTER_FROM = 0.1;

@@ -79,7 +79,7 @@ describe('揚陸の任務の固定ステップの順（ソースの pin）', () 
   it('配線: 呼びかけ（returnCallDone）は揚陸の決着が先、撃ち尽くしは揚陸の任務で立てない、達成は揚陸完了して帰投（米PT の隊の枝より先）', () => {
     const w = code('systems/mission-world.ts');
     // v0.8.2 S2（us_05 の報告の任務。lead の L22）: 敵の側の目標の後ろに「報告が届いた」の枝（recon の無い任務は null＝objectiveDone || false で同じ値）
-    expect(w).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
+    expect(w).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.rescue \? this\.rescue\.objectiveReached : this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
     expect(w).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.landing \? false : this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
     const o = code('systems/mission-objective.ts');
     expectOrder(o, ['if (w.landing) return endCountsAsReturn(reason) && w.landing.state.phase === LD_DONE;', 'return w.convoy ? convoyObjectiveDone(']);

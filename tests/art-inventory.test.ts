@@ -197,10 +197,11 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
     expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
       'tex-barge', 'tex-barge-friendly', 'tex-battleship-fuso', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
       'tex-cruiser-mogami', 'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-mutsuki', 'tex-destroyer-us', 'tex-pt-boat', 'tex-subchaser', 'tex-transport', 'tex-transport-friendly',
-    ]); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）・S2b: ハードの駆潜艇の tex-subchaser（D-A2）・v0.8.2 S2b: us_05 の戦艦・重巡（D-A1・D-A2）
+      'tex-boat-us_higgins78', 'tex-destroyer-ally-us', 'tex-sboat', // v0.8.5 S2: us_07 の Higgins・味方のフレッチャー級（フィッチとコリー）・S ボート
+    ].sort()); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）・S2b: ハードの駆潜艇の tex-subchaser（D-A2）・v0.8.2 S2b: us_05 の戦艦・重巡（D-A1・D-A2）
     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
     expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
-    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32], 'tex-subchaser': [102, 13.4], 'tex-battleship-fuso': [425.5, 66.2], 'tex-cruiser-mogami': [401.2, 40.4] };
+    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32], 'tex-subchaser': [102, 13.4], 'tex-battleship-fuso': [425.5, 66.2], 'tex-cruiser-mogami': [401.2, 40.4], 'tex-destroyer-ally-us': [229.6, 24], 'tex-sboat': [69.8, 10.6], 'tex-boat-us_higgins78': [47.6, 12.2] }; // v0.8.5 S2: フィッチとコリー（us_destroyer の寸法）・S ボート（de_s100）・Higgins
     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
     const ks = [...KS];
     for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
@@ -254,7 +255,7 @@ describe('世界の絵の原点（setOrigin）は鍵ごとに今のまま', () =
   });
   it('描き直すほかの絵（艇・艦・大発・米PT・魚雷・機・星弾・煙幕）は中央（setOrigin なし）', () => {
     for (const name of [...REDRAW.filter((n) => n !== 'searchlight'), 'boat']) if (o[name]) expect(o[name], name).toEqual(['default']);
-    for (const name of ['destroyer', 'transport', 'transportFriendly', 'destroyerFriendly', 'torpedo', 'barge', 'bargeFriendly', 'ptBoat', 'enemyAircraft', 'starshell', 'smokePuff']) expect(o[name], name).toBeDefined();
+    for (const name of ['destroyer', 'transport', 'transportFriendly', 'destroyerFriendly', 'torpedo', 'barge', 'bargeFriendly', 'enemyAircraft', 'starshell', 'smokePuff']) expect(o[name], name).toBeDefined(); // ptBoat は v0.8.5 S2 から config/pt-look-data の鍵（pt-squadron は look.texKey。原点なし＝tests/boat-paint の行）
   });
 });
 

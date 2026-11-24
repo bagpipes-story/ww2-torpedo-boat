@@ -40,6 +40,8 @@ export interface PtTelemetryWorld {
     readonly targets?: PtTargets | null;
     readonly gunboat?: { readonly credit: GunboatCredit } | null;
     readonly ally?: { readonly credit: AllyCredit } | null;
+    /** 絵の鍵と HUD の名（v0.8.5 S2。config/pt-look-data。無い tests は米PT） */
+    readonly look?: { readonly named: boolean; readonly nameJa: string };
   } | null;
   readonly boat: { readonly state: BoatState };
   /** 艇の静音の上限（2 行目の「14 kt 以下に」） */
@@ -201,5 +203,6 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
     passesOnBarges: ts ? ts.attacksOnBarges + (open === 1 && openBurst === 0 && ts.attackKind === 1 ? 1 : 0) : 0, // 航過（passes）の内訳: 終わる瞬間に撃っていた大発への航過も（レビュー ai:R2）
     firstDetectKind: ts ? ts.firstDetectKind : 0,
     gunLabel: s.gun ? s.gun.g.label.replace('機銃', '') : '',
+    ...(s.look && s.look.named ? { nameJa: s.look.nameJa } : {}), // 隊の名（v0.8.5 S2。us_07 の「Sボート」だけ。米PT は鍵が無い＝今の Result のまま）
   };
 }

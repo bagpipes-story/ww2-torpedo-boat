@@ -29,6 +29,8 @@ import { patrolResult, refreshPatrolTelemetry } from './patrol-telemetry';
 import { ptResult, refreshPtTelemetry } from './pt-telemetry';
 import { refreshRadarTelemetry } from './radar-telemetry';
 import { refreshMagazineTelemetry, refreshReconTelemetry } from './recon-telemetry';
+import { refreshRescueTelemetry } from './rescue-telemetry';
+import { rescueResultPart } from './rescue-result-part';
 import { refreshStraitTelemetry } from './strait-telemetry';
 import { refreshTransitTelemetry } from './transit-telemetry';
 import { refreshSeaplaneTelemetry } from './seaplane-telemetry';
@@ -108,6 +110,9 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
     t.bargeEscapeS = h.flotilla.escapeLeftS;
     t.batteryInArc = h.shoreInArc;
     t.batteryAlerted = h.shoreAlerted;
+  } else if (w.shoreGuns) {
+    t.batteryInArc = w.shoreGuns.shoreInArc; // 大発の無い任務の沿岸砲（v0.8.5 S2。us_07。同じ欄＝3 行目「沿岸砲！」と曲の段が今のまま効く）
+    t.batteryAlerted = w.shoreGuns.shoreAlerted;
   }
   // 僚艇（v0.4.4）: HP・沈没・自艇からの距離（平方根はここの 1 回だけ）
   const es = w.escort ? w.escort.state : null;
@@ -142,6 +147,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   refreshAnchorTelemetry(t.anchor, w); // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 数を写すだけ（鍵の無い任務は何もしない）
   refreshReconTelemetry(t.recon, w); // 報告・無線・中継（v0.8.2 S2。us_05）と戦艦の弾薬庫: 数を写すだけ（鍵の無い任務は何もしない）
   refreshMagazineTelemetry(t.magazine, w);
+  refreshRescueTelemetry(t.rescue, w); // 生存者の救助・機雷・フィッチの砲火（v0.8.5 S2。us_07）: 数を写すだけ（鍵の無い任務は何もしない）
   w.engine?.writeTelemetry(t.engine); // 機関の不調（v0.6.5）: 熱・段・不調の残りの秒・出来事
   w.gunboat?.writeTelemetry(t.gunboat, s); // 隼艇（v0.6.6）: 自艇からの位置と距離（平方根 1 回）・HP・沈没・決着・浜
   // 暴風（docs/02 §6.8）と乗員（§6.6）。乗員は HP から決まる
@@ -160,6 +166,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
 
 /** 終了時に 1 回だけ Result の材料を作る（走っている魚雷は呼び出し側が先に外れとして確定しておく）。startFireS は出撃時の火災が消えた実秒（燃えたまま終われば -1、火災なしで出撃なら NaN。Result の「出撃前」の行） */
 export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, data: GameData, elapsedS: number, ringEdgeM: number, startFireS: number): MissionResult {
+  w.rescue?.finish(reason); // 救助の任務（v0.8.5 S2。us_07）: 終わりの理由で乗せている分を決める（帰投は渡した・沈没は失った・漂流と座礁は乗せたまま）。達成と点の前に 1 回
   const counts = countHits(w.shots);
   const pct = (gal: number): number => Math.max(0, Math.min(100, Math.ceil((gal / w.fuelAllotmentGal) * 100)));
   return {
@@ -218,5 +225,6 @@ export function buildMissionResult(reason: MissionEndReason, w: MissionWorld, da
     ...straitResultPart(w), // 列の通過（v0.8.0 S4。us_04）: 列の通過の任務だけ strait の鍵（往路・復路・撃沈・揚陸の地）
     ...anchorResultPart(w, data), // 止まった艦の任務（v0.8.1 S4。us_06）: anchor の鍵（卯月の撃沈と動き出し・止まった艦への魚雷・背に岸の秒。本文の駆逐艦の行の後）
     ...reconResultPart(w), // 報告の任務（v0.8.2 S4。us_05）: recon の鍵（報告・艦隊の命中と誘爆・魚雷で沈めた艦＝得点の shipKills。本文のレーダーの行の後に 2 行）
+    ...rescueResultPart(w), // 救助の任務（v0.8.5 S2。us_07）: rescue の鍵（渡した・失った・機雷・S ボート・砲台の数＝点の rescued。本文の行は S4）
   };
 }

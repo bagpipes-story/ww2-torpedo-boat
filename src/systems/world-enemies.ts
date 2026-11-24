@@ -5,6 +5,8 @@
 // v0.8.2 S2（us_05）: 弾薬庫（systems/ship-magazine。seed+44）は規則のある艦のいる隊だけ、報告（systems/world-recon。無線 seed+45・中継の輪の絵）は setup.recon の世界だけ作る。
 // recon の世界だけ艦の砲弾の命中の手を包んで無線の故障を引く（無い任務は世界の hitBoat そのもの＝今の手）。
 // v0.8.4: 煙幕への乱射（systems/smoke-barrage-fire。seed+46）は史実モードで煙幕のある艇と艦の隊のいる世界だけ、隊の全艦に付ける（無い世界は乱数の系列も作らない＝今のまま）。
+// v0.8.5 S2（us_07）: 大発が無く沿岸砲がある任務だけ、沿岸砲の持ち主 systems/shore-guns（seed+8〜。着弾は onShoreLand＝救助の群）を作る（us_03 の大発の狩りの沿岸砲は今のまま）。
+//   PT の隊の絵の鍵と HUD の名は記録から（config/pt-look-data。data の無い tests は米PT の既定）。
 import type Phaser from 'phaser';
 import { boatTextureKey } from '../config/game-config';
 import type { GameData } from '../config/game-data';
@@ -30,6 +32,8 @@ import { EnemySide } from './enemy-side';
 import { EscortBoat } from './escort-boat';
 import { Gunboat, type GunboatGunKit } from './gunboat';
 import { PtSquadron } from './pt-squadron';
+import { ShoreGuns } from './shore-guns';
+import { PT_LOOK_DEFAULT, ptLookOf } from '../config/pt-look-data';
 import type { PtTargetConvoy } from './pt-target';
 import type { SplashPool } from './splash-pool';
 import type { WorldEvents } from './world-events';
@@ -49,6 +53,8 @@ export interface Enemies {
   enemy: EnemySide;
   /** 報告・無線・中継（v0.8.2 S2。setup.recon の世界＝us_05 だけ）。無い任務は null */
   recon: WorldRecon | null;
+  /** 大発の無い任務の沿岸砲（v0.8.5 S2。us_07）。大発の任務（沿岸砲は大発の狩りの中）・沿岸砲の無い任務は null */
+  shoreGuns: ShoreGuns | null;
 }
 
 export function buildEnemies(
@@ -66,6 +72,8 @@ export function buildEnemies(
   convoy: PtTargetConvoy | null = null,
   /** data（v0.8.4。煙幕への乱射の値 historical_mode.smoke_barrage を読む＝世界を作るたびに検査。省けば乱射なし） */
   data: GameData | null = null,
+  /** 沿岸砲の着弾ごと（v0.8.5 S2。us_07 の救助の群。無い任務は null） */
+  onShoreLand: ((x: number, y: number) => void) | null = null,
 ): Enemies {
   const mission = s.mission;
   const ds = s.destroyer;
@@ -106,7 +114,8 @@ export function buildEnemies(
   const pt = s.ptBoats;
   const gb = s.gunboat;
   const makeGunboat = gb && pt && convoy ? (q: PtSection, kit: GunboatGunKit): Gunboat => new Gunboat(scene, gb, { player: boat, convoy: convoy.state, convoyParams: convoy.p, pts: q, ring: mission.returnPoint, bounds: mission.bounds, visRange2: s.visRange2 }, s.vis, pt.baseDetectM, onSunk, kit) : null;
-  const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat) : null;
+  const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat, data ? ptLookOf(data, mission.enemyId) : PT_LOOK_DEFAULT) : null;
   const enemy = new EnemySide(destroyers, hunt, pts);
-  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon };
+  const shoreGuns = !s.barges && s.shoreBatteries.length > 0 ? new ShoreGuns(scene, s.shoreBatteries, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, splashes, hitBoat, onShoreLand) : null;
+  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon, shoreGuns };
 }

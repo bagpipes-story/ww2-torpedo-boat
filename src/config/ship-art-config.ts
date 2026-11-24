@@ -29,6 +29,8 @@ export const ART_TEX_DENSITY: Readonly<Record<string, number>> = {
   'tex-battleship-fuso': 2, 'tex-cruiser-mogami': 2, // v0.8.2 S2b（D-A1・D-A2。us_05 の戦艦・重巡）
   // v0.7.0 IP3（実機 3 回目の U10「自機（魚雷艇）と大発も視覚的なクオリティを上げてください」）: 艇 5 枚・敵の米PT・大発 2 枚。表示は game-config の artImageScale
   'tex-boat-us_elco80': 2, 'tex-boat-us_elco77': 2, 'tex-boat-jp_t38': 2, 'tex-boat-jp_t14': 2, 'tex-boat-jp_h38_hayabusa': 2, 'tex-pt-boat': 2, 'tex-barge': 2, 'tex-barge-friendly': 2,
+  // v0.8.5 S2（us_07）: 初期の Higgins・S ボート・味方のフレッチャー級（フィッチとコリー）
+  'tex-boat-us_higgins78': 2, 'tex-sboat': 2, 'tex-destroyer-ally-us': 2,
 };
 export function artTexDensity(key: string): number {
   return ART_TEX_DENSITY[key] ?? 1;
@@ -58,6 +60,7 @@ export const SHIP_ART_KIND_BY_KEY: Readonly<Record<string, ShipArtKind>> = {
   'tex-destroyer-mutsuki': 'mutsuki', // v0.8.1 S2（D-A1。敵の卯月）
   'tex-subchaser': 'subchaser', // v0.8.1 S2b（D-A2。ハードの駆潜艇）
   'tex-battleship-fuso': 'fuso', 'tex-cruiser-mogami': 'mogami', // v0.8.2 S2b（D-A1・D-A2）
+  'tex-destroyer-ally-us': 'fletcher', // v0.8.5 S2（us_07）: 味方のフィッチとコリー＝フレッチャー級の形を味方の色で（Gleaves 型の代わり。2 本煙突で似る＝spec §9 の 9）
 };
 export const SHIP_ART_DEFAULT_KIND: ShipArtKind = 'kagero';
 export function shipArtKind(key: string): ShipArtKind {

@@ -24,8 +24,8 @@ const sat = (c: number): number => {
 };
 
 describe('艇の絵の形（v0.7.0 S1）', () => {
-  it('5 枚の艇（Elco 80・Elco 77・T-38・T-14・H-38）に形があり、どれも幅 10 単位以上の艇ではない（側の暗い帯は描かない）', () => {
-    expect(BOATS.map((b) => b.kind).sort()).toEqual(['elco77', 'elco80', 'h38', 't14', 't38']);
+  it('5 枚の艇（Elco 80・Elco 77・T-38・T-14・H-38）に形があり、どれも幅 10 単位以上の艇ではない（側の暗い帯は描かない）。v0.8.5 S2 から us_07 の初期の Higgins（higgins78）も', () => {
+    expect(BOATS.map((b) => b.kind).sort()).toEqual(['elco77', 'elco80', 'h38', 'higgins78', 't14', 't38']);
     for (const b of BOATS) expect(b.B, b.id).toBeLessThan(ART_SIDE_BAND_MIN_BEAM_UNITS + 3); // Elco 80 の 12.6 も「小艇」（spec §3.3）
   });
   it.each(BOATS)('$id: 輪郭は矩形の内・艇首の先が上の中央・艇尾は四角（0.84B〜0.92B）・最大幅は長さの 55%', ({ kind, L, B }) => {
