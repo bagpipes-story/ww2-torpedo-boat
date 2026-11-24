@@ -31,15 +31,15 @@ function scene(d = 300) {
 const fired = (n: { v: number }): ShellEvents => ({ onFire: () => { n.v++; }, onImpact: () => {} });
 
 describe('data（hit_rate_model.historical_mode.smoke_barrage）', () => {
-  it('今の値: 500 m の内・散布 25 → 90 m（100 → 500 m）・最後に見た点から 100 m の煙・普段の半分の速さ。source は design', () => {
-    expect(P).toEqual({ maxRangeM: 500, minRangeM: 100, scatterMaxM: 90, scatterMinM: 25, puffSearchM: 100, rateFactor: 0.5 });
+  it('今の値: 600 m の内・散布 25 → 120 m（100 → 600 m。v0.8.4 IP1）・最後に見た点から 100 m の煙・普段の半分の速さ。source は design', () => {
+    expect(P).toEqual({ maxRangeM: 600, minRangeM: 100, scatterMaxM: 120, scatterMinM: 25, puffSearchM: 100, rateFactor: 0.5 });
     expect(gameData.hitRateModel.historical_mode.smoke_barrage.source).toMatch(/^design \(v0\.8\.4/);
   });
   it('検査: 有限でない・min ≥ max・min ≤ 0・scatter_min > scatter_max・scatter_min < 0・puff_search < 0・rate_factor が 0 以下か 1 より大きい・鍵が無い → 例外', () => {
     const ok = { ...gameData.hitRateModel.historical_mode.smoke_barrage };
     expect(isSmokeBarrageDataRecord(ok)).toBe(true);
     const bad: Array<Record<string, unknown>> = [
-      { max_range_m: Infinity }, { min_range_m: 500 }, { min_range_m: 0 }, { scatter_min_m: 91 }, { scatter_min_m: -1 }, { puff_search_m: -1 },
+      { max_range_m: Infinity }, { min_range_m: 600 }, { min_range_m: 0 }, { scatter_min_m: 121 }, { scatter_min_m: -1 }, { puff_search_m: -1 },
       { rate_factor: 0 }, { rate_factor: 1.01 }, { rate_factor: '0.5' }, { max_range_m: undefined },
     ];
     for (const o of bad) {
@@ -55,7 +55,7 @@ describe('data（hit_rate_model.historical_mode.smoke_barrage）', () => {
 
 describe('散布の半径と狙う点', () => {
   it('散布は min_range_m 以下で scatter_min_m・max_range_m 以上で scatter_max_m・間は直線で、近いほど小さい（単調）', () => {
-    expect([barrageScatterM(P, 0), barrageScatterM(P, 100), barrageScatterM(P, 300), barrageScatterM(P, 500), barrageScatterM(P, 900)]).toEqual([25, 25, 57.5, 90, 90]);
+    expect([barrageScatterM(P, 0), barrageScatterM(P, 100), barrageScatterM(P, 300), barrageScatterM(P, 500), barrageScatterM(P, 600), barrageScatterM(P, 900)]).toEqual([25, 25, 63, 101, 120, 120]);
     let prev = -1;
     for (let d = 0; d <= 700; d += 7) {
       const r = barrageScatterM(P, d);
@@ -114,8 +114,8 @@ describe('引き金（1 隻・1 ステップ）', () => {
       return { shots: n.v, draws: rng.draws };
     };
     expect(run({})).toEqual({ shots: 2, draws: 2 * 3 }); // 1 発に 3 回（煙を選ぶ 1・散布 2）
-    for (const o of [{ detected: false }, { blocked: false }, { canFire: false }, { visible: true }, { lit: true }, { d: 501 }, { noFix: true }]) expect(run(o), JSON.stringify(o)).toEqual({ shots: 0, draws: 0 });
-    expect(run({ d: 500 }).shots).toBe(2);
+    for (const o of [{ detected: false }, { blocked: false }, { canFire: false }, { visible: true }, { lit: true }, { d: 601 }, { noFix: true }]) expect(run(o), JSON.stringify(o)).toEqual({ shots: 0, draws: 0 });
+    expect(run({ d: 600 }).shots).toBe(2);
   });
   it('間隔: 砲ごとに普段の 1 / rate_factor 倍（120mm 2 門×毎分 10 → 6 秒・25mm 4 門×毎分 120 → 0.25 秒）。撃てない間は負の残りを溜めない', () => {
     const s = scene(300);

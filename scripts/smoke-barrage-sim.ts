@@ -34,7 +34,7 @@ const SEEDS = Number(process.env['SEEDS'] ?? 200);
 const STAY_S = Number(process.env['STAY_S'] ?? 30);
 const POOL = 32; // config/ui-config の SMOKE_POOL_SIZE と同じ
 const SHELLS = 48; // config/ui-config の SHELL_POOL_SIZE と同じ
-const RANGES = [500, 400, 300, 200, 150, 100];
+const RANGES = [600, 500, 400, 300, 200, 150, 100];
 
 interface Tally { shots: number[]; hits: number[] }
 const zero = (): Tally => ({ shots: GP.guns.map(() => 0), hits: GP.guns.map(() => 0) });
