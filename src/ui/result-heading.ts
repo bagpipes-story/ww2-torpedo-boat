@@ -24,6 +24,7 @@ export const REASON_LABEL: Record<MissionEndReason, string> = {
   barge_fire: '大発の機銃で沈没',
   shore_battery: '沿岸砲で沈没',
   pt_fire: 'PTの掃射で沈没',
+  mine: '触雷で沈没', // v0.8.5 S1（us_07 の機雷原。spec-v0850 §8.3 の「触雷 — 沈没」の見出しの言い換えは S4）
 };
 
 /** 空襲下の退避（v0.6.11 S6。jp_03）の理由の言い換え（昼の任務に「夜明け」と言わない＝H6）。ここに無い理由は REASON_LABEL のまま */

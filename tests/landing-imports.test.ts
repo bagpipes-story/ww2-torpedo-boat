@@ -57,18 +57,19 @@ describe('米PT の雷撃（core/pt-torpedo）を使う所', () => {
 describe('PT の段階を外から書く所（R8/F9）', () => {
   // F9 の正規表現。`=== PT_LEAVE`（比べるだけ）は書き込みではないので = の次が = のものは除く（(?!=)。書き込みはどれも拾う）
   const WRITE = /\.phase\s*=(?!=)[^;]*PT_LEAVE/;
-  const ALLOWED = ['core/pt-boats.ts', 'core/pt-damage.ts', 'core/pt-pass-end.ts', 'core/pt-chase.ts', 'core/pt-torpedo.ts'];
-  it('「.phase = … PT_LEAVE」があるのは pt-boats・pt-damage・pt-pass-end・pt-chase・pt-torpedo だけ（pt-torpedo は書く）', () => {
+  // v0.8.5 S1: core/sboat-cover（us_07 のフィッチの砲火で S ボートが退く）も外から PT_LEAVE を書く（pt-torpedo と同じ書き方。書く欄は phase と timerS だけ＝下の 3 つ目）
+  const ALLOWED = ['core/pt-boats.ts', 'core/pt-damage.ts', 'core/pt-pass-end.ts', 'core/pt-chase.ts', 'core/pt-torpedo.ts', 'core/sboat-cover.ts'];
+  it('「.phase = … PT_LEAVE」があるのは pt-boats・pt-damage・pt-pass-end・pt-chase・pt-torpedo・sboat-cover だけ（pt-torpedo・sboat-cover は書く）', () => {
     const got = using(WRITE);
     subsetOf(got, ALLOWED);
-    expect(got).toEqual(expect.arrayContaining(['core/pt-boats.ts', 'core/pt-damage.ts', 'core/pt-pass-end.ts', 'core/pt-chase.ts', 'core/pt-torpedo.ts']));
+    expect(got).toEqual(expect.arrayContaining(['core/pt-boats.ts', 'core/pt-damage.ts', 'core/pt-pass-end.ts', 'core/pt-chase.ts', 'core/pt-torpedo.ts', 'core/sboat-cover.ts']));
   });
   it('正規表現は三項の書き込みも拾い、比べるだけは拾わない', () => {
     for (const s of ['b.phase = PT_LEAVE;', 'b.phase = b.passes >= p.maxPasses || b.fate !== PT_FATE_NONE ? PT_LEAVE : PT_BREAK;', 'q.boats[i]!.phase=PT_LEAVE']) expect(WRITE.test(s), s).toBe(true);
     for (const s of ['if (b.phase === PT_LEAVE) ev.onLeave(i);', 'b.phase == PT_LEAVE', 'b.phase < PT_LEAVE', 'st.prevPhase[i] = b.phase;']) expect(WRITE.test(s), s).toBe(false);
   });
-  it('core/pt-torpedo が書く PT の欄は phase と timerS だけ（owner・held・追撃・航過の状態に触らない）', () => {
-    const s = code('core/pt-torpedo.ts');
+  it.each(['core/pt-torpedo.ts', 'core/sboat-cover.ts'])('%s が書く PT の欄は phase と timerS だけ（owner・held・追撃・航過の状態に触らない）', (f) => {
+    const s = code(f);
     const writes = [...s.matchAll(/\bb\.(\w+)\s*=(?!=)/g)].map((m) => m[1]);
     expect([...new Set(writes)].sort()).toEqual(['phase', 'timerS']);
     expect(s).not.toMatch(/\bq\.(owner|held|detected|passes|gapLeftS|lastPassBoat)\s*=(?!=)/);

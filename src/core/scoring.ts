@@ -6,6 +6,8 @@
 // 空襲下の退避（v0.6.11 S6。jp_03）: 残った艇 1 隻ごとに evac.points_per_survivor（座席＝操作中の隊長艇は帰投の 700 で数えるので除く＝core/evac-result の evacScoredBoats。
 // 帰投の有無に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。最大 17 × 30 ＝ 510 < 帰投 700（spec-v0611-r2 §3.10。tests/evac-score）。
 // 魚雷で沈めた艦（v0.8.2 S2。us_05 の戦艦・重巡）: shipKills の 1 件ごとに count × kill.points_by_enemy[enemyId]（表に無い id＝駆逐艦は 0）を kills に足す。無い任務は省略＝今の式（tests/scoring-recon）。
+// 生存者の救助（v0.8.5 S1。us_07）: フィッチへ渡した生存者 1 名ごとに rescue.points_per_survivor（帰投の有無に関わらず。上陸と同じ deliveries に足す。鍵が無ければ 0）。
+// 最大 60 × 8 ＋ S ボート 3 隻 × 70 ＝ 690 < 帰投 700（spec-v0850 §4.6。tests/scoring-rescue）。
 
 export interface ScoringParams {
   returnedPoints: number;
@@ -29,6 +31,8 @@ export interface ScoringParams {
   landingPoints: number;
   /** 空襲下の退避の残った艇 1 隻の点（v0.6.11 S6。scoring.json の evac.points_per_survivor。鍵が無ければ 0） */
   evacBoatPoints: number;
+  /** 救助の渡した生存者 1 名の点（v0.8.5 S1。scoring.json の rescue.points_per_survivor。鍵が無ければ 0） */
+  rescuePoints: number;
   fuelMax: number;
   fuelRequiresReturnedAndObjective: boolean;
   crewMax: number;
@@ -61,6 +65,8 @@ export interface ScoreInput {
   evacBoats?: number;
   /** 魚雷で沈めた艦の id と数（v0.8.2 S2。us_05。点は kill.points_by_enemy・表に無い id は 0）。無い任務は省略＝0 */
   shipKills?: readonly { enemyId: string; count: number }[];
+  /** フィッチへ渡した生存者（v0.8.5 S1。us_07。帰投で数えた乗せている分を含む＝core/rescue の delivered）。救助の無い任務は省略＝0 */
+  rescued?: number;
 }
 
 export interface ScoreBreakdown {
@@ -72,7 +78,7 @@ export interface ScoreBreakdown {
   evade: number;
   fuel: number;
   crew: number;
-  /** 上陸（v0.6.4。届けた大発 × convoyArrivalPoints。輸送隊の無い任務は 0）と揚陸（v0.6.9。揚陸完了なら landingPoints）と残った艇（v0.6.11 S6。× evacBoatPoints） */
+  /** 上陸（v0.6.4。届けた大発 × convoyArrivalPoints。輸送隊の無い任務は 0）と揚陸（v0.6.9。揚陸完了なら landingPoints）と残った艇（v0.6.11 S6。× evacBoatPoints）と渡した生存者（v0.8.5 S1。× rescuePoints） */
   deliveries: number;
   /** 乗員が半数以下で帰投点を減らした（Result の説明用） */
   crewHalf: boolean;
@@ -108,7 +114,7 @@ export function computeScore(inp: ScoreInput, p: ScoringParams, out: ScoreBreakd
   out.fuel = fuelAllowed ? Math.round((pct * p.fuelMax) / 100) : 0;
   const crewAllowed = p.crewRequiresReturnedAndObjective ? inp.returned && inp.objectiveDone : inp.returned;
   out.crew = crewAllowed && inp.crewTotal > 0 ? Math.round((p.crewMax * Math.max(0, Math.min(inp.crewTotal, inp.crewAlive))) / inp.crewTotal) : 0;
-  out.deliveries = (inp.arrivals ?? 0) * p.convoyArrivalPoints + (inp.landed === true ? p.landingPoints : 0) + Math.max(0, inp.evacBoats ?? 0) * p.evacBoatPoints;
+  out.deliveries = (inp.arrivals ?? 0) * p.convoyArrivalPoints + (inp.landed === true ? p.landingPoints : 0) + Math.max(0, inp.evacBoats ?? 0) * p.evacBoatPoints + Math.max(0, inp.rescued ?? 0) * p.rescuePoints;
   out.total = out.survival + out.objective + out.hits + out.kills + out.evade + out.fuel + out.crew + out.deliveries;
   return out;
 }
@@ -129,6 +135,8 @@ export interface ScoringDataRecord {
   landing?: { points_complete: number };
   /** 空襲下の退避（v0.6.11 S6）。省略可（無ければ 0） */
   evac?: { points_per_survivor: number };
+  /** 生存者の救助（v0.8.5 S1）。省略可（無ければ 0） */
+  rescue?: { points_per_survivor: number };
 }
 
 function isFiniteNum(v: unknown): v is number {
@@ -165,7 +173,10 @@ export function isScoringDataRecord(v: unknown): v is ScoringDataRecord {
   if (!(ld === undefined || (typeof ld === 'object' && ld !== null && isFiniteNum(ld['points_complete']) && ld['points_complete'] >= 0))) return false;
   // 空襲下の退避（v0.6.11 S6）: 鍵があれば points_per_survivor は 0 以上の数
   const ev2 = r['evac'] as Record<string, unknown> | undefined;
-  return ev2 === undefined || (typeof ev2 === 'object' && ev2 !== null && isFiniteNum(ev2['points_per_survivor']) && ev2['points_per_survivor'] >= 0);
+  if (!(ev2 === undefined || (typeof ev2 === 'object' && ev2 !== null && isFiniteNum(ev2['points_per_survivor']) && ev2['points_per_survivor'] >= 0))) return false;
+  // 生存者の救助（v0.8.5 S1）: 鍵があれば points_per_survivor は 0 以上の数
+  const rs = r['rescue'] as Record<string, unknown> | undefined;
+  return rs === undefined || (typeof rs === 'object' && rs !== null && isFiniteNum(rs['points_per_survivor']) && rs['points_per_survivor'] >= 0);
 }
 
 /**
@@ -193,6 +204,7 @@ export function scoringParamsFromData(r: ScoringDataRecord, kpiBands: readonly s
     convoyArrivalPoints: r.convoy ? r.convoy.points_per_arrival : 0,
     landingPoints: r.landing ? r.landing.points_complete : 0,
     evacBoatPoints: r.evac ? r.evac.points_per_survivor : 0,
+    rescuePoints: r.rescue ? r.rescue.points_per_survivor : 0,
     fuelMax: r.fuel.max,
     fuelRequiresReturnedAndObjective: r.fuel.requires_returned_and_objective,
     crewMax: r.crew.max,

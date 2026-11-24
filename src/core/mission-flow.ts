@@ -5,9 +5,10 @@
 
 /**
  * 終了理由。Result の見出しは ui/result-heading の表で付ける。bombed は夜の水上機、air_strike は夜明けの空襲（v0.6.1。dawn「夜明け — 帰投できず」は廃止）。
- * cleared は制空権下で敵艦隊がいなくなった（v0.6.2 実機 1 回目。fleet_gone_clears の任務だけ。輪に入らなくても帰投と同じに数える＝endCountsAsReturn）。pt_fire は米PT の掃射（v0.6.3。その火災で沈んでも）
+ * cleared は制空権下で敵艦隊がいなくなった（v0.6.2 実機 1 回目。fleet_gone_clears の任務だけ。輪に入らなくても帰投と同じに数える＝endCountsAsReturn）。pt_fire は米PT の掃射（v0.6.3。その火災で沈んでも）。
+ * mine は機雷に触れて沈んだ（v0.8.5 S1。us_07 の機雷原＝core/minefield。その火災で沈んでも。見出しは ui/result-heading）
  */
-export type MissionEndReason = 'returned' | 'cleared' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'air_strike' | 'barge_fire' | 'shore_battery' | 'pt_fire';
+export type MissionEndReason = 'returned' | 'cleared' | 'adrift' | 'grounded' | 'rammed' | 'destroyed' | 'friendly_fire' | 'storm' | 'bombed' | 'air_strike' | 'barge_fire' | 'shore_battery' | 'pt_fire' | 'mine';
 
 /** 帰投と同じに数える終わり（Result の returned・得点・キャンペーンの解放）: 帰投と cleared（v0.6.2 実機 1 回目。帰投は不要） */
 export function endCountsAsReturn(reason: MissionEndReason): boolean {
@@ -17,6 +18,11 @@ export function endCountsAsReturn(reason: MissionEndReason): boolean {
 /** 輸送隊の任務（v0.6.4）の達成: 帰投と同じに数える終わりで、上陸がノルマ以上（決着しても沈めば達成でない＝帰投 700 > 沈没） */
 export function convoyObjectiveDone(reason: MissionEndReason, arrived: number, quota: number): boolean {
   return endCountsAsReturn(reason) && arrived >= quota;
+}
+
+/** 救助の任務（v0.8.5 S1。us_07）の達成: 帰投と同じに数える終わりで、フィッチへ渡した生存者（帰投で数えた乗せている分を含む＝core/rescue の finishRescue）が objective_delivered 以上 */
+export function rescueObjectiveDone(reason: MissionEndReason, delivered: number, objective: number): boolean {
+  return endCountsAsReturn(reason) && delivered >= objective;
 }
 
 export interface ReturnPoint {

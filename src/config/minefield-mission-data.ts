@@ -1,11 +1,15 @@
 // 機雷原（v0.8.5。us_07「D-Day・生存者救助」。spec-v0850 §4.2）の任務の読み出し: 任務の v0_1_prototype.minefield（区画 fields・掃海済みの水路 lanes・置かない余白 clear_m）と
 // risk_events.json の mine.params（1 個の被害・見える距離・触れる距離）から世界の値（MinefieldSetup）を組み、data だけで決まる起動時の検査 V-X1・V-X3〜V-X5 をする（例外は鍵を名指す日本語）。
-// V-X2（置ける面積があり、ノーマルの数の 80% 以上が置ける）は置き方の組み立て（v0.8.5 S1 の core/minefield・seed+47）を seed 1〜32 で回す tests が確かめる。
+// V-X2（置ける面積があり、ノーマルの数の 80% 以上が置ける。v0.8.5 S1）は Boot の validateMinefieldMissions が決まった格子で見る（checkMinefieldPlaceable。群は ±ずれを足した円で広めに）。
+// 置き方の組み立て（core/rescue-field・seed+47）を seed 1〜32 で回す tests/minefield も同じ 80% を確かめる。
 // block は生の proto から読む（PrototypeMission に鍵は足さない＝ほかの任務の setup の snapshot が変わらない）。S0 では世界は何も読まない（置き方と触雷は S1・配線は S2）。
 import { getBoatDamageParams, type GameData, type PrototypeMission } from './game-data';
 import { getPrototypeMission, hasHardVariant } from './mission-data';
-import { getRescueParams } from './rescue-mission-data';
+import { getRescueParams, type RescueSetup } from './rescue-mission-data';
 import { segDistM } from '../core/ally-geometry';
+import { minefieldFreeShare } from '../core/minefield';
+import { createRescueState } from '../core/rescue';
+import { mineKeepOut, type RescueFieldSite } from '../core/rescue-field';
 
 /** V-X1: minefield の鍵（ちょうどこれ）・機雷の数の上限（固定長の配列の大きさ）。V-X3: mine.params の鍵。V-X4: 水路がつなぐコリーの周りの円の半径 m。V-X5: 危険の id */
 export const MINEFIELD_KEYS = ['fields', 'lanes', 'clear_m', 'source'] as const;
@@ -13,6 +17,9 @@ export const MINE_PARAM_KEYS = ['damage', 'fire_chance', 'engine_damage_chance',
 export const MINEFIELD_MAX = 48;
 export const MINEFIELD_LANE_CORRY_M = 400;
 export const MINE_EVENT_ID = 'mine';
+/** V-X2: 置ける見込みの下限（ノーマルの数に対する割合）と、置ける面積を数える格子の間隔 m */
+export const MINEFIELD_PLACEABLE_SHARE = 0.8;
+export const MINEFIELD_GRID_STEP_M = 20;
 
 /** 機雷原の世界の値（WorldSetup.minefield。S1 の core/minefield・S2 の systems/world-mines が読む）。count はこの難易度の数、maxCount はハードの数（引く回数＝難易度に依らず固定） */
 export interface MinefieldSetup {
@@ -141,14 +148,39 @@ export function minefieldSetupPart(data: GameData, mission: PrototypeMission): {
   return p ? { minefield: p } : {};
 }
 
-/** Boot の検査: v0_1_prototype を持つ全任務（ハードも）を 1 回組む（壊れていれば Boot で止まる）。最初の機雷原の任務の値（ノーマル）を返す（無ければ null） */
+/** 置かない所を作る材料（core/rescue-field。出発・帰投の輪・フィッチの輪・コリー・浅瀬）。世界の組み立て（S2）と V-X2 と tests が使う */
+export function rescueFieldSite(mission: PrototypeMission, rescue: RescueSetup): RescueFieldSite {
+  return { start: mission.playerStart, returnRing: mission.returnPoint, fitch: rescue.fitch, corry: rescue.corry, shallows: mission.shallows };
+}
+
+/**
+ * V-X2（v0.8.5 S1）: 区画ごとに置ける面積があり（ノーマルかハードの数のある区画）、置ける割合 × ノーマルの数の和がノーマルの数の 80% 以上（決まった格子。乱数なし）。
+ * 群は今夜のずれの最大（±group_jitter_m の対角）を円に足して、どの夜でも置けない所を広めに見る。壊れていれば「<任務>.v0_1_prototype.minefield…（V-X2・spec-v0850 §4.2）」。区画ごとの割合を返す
+ */
+export function checkMinefieldPlaceable(mission: PrototypeMission, field: MinefieldSetup, rescue: RescueSetup): number[] {
+  const rs = createRescueState(rescue, 0);
+  const keep = mineKeepOut(rescueFieldSite(mission, rescue), rs, rescue.groupJitterM * Math.SQRT2);
+  const shares = field.fields.map((_, f) => minefieldFreeShare(field, keep, f, MINEFIELD_GRID_STEP_M));
+  const at = `${mission.id}.v0_1_prototype.minefield`;
+  field.fields.forEach((f, i) => {
+    if (f.normal + f.hardExtra > 0 && !(shares[i]! > 0)) throw new Error(`${at}.fields[${i}] に置ける所が無い（水路・輪・出発・コリー・群・浅瀬の余白 ${field.clearM} m 込み。V-X2・spec-v0850 §4.2）`);
+  });
+  const normal = field.fields.reduce((a, f) => a + f.normal, 0);
+  const expect = field.fields.reduce((a, f, i) => a + f.normal * shares[i]!, 0);
+  if (!(expect >= normal * MINEFIELD_PLACEABLE_SHARE)) throw new Error(`${at} の置ける見込み ${expect.toFixed(1)} 個はノーマルの数 ${normal} の ${MINEFIELD_PLACEABLE_SHARE * 100}% 未満（V-X2・spec-v0850 §4.2）`);
+  return shares;
+}
+
+/** Boot の検査: v0_1_prototype を持つ全任務（ハードも）を 1 回組む（壊れていれば Boot で止まる）。V-X2 も（v0.8.5 S1）。最初の機雷原の任務の値（ノーマル）を返す（無ければ null） */
 export function validateMinefieldMissions(data: GameData): MinefieldSetup | null {
   let first: MinefieldSetup | null = null;
   for (const m of data.missionsSeed.missions as readonly Rec[]) {
     const id = m['id'];
     if (typeof id !== 'string' || !m['v0_1_prototype']) continue;
     for (const hard of hasHardVariant(data, id) ? [false, true] : [false]) {
-      const p = getMinefieldParams(data, getPrototypeMission(data, id, hard));
+      const mission = getPrototypeMission(data, id, hard);
+      const p = getMinefieldParams(data, mission);
+      if (p) checkMinefieldPlaceable(mission, p, getRescueParams(data, mission)!);
       if (p && !first) first = p;
     }
   }
