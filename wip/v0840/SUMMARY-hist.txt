@@ -1,0 +1,31 @@
+- build (SKIP)
+- typecheck (SKIP)
+- lint (SKIP)
+- test (SKIP)
+- g2 (SKIP)
+- ab (SKIP)
+- hud (SKIP)
+- us04 (SKIP)
+- us06 (SKIP)
+- us05 (SKIP)
+✓ ab-hist cases 6 same 6 diff 0
+    hist   us_01 seed 1 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_01 seed 2 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_02 seed 1 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_02 seed 2 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_06 seed 1 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_06 seed 2 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+✓ hud-hist cases 6 same 6 diff 0
+    hud us_01 seed 1 ctrl A 248 B 248 same:true snapshots 62
+    hud us_01 seed 2 ctrl A 248 B 248 same:true snapshots 62
+    hud us_02 seed 1 ctrl A 248 B 248 same:true snapshots 62
+    hud us_02 seed 2 ctrl A 248 B 248 same:true snapshots 62
+    hud us_06 seed 1 ctrl A 248 B 248 same:true snapshots 62
+    hud us_06 seed 2 ctrl A 248 B 248 same:true snapshots 62
+✓ ab-histsmoke (違うはず) cases 2 same 0 diff 2
+    histsm us_02 seed 1 nostrike historical smoke ctrl A 48000 B 48000 same:false frames 12000 最初の違い frame 1691 {"path":".hud.6","a":"敵機 4400 m ・ 航跡なし ・ 静音を保て","b":"煙の中へ乱射されている"}
+    histsm us_02 seed 2 nostrike historical smoke ctrl A 48000 B 48000 same:false frames 12000 最初の違い frame 1577 {"path":".hud.6","a":"敵機 5000 m ・ 航跡なし ・ 静音を保て","b":"煙の中へ乱射されている"}
+- tex-ab (SKIP)
+- art-perf (SKIP)
+- snapshots (SKIP)
+ALL_DONE

@@ -1,0 +1,76 @@
+✓ build
+✓ typecheck
+✓ lint
+✓ npm test  Tests 4295 passed (4295)
+✓ g2 OK 39 DIFF 0
+✓ ab-all cases 58 same 58 diff 0
+✓ ab-all@audio cases 58 same 58 diff 0
+✓ ab-all@noaudio cases 58 same 58 diff 0
+✓ ab-jp04base cases 8 same 8 diff 0
+✓ ab-jp03 cases 4 same 4 diff 0
+✓ hud-base cases 16 same 16 diff 0
+✓ hud-base@audio cases 16 same 16 diff 0
+✓ hud-base@noaudio cases 16 same 16 diff 0
+✓ hud-jp04base cases 8 same 8 diff 0
+✓ hud-jp03 cases 4 same 4 diff 0
+✓ ab-us04 cases 4 same 4 diff 0
+    us04   us_04 seed 1 ctrl A 62400 B 62400 same:true frames 15600
+    us04   us_04 seed 2 ctrl A 62400 B 62400 same:true frames 15600
+    us04   us_04&hard seed 1 ctrl A 62400 B 62400 same:true frames 15600
+    us04   us_04&hard seed 2 ctrl A 62400 B 62400 same:true frames 15600
+✓ hud-us04 cases 4 same 4 diff 0
+    hud us_04 seed 1 ctrl A 1040 B 1040 same:true snapshots 260
+    hud us_04 seed 2 ctrl A 1040 B 1040 same:true snapshots 260
+    hud us_04&hard seed 1 ctrl A 1040 B 1040 same:true snapshots 260
+    hud us_04&hard seed 2 ctrl A 1040 B 1040 same:true snapshots 260
+✓ ab-us04-noradar cases 4 same 4 diff 0
+    us04   us_04 seed 1 B&noradar masked 1208 ctrl A 62400 B 62400 same:true frames 15600
+    us04   us_04 seed 2 B&noradar masked 1692 ctrl A 62400 B 62400 same:true frames 15600
+    us04   us_04&hard seed 1 B&noradar masked 1450 ctrl A 62400 B 62400 same:true frames 15600
+    us04   us_04&hard seed 2 B&noradar masked 1692 ctrl A 62400 B 62400 same:true frames 15600
+✓ hud-us04-noradar cases 4 same 4 diff 0
+    hud us_04 seed 1 B&noradar masked 20 ctrl A 1040 B 1040 same:true snapshots 260
+    hud us_04 seed 2 B&noradar masked 28 ctrl A 1040 B 1040 same:true snapshots 260
+    hud us_04&hard seed 1 B&noradar masked 24 ctrl A 1040 B 1040 same:true snapshots 260
+    hud us_04&hard seed 2 B&noradar masked 28 ctrl A 1040 B 1040 same:true snapshots 260
+✓ ab-us06 cases 4 same 4 diff 0
+    us06   us_06 seed 1 ctrl A 48000 B 48000 same:true frames 12000
+    us06   us_06 seed 2 ctrl A 48000 B 48000 same:true frames 12000
+    us06   us_06&hard seed 1 ctrl A 48000 B 48000 same:true frames 12000
+    us06   us_06&hard seed 2 ctrl A 48000 B 48000 same:true frames 12000
+✓ hud-us06 cases 4 same 4 diff 0
+    hud us_06 seed 1 ctrl A 800 B 800 same:true snapshots 200
+    hud us_06 seed 2 ctrl A 800 B 800 same:true snapshots 200
+    hud us_06&hard seed 1 ctrl A 800 B 800 same:true snapshots 200
+    hud us_06&hard seed 2 ctrl A 800 B 800 same:true snapshots 200
+✓ ab-us05 cases 4 same 4 diff 0
+    us05   us_05 seed 1 RECONUI masked 10495 ctrl A 64800 B 64800 same:true frames 16200
+    us05   us_05 seed 2 RECONUI masked 10761 ctrl A 64800 B 64800 same:true frames 16200
+    us05   us_05&hard seed 1 RECONUI masked 10495 ctrl A 64800 B 64800 same:true frames 16200
+    us05   us_05&hard seed 2 RECONUI masked 10519 ctrl A 64800 B 64800 same:true frames 16200
+✓ hud-us05 cases 4 same 4 diff 0
+    hud us_05 seed 1 RECONUI masked 174 ctrl A 1080 B 1080 same:true snapshots 270
+    hud us_05 seed 2 RECONUI masked 179 ctrl A 1080 B 1080 same:true snapshots 270
+    hud us_05&hard seed 1 RECONUI masked 174 ctrl A 1080 B 1080 same:true snapshots 270
+    hud us_05&hard seed 2 RECONUI masked 175 ctrl A 1080 B 1080 same:true snapshots 270
+✓ ab-hist cases 6 same 6 diff 0
+    hist   us_01 seed 1 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_01 seed 2 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_02 seed 1 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_02 seed 2 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_06 seed 1 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+    hist   us_06 seed 2 nostrike historical ctrl A 48000 B 48000 same:true frames 12000
+✓ hud-hist cases 6 same 6 diff 0
+    hud us_01 seed 1 ctrl A 248 B 248 same:true snapshots 62
+    hud us_01 seed 2 ctrl A 248 B 248 same:true snapshots 62
+    hud us_02 seed 1 ctrl A 248 B 248 same:true snapshots 62
+    hud us_02 seed 2 ctrl A 248 B 248 same:true snapshots 62
+    hud us_06 seed 1 ctrl A 248 B 248 same:true snapshots 62
+    hud us_06 seed 2 ctrl A 248 B 248 same:true snapshots 62
+✗ ab-histsmoke (違うはず) cases 2 same 2 diff 0
+    histsm us_02 seed 1 nostrike historical smoke ctrl A 48000 B 48000 same:true frames 12000
+    histsm us_02 seed 2 nostrike historical smoke ctrl A 48000 B 48000 same:true frames 12000
+✓ tex-ab CHECK=1 0 ✗ lines
+- art-perf (SKIP)
+✓ snapshots untouched
+ALL_DONE

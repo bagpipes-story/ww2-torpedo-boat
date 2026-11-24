@@ -120,6 +120,7 @@ if ! skip hist; then
   abrunh ab-hist ab-replay hist same
   abrunh hud-hist hud-ab hist same
   abrunh ab-histsmoke ab-replay histsmoke diff
+  abrunh ab-smokeoff ab-replay smokeoff same
 fi
 # 既知の揺れ（v0.7.0 から）: nodawn/result の us_02 seed 1 の最後のフレームの .t。ab-all（どの状態でも）が ✗ なら、違った件の組を同じ状態で 1 本ずつ回し直す（v0.8.0 S5 の L62）
 for st in $AUDIO_STATES; do

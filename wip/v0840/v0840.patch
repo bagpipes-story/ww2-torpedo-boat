@@ -1,8 +1,8 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 248208a..708c7e2 100644
+index 248208a..db26d4b 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -3,6 +3,46 @@
+@@ -3,6 +3,47 @@
  書式: `## vX.Y.Z — YYYY-MM-DD` の下に **目的 / 変更点 / 既知の制約 / 実機テスト結果** を書く。
  3か月後の自分が読んで分かる粒度にする。設計値（`data/*.json` の `"source": "design"`）を変えたときは理由も書く。
  
@@ -38,12 +38,13 @@ index 248208a..708c7e2 100644
 +- 変更点（ファイルと行数。新／前 → 後）:
 +  - 新 `src/core/smoke-barrage.ts`（204）・`src/systems/smoke-barrage-fire.ts`（36）・`src/config/smoke-barrage-data.ts`（10）・`src/config/barrage-hud-config.ts`（6。何も import しない）・`src/ui/barrage-lines.ts`（50）・`scripts/smoke-barrage-sim.ts`（92）。
 +  - `src/systems/enemy-fire.ts`（236 → 256。`setBarrage`・`barrageOf`・step と stepPair の `if (br)` の 4 行）・`src/systems/world-enemies.ts`（97 → 112。data の引数・付ける所）・`src/systems/mission-world.ts`（300 → 300。buildEnemies の行に data）・`src/systems/destroyer-group.ts`（268 → 275。`barrageNear`）・`src/core/boat-telemetry.ts`（277 → 279）・`src/systems/telemetry-create.ts`（144 → 145）・`src/systems/mission-telemetry.ts`（221 → 222）・`src/ui/mission-mode.ts`（251 → 253）・`src/ui/strait-line-clock.ts`（135 → 138）・`src/ui/special-line.ts`（24 → 26）・`src/ui/mission-line-keys.ts`（67 → 67）・`src/core/night.ts`（系列の一覧の注に +46）・`data/hit_rate_model.json`（`smoke_barrage` の block）。
-+  - ヘッドレス: `scripts/headless/ab-replay.mjs`（246 → 252。`SET=hist`＝史実モードの us_01・us_02・us_06 × seed 1・2 を 200 秒〔煙幕を張らない台本〕・`SET=histsmoke`＝us_02 seed 1・2 で最寄りの艦から 450 m の内で止まって煙幕を張り続ける台本＝違いが出るはずの組。`historical` は両方の側に `&historical`）。
++  - ヘッドレス: `scripts/headless/ab-replay.mjs`（246 → 255。`SET=hist`＝史実モードの us_01・us_02・us_06 × seed 1・2 を 200 秒〔煙幕を張らない台本〕＝同じはず・`SET=histsmoke`＝史実モードの us_02 seed 1・2 で魚雷を撃たずに最寄りの艦へ寄り、700 m の内で止まって煙幕を張り続ける台本〔寄ってくる艦が 500 m の内に入る〕＝違うはず・`SET=smokeoff`＝同じ台本を史実モードのオフで＝同じはず。`historical` は両方の側に `&historical`）。
 +  - 版 0.8.4（package.json・package-lock.json）。docs/02 §6.3 の史実モードの行に煙幕への乱射。docs/03 の v0.8.4 の行（中身・Done・実機 3 項目）。CLAUDE.md §2 に「史実モード（煙幕への乱射）」、§4 に新しいファイル、変更履歴。
-+- tests（＋2 ファイル・＋16 件）: 新 `tests/smoke-barrage`（12 件: data の値と検査・散布の単調と端・狙う点は 100 m の内の生きている煙から一様〔乱数 1 回〕・無ければ最後に見た点〔乱数なし〕・最後に見た点の書き方・引き金の表〔1 つでも偽なら撃たず引かない〕・間隔は普段の半分で負の残りを溜めない・決定的と当たりの数え・源の規則〔Phaser・config・Math.random・確保なし・seed+46〕・世界の配線〔us_02・us_05・us_06 の史実モードだけ全艦に付く・オフ・T-38・data なしは付かない・setup に鍵なし・seed の系列は 1 か所・enemy-fire の順〕）・`tests/smoke-barrage-hud`（4 件: 文と色と幅・時計〔数え直し・キー〕・隠れている間は待つ・レーダーの出来事より上・配線と音の層）。
++- tests（＋2 ファイル・＋16 件＝npm test 4,295 通過）: 新 `tests/smoke-barrage`（12 件: data の値と検査・散布の単調と端・狙う点は 100 m の内の生きている煙から一様〔乱数 1 回〕・無ければ最後に見た点〔乱数なし〕・最後に見た点の書き方・引き金の表〔1 つでも偽なら撃たず引かない〕・間隔は普段の半分で負の残りを溜めない・決定的と当たりの数え・源の規則〔Phaser・config・Math.random・確保なし・seed+46〕・世界の配線〔us_02・us_05・us_06 の史実モードだけ全艦に付く・オフ・T-38・data なしは付かない・setup に鍵なし・seed の系列は 1 か所・enemy-fire の順〕）・`tests/smoke-barrage-hud`（4 件: 文と色と幅・時計〔数え直し・キー〕・隠れている間は待つ・レーダーの出来事より上・配線と音の層）。
 +- 確かめ（実装者）: 画面写し（W 1280・dpr 2。`scratchpad/v0840/shots/`）: 史実モードの us_02 seed 1 で駆逐艦の真横 400 m・150 m に艇を置いて止め、見つかってから煙幕＝煙の周りに水柱・2 行目「煙の中へ乱射されている」（400 m: 3 秒で 15 発・当たり 0。150 m: 4 秒で 19 発・当たり 1〔HP 96〕。艦は動いて 150 → 304 m）。史実モードのオフの同じ置き方は撃たれず、2 行目は「敵影あり ・ 未発見 ・ 煙幕に隠れている」のまま。
++    - 実装者の門（`run-gates v0840-impl`。基準 main e769c26・今の木も main@e769c26 のビルド番号・JOBS 2）: build・typecheck・lint ✓・npm test 4,295 通過・g2 OK 39 DIFF 0・ab-all（既定・@audio・@noaudio）58/58・ab-jp04base 8/8・ab-jp03 4/4・hud-base（3 つの音の状態）16/16・hud-jp04base 8/8・hud-jp03 4/4・us04（ab・hud・noradar の 2 組）・us06・us05（RECONUI）の組 みな same・ab-hist 6/6・hud-hist 6/6 same・tex-ab ✗ 0・snapshots 触らず。histsmoke は台本を直して回し直し（`v0840-impl-hist`）: 2/2 違う（最初の違いは seed 1 の frame 1,691・seed 2 の 1,577 の 2 行目「煙の中へ乱射されている」＝水上機の接近の行の代わり）・smokeoff 2/2 same。
 +    - 門: （lead が別に回した run-gates の結果をここに足す）
-+- 既知の制約: 線が遮られているかは今までどおり最寄りの艦との 1 本の線（`hiddenBySmoke`）で、隊のほかの艦もそれを使う（遠い艦も 500 m の内なら同じ判定で乱射する）。最後に見た点は艦ごと。模擬（`core/intercept-sim`・`landing-sim`・`hit-rate-sim`）と味方の卯月（`core/ally-destroyer`）は乱射しない（そのまま）。乱射の弾は普段の弾のプール（48）を分け合う。凍結の `core/pt-state.ts` の注の「+21 は大発の 13mm に予約」はそのまま（+21 は使っていない）。
++- 既知の制約: 線が遮られているかは今までどおり最寄りの艦との 1 本の線（`hiddenBySmoke`）で、隊のほかの艦もそれを使う（遠い艦も 500 m の内なら同じ判定で乱射する）。最後に見た点は艦ごと。模擬（`core/intercept-sim`・`landing-sim`・`hit-rate-sim`）と味方の卯月（`core/ally-destroyer`）は乱射しない（そのまま）。乱射の弾は普段の弾のプール（48）を分け合う。2 行目の「煙の中へ乱射されている」は水上機の接近の行（「静音を保て」）より上（us_06 だけは水上機の未確定の接近の下＝v0.8.1 IP2 の順）。凍結の `core/pt-state.ts` の注の「+21 は大発の 13mm に予約」はそのまま（+21 は使っていない）。
 +- 実機テスト結果: （未）
 +
  ## v0.8.3 — 2026-11-23（操作の改修：静音ボタン・倍速）
@@ -173,7 +174,7 @@ index 1acb35a..48653ce 100644
    "description": "WWII魚雷艇ゲーム（仮称: Night Hunters）— Phaser 3 + TypeScript + Vite",
    "type": "module",
 diff --git a/scripts/headless/ab-replay.mjs b/scripts/headless/ab-replay.mjs
-index 2dc23ff..cac3479 100644
+index 2dc23ff..e7d0e1a 100644
 --- a/scripts/headless/ab-replay.mjs
 +++ b/scripts/headless/ab-replay.mjs
 @@ -27,7 +27,9 @@
@@ -182,30 +183,33 @@ index 2dc23ff..cac3479 100644
  //   結果の行に両方の側で除いた数（ctrl A n B m。A＝基準 b7e9f44 は 0、B＝今の木は写すたびに 4）。CTRLUI=0 で除かない（違いが出るはず）。
 -// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 +// v0.8.4（煙幕への乱射。史実モードだけ）: SET=hist で史実モード（両方の側に &historical）の us_01・us_02・us_06 × seed 1・2 を 200 秒（&nostrike。台本は煙幕を張らない）＝乱射の系列を作っても
-+//   煙を使わない夜は基準と 1 ビットも同じ証。SET=histsmoke は同じ us_02 seed 1・2 で、最寄りの艦から 450 m の内に入ったら止まって煙幕を張り続ける台本（o.smoke）＝違いが出るはずの組（最初の違いを出す）。
-+// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|hist|histsmoke] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
++//   煙を使わない夜は基準と 1 ビットも同じ証。SET=histsmoke は同じ us_02 seed 1・2 で、最寄りの艦へ背を向けずに寄り、700 m の内に入ったら止まって煙幕を張り続ける台本（寄ってくる艦が 500 m の内に入る）（o.smoke）＝違いが出るはずの組（最初の違いを出す）。SET=smokeoff は同じ煙幕の台本を史実モードのオフで＝同じはずの組。
++// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|hist|histsmoke|smokeoff] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
  import { fileURLToPath } from 'node:url';
  import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
  import { anchorPair } from './anchor-filter.mjs';
-@@ -105,6 +107,7 @@ export function abRun(o) {
+@@ -105,6 +107,8 @@ export function abRun(o) {
      const f = w.enemy.focus(b.x, b.y);
      const dist = f ? Math.sqrt(d2(f, b)) : Infinity;
      if (t < 2) hl.steer(NaN, 0);
-+    else if (o.smoke && f && dist < 450) { hl.steer(NaN, 0); w.input.smokeTap = true; } // v0.8.4 の histsmoke: 止まって煙幕を張り続ける（張れる時だけ張れる）
++    else if (o.smoke && f && (dist < 700 || w.smoke.puffs.some((p) => p.active))) { hl.steer(NaN, 0); w.input.smokeTap = true; } // v0.8.4 の histsmoke: 700 m の内（か煙が残る間）は止まって煙幕を張り続ける（張れる時だけ張れる。寄ってくる艦が 500 m の内に入る）
++    else if (o.smoke && f) hl.steer(hl.bearing(b.x, b.y, f.x, f.y), 0.6); // それまでは背を向けずに寄る
      else if (f && dist < 600) hl.steer(hl.bearing(f.x, f.y, b.x, b.y), o.ptrun ? 1 : 0.8);
      else if (f) hl.steer(hl.bearing(b.x, b.y, f.x, f.y), o.ptrun ? 1 : dist > 1800 ? 0.6 : 0.4);
      else hl.steer((90 + t * 2) % 360, 0.5);
-@@ -169,6 +172,9 @@ export function abCases(set, input) {
+@@ -169,6 +173,11 @@ export function abCases(set, input) {
      us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
      // us_05 のスリガオ海峡・最初の接触（v0.8.2 S2。片道の列・見張り・報告・弾薬庫）: 夜明けの 270 秒まで。S2 は A＝B＝今の木（決定性）・S2b から A は S2 の commit のビルド
      us05: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_05', hard, seed, secs: envNum('SECS', 270), set: 'us05' }))),
 +    // 史実モード（v0.8.4）: 煙を使わない夜は基準と同じ（hist）・止まって煙幕を張る夜は違う（histsmoke）
 +    hist: () => ['us_01', 'us_02', 'us_06'].flatMap((mission) => [1, 2].map((seed) => ({ ...base, mission, hard: false, seed, nodawn: true, historical: true, secs: envNum('SECS', 200), set: 'hist' }))),
-+    histsmoke: () => [1, 2].map((seed) => ({ ...base, mission: 'us_02', hard: false, seed, nodawn: true, historical: true, smoke: true, secs: envNum('SECS', 200), set: 'histsm' })),
++    histsmoke: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, historical: true, smoke: true, secs: envNum('SECS', 200), set: 'histsm' })),
++    // 同じ煙幕の台本を史実モードのオフで（v0.8.4）: 乱射は作らない＝基準と同じはず
++    smokeoff: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, smoke: true, secs: envNum('SECS', 200), set: 'smkoff' })),
    };
    if (process.env.MISSION) {
      return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
-@@ -177,7 +183,7 @@ export function abCases(set, input) {
+@@ -177,7 +186,7 @@ export function abCases(set, input) {
  }
  
  export function query(c, side) {
@@ -214,7 +218,7 @@ index 2dc23ff..cac3479 100644
  }
  
  /** S4 の濾しの設定（RADARUI は B・NORADAR は A が出し側。どちらでもなければ null＝今のまま） */
-@@ -235,7 +241,7 @@ async function main() {
+@@ -235,7 +244,7 @@ async function main() {
    await sb.close();
    let bad = 0;
    for (const r of res) {
