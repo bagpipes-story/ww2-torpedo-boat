@@ -1,8 +1,8 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 647e323..686358c 100644
+index 647e323..ff6ce38 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
-@@ -51,6 +51,47 @@
+@@ -51,6 +51,49 @@
    - 実装者の確かめ（ヘッドレス。scratchpad `v0850/impl/v0850-s2/`・道具 `v0850/tools/us07-probe.mjs`）: ノーマル・ハード × seed 1・2 で水路を通って拾い・フィッチで移し 40 名で帰投（`&fuel=400`）＝ページの error 0・「任務終了 — 帰投した」・達成 300・救助 320。砲台の砲撃・被弾・群が砲弾で減る・S ボートの航過と撃退・フィッチの砲火で 2 隻が退く（mines 台本）・触雷 2 個で沈む（minehit 台本。沈む演出の終わりはヘッドレスの tween の時計で来ない＝jp_05 も同じ）。画面写し（W 1560・1280）は `v0850/impl/v0850-s2/shots/`。
    - 実装者の門（`JOBS=2 run-gates v0850-s2`。基準 main 38acd73・今の木も main@38acd73 のビルド番号）: build・typecheck・lint ✓・npm test 4,402 件 ✓（380 ファイル）・g2 OK 39 DIFF 0・ab-all（既定）57/58・@audio 56/58（どちらも既知の揺れ＝nodawn・result の us_02 seed 1 の最後のフレームの `.t`。JOBS=1 の回し直しで 16/16・8/8）・@noaudio 58/58・ab-jp04base 8/8・ab-jp03 4/4・hud-base（3 つの音の状態）16/16・hud-jp04base 8/8・hud-jp03 4/4・us04（ab・hud・noradar の 2 組）・us06・us05 の組 4/4・ab-us07・hud-us07 4/4（A＝B＝今の木。決定性・page errors 0）・hist 6/6・hud-hist 6/6・histsmoke 2/2・smokeoff 2/2・tex-ab CHECK=1 の ✗ 0（新しい鍵 tex-sboat・tex-destroyer-ally-us・tex-survivors・tex-mine・tex-buoy と S0 の tex-boat-us_higgins78＝密度 2 の Higgins の形。今の鍵は同じ画素）・snapshots untouched。門の後に変えたのは CHANGELOG だけ。
  - 既知の制約（S2）: 燃料（S3 で決める）: `&fuel` の上書きなしでは、水路を通って拾う丁寧な台本が 256 秒で燃料切れ（20 名を渡しただけ）、全速で真っ直ぐは 67 秒で燃料切れ。2 行目の時計は「空襲 残り」・S ボートの文は米PT の任務の文の名だけ差した形（「静音で抜けて帰投」など）・Result の本文の救助の行・端の印は S4。
@@ -47,6 +47,8 @@ index 647e323..686358c 100644
 +  - S2 の開いた問題（フィッチの砲火）: S ボートに追われてフィッチへ逃げる台本（flee・fleec、128 夜）では、S ボートがフィッチの 1,200 m の内に入ってから退くまで 3.9〜6.8 秒（中央 4.0。航過の終わりを待つ夜が 6.8 秒）で、どの夜も来た S ボートはみな退いた（ノーマル 2.0／2、ハード 2.97／3）。S ボートから受けた HP は丁寧な台本の 31〜43 に対し 1〜4。cover_m（1,200 m・4 秒）は効くので data は変えていない。ただし逃げると水路を余計に往復するので燃料が持たない（上の表の fleec・flee）。
 +  - setup の snapshot: `tests/__snapshots__/setup-us07.test.ts.snap` の 8 本が変わる（`-u` は使っていない＝lead がユーザーの許可で更新）。変わる所: 出発・帰投の輪・フィッチの位置、S ボートの線と今夜の出発点・針路、水路 3 本・区画 2 つ、ハードの沿岸砲の 2 門目（x 1,300）、pt_boats の source の文。乱数の回数は同じ。ほかの 8 本の setup の snapshot は変わらない。
 +  - 直した tests（data に合わせただけ・確かめる事は同じ）: `rescue-data`（フィッチの位置・V-Q2 の文・V-Q4 は新しい帰投の輪の縁ちょうど・V-Q5 の揺らぎの注・V-D2 の距離 1,247 m）・`minefield-data`（水路 3 本と区画の値・ハードの 2 つ目の砲台・V-X4 は 3 本目を外すとコリーへ、2 本目を外すとフィッチへつながらない・出発の水路は道の検査に要らない）・`minefield`（水路の上の区画の例を新しい水路の上へ）・`sboat-cover`（フィッチの位置）。
++  - 実装者の門（`JOBS=2 run-gates v0850-s3`。基準 main 38acd73・今の木も main@38acd73 のビルド番号）: build・typecheck・lint ✓・npm test ✗（4,394 件通過・8 件 ✗＝`tests/setup-us07` の 8 本の snapshot だけ。上の「setup の snapshot」。ほかの 379 ファイルは通る）・g2 OK 39 DIFF 0・ab-all（既定・@audio・@noaudio）58/58（揺れも出なかった）・ab-jp04base 8/8・ab-jp03 4/4・hud-base（3 つの音の状態）16/16・hud-jp04base 8/8・hud-jp03 4/4・us04（ab・hud・noradar の 2 組）・us06・us05 の組 4/4・ab-us07・hud-us07 4/4（A＝B＝今の木。決定性・page errors 0。ただし下の既知の制約で 1,430 フレームで終わる）・hist 6/6・hud-hist 6/6・histsmoke 2/2・smokeoff 2/2・tex-ab CHECK=1 の ✗ 0・snapshots untouched（`-u` は使っていない＝写しのファイルは S2 のまま）。門の後に変えたのは CHANGELOG だけ。
++- 既知の制約（S3）: ① 帰投の輪 (3650, 1300) は出発の真西 1,500 m なので、出発から西へ走ると救助の前でも輪に入って任務が終わる（今の mission-flow＝輪に入れば帰投）。ヘッドレスの SET=us07（ab-replay・hud-ab の「最寄りの敵へ寄る」台本）は 24 秒で輪に入って終わる＝その組の決定性の確かめが短くなった（S2 は 160〜320 秒）。丁寧な台本の道（出発 → フィッチ）からは 664 m 離れている。② 燃料は丁寧な道だけを見た決め: S ボートから逃げて水路を余計に往復すると残りが数 %（巡航で逃げる台本 ノーマル平均 5%・ハード 32 夜で漂流 12、全速で逃げるとノーマル 32 夜で漂流 28）。HUD の「フィッチの方へ引き込め」（S4 の文）と燃料が食い違うおそれ。③ ノーマルの沈没 25%（spec の ≤ 15% より多い。失敗はみな沈没で多くは砲台）。④ 全速で真っ直ぐの触雷 0%（spec の ≥ 50% に届かない。水路がほぼ真っ直ぐの道になった）。⑤ 煙幕を張る台本はノーマル 97%・ハード 78%（煙幕で砲台と S ボートの両方の目を切れる＝今の規則）。⑥ Result の見出しは S ボートに沈められても「PTの掃射で沈没」、見つからない夜の行は「Sボート に一度も見つからなかった」「PT の最接近」（S4 の文）。
  
  ## v0.8.4 — 2026-11-23（史実モード：至近の煙幕へ乱射）
  
