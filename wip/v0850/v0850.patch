@@ -1,0 +1,898 @@
+diff --git a/data/boats.json b/data/boats.json
+index 9177fcb..c86525b 100644
+--- a/data/boats.json
++++ b/data/boats.json
+@@ -221,6 +221,8 @@
+       "turn_rate_deg_s": 28,
+       "fuel_hours_cruise": 15,
+       "fuel_hours_full": 6,
++      "fuel_capacity_gal": 3000,
++      "fuel_idle_ratio": 0.1,
+       "fuel_type": "gasoline",
+       "fire_risk": "high",
+       "crew": 14,
+@@ -243,6 +245,19 @@
+         "type": "SO",
+         "source": "historical (v0.8.0 S0・spec-v0800 §3.1。SO 型は 1943 年半ばから一部の艇（分隊の先頭）に載り、1943-08 のブラケット海峡では 3〜4 隻だけ。1944 年後半のレイテの作戦では各分隊がレーダーで接触を報じた。艦船への探知は約 16〜20 nm（出典で食い違う。range_m 31,000 m＝約 17 nm はその間）。available_from は 1943-01 → 1943-07（半ば）に直した。WebSearch の抜粋のみ・本文未読。ゲームの射程は hit_rate_model.json の radar.models（海域の縮尺）)"
+       },
++      "gun_battery": {
++        "label_ja": "40mm・20mm・12.7mm",
++        "range_m": 600,
++        "effective_m": 300,
++        "dead_cone_deg": 30,
++        "muzzle_flash_reveal_m": 1200,
++        "spread_factor": { "stop": 1.0, "silent": 1.0, "cruise": 1.6, "full": 2.5 },
++        "groups": [
++          { "id": "40mm_37mm", "rounds_per_min": 150, "damage": 8, "shell_speed_mps": 400, "dispersion_m": 30, "splash_radius_m": 2.5 },
++          { "id": "20mm_12.7mm", "rounds_per_min": 480, "damage": 2, "shell_speed_mps": 500, "dispersion_m": 36, "splash_radius_m": 1.0 }
++        ],
++        "magazine": { "rounds": 120, "reload_s": 3.2 }
++      },
+       "smoke_generator": true,
+       "smoke": {
+         "duration_s": 5,
+@@ -252,11 +267,28 @@
+         "puff_lifetime_s": 25
+       },
+       "hull_hp": 100,
++      "damage": {
++        "engine_damage_speed_factor": 0.7,
++        "fire_dps": 2,
++        "fire_duration_s": 20,
++        "extinguish_hold_s": 1.0,
++        "casualties_per_hp": 0.1,
++        "crew_effects": {
++          "extinguish_exponent": 1,
++          "turn_rate_per_loss": 0.04,
++          "accel_per_loss": 0.04,
++          "min_factor": 0.5
++        }
++      },
+       "hull_circles": 3,
+       "sea_state_limit": 5,
+       "source": {
+         "turn_rate_deg_s": "design (Elcoより旋回性良との記述を反映)",
+-        "others": "design/historical as elco80"
++        "others": "design/historical as elco80",
++        "fuel_capacity_gal": "design (v0.8.5 S0・spec-v0850 §2.2。us_07 の自艇になるので Elco 80 と同じ値を足した。Higgins の燃料の容量は未確認（同じ 100 オクタンのガソリン・同じ速力段＝fuel_hours_* も Elco 80 と同じ）)",
++        "fuel_idle_ratio": "design (v0.8.5 S0。Elco 80 と同じ 0.1（停止中は巡航の 1 割）。Higgins の値は未確認)",
++        "gun_battery": "design (v0.8.5 S0・spec-v0850 §2.2。us_07 の S ボート（PT の隊）を撃つ艇の砲＝弾倉つき（config/pt-mission-data の検査）。数は Elco 80 の gun_battery と同じ値（Higgins の値は未確認）。label_ja だけ Higgins の guns の並び（37mm なし）に合わせた。組の id は Elco 80 と同じ（core/gun-battery が読むのは数）)",
++        "damage.*": "design (v0.8.5 S0。Elco 80 の damage と同じ値（機関損傷 0.7 倍・火災 20 秒で 40 HP・消火 1.0 秒・HP 10 で 1 名・乗員の減りの効き）。Higgins の値は未確認)"
+       },
+       "notes": "Elcoより旋回性が良いが波に突っ込んで乗員が濡れる。"
+     },
+@@ -438,12 +470,19 @@
+         "puff_lifetime_s": 25
+       },
+       "hull_hp": 150,
++      "damage": {
++        "engine_damage_speed_factor": 0.7,
++        "fire_dps": 2,
++        "fire_duration_s": 20,
++        "extinguish_hold_s": 1.0
++      },
+       "hull_circles": 5,
+       "sea_state_limit": 6,
+       "source": {
+         "speed_max_kt": "historical (39〜42kt)",
+         "fuel_hours_cruise": "historical (700〜750nm@30kt)",
+         "reload_time_s": "design",
++        "damage": "design (v0.8.5 S0・spec-v0850 §4.4。us_07 の敵の S ボート（enemies.json の de_sboat_enemy の boat_ref）の HP を config/pt-mission-data が getBoatDamageParams で読むので、その 4 鍵を Elco 80 と同じ値で足した。PT の隊は hull_hp（150）と under_fire だけを使い、この 4 つは読まない（自艇として遊ぶ時の値は未確認）)",
+         "others": "design"
+       },
+       "notes": "レーダー無し。ディーゼルで火災リスクが低い。艇尾波が小さく夜間に見つかりにくい（リュールセン効果）。"
+diff --git a/data/enemies.json b/data/enemies.json
+index bc45185..32ab83c 100644
+--- a/data/enemies.json
++++ b/data/enemies.json
+@@ -1085,21 +1085,110 @@
+     {
+       "id": "de_sboat_enemy",
+       "faction": "KM",
+-      "name_ja": "独Sボート（英MTB視点の敵、将来）",
++      "name_ja": "独Sボート（S-100級）",
++      "name_short_ja": "Sボート",
+       "boat_ref": "de_s100",
+-      "ai": {
+-        "patrol_speed_kt": 12,
+-        "attack_speed_kt": 38,
+-        "detect_m": 2200,
+-        "radar_m": 0,
+-        "torpedo_launch_range_m": 1200,
+-        "gun_range_m": 1500,
+-        "retreat_after_salvo": true
++      "torpedo_immune": true,
++      "detection": {
++        "base_detect_m": 2000,
++        "reaction_delay_s": 1.5,
++        "detect_from_s": 60
+       },
+-      "source": {
+-        "all": "design"
++      "patrol": {
++        "speed_kt": 12,
++        "arrive_m": 100
+       },
+-      "notes": "v0.6以降。"
++      "attack": {
++        "run_in_speed_kt": 40,
++        "pass_speed_kt": 25,
++        "overtake_kt": 6,
++        "commit_max_m": 1050,
++        "commit_tcpa_s": 5.0,
++        "commit_heading_tol_deg": 30,
++        "pass_offset_m": 150,
++        "open_fire_s": 2.5,
++        "pass_max_s": 8,
++        "rounds_per_pass": 10,
++        "dead_cone_deg": 30,
++        "min_range_m": 60,
++        "spread_min_m": 8,
++        "break_off_m": 800,
++        "break_max_s": 5,
++        "run_in_max_s": 25,
++        "pass_gap_s": 3.0,
++        "wingman_delay_s": 3,
++        "hold_off_m": 700,
++        "max_passes": 4,
++        "edge_margin_m": 200,
++        "leave_speed_kt": 30
++      },
++      "guns": [
++        {
++          "id": "sboat_20mm",
++          "count": 1,
++          "range_m": 2000,
++          "effective_night_m": 600,
++          "rof_per_min": 240,
++          "damage": 4,
++          "shell_speed_mps": 500,
++          "dispersion_m": 42,
++          "splash_radius_m": 1.5,
++          "fire_chance": 0.03,
++          "engine_damage_chance": 0.15
++        }
++      ],
++      "tactics": {
++        "station_m": 750,
++        "station_rel_deg": [
++          90,
++          45,
++          135
++        ],
++        "station_tol_deg": 30,
++        "station_close_m": 150,
++        "station_lead_s": 1
++      },
++      "under_fire": {
++        "retreat_hp": 90,
++        "casualty_chance": 0.03,
++        "fire_chance": 0.001
++      },
++      "chase": {
++        "speed_kt": 40,
++        "min_target_kt": 10,
++        "start_aft_deg": 75,
++        "station_m": 170,
++        "station_rel_deg": 135,
++        "held_station_m": 350,
++        "held_rel_deg": 150,
++        "held_guard_m": 150,
++        "commit_m": 350,
++        "burst_rounds": 6,
++        "burst_max_s": 3,
++        "max_bursts": 6,
++        "gap_s": 2,
++        "self_gap_s": 3,
++        "exit_fwd_deg": 45,
++        "slow_exit_s": 2,
++        "bow_rof_factor": 0.4,
++        "cone_quit_s": 2.0,
++        "suppress_hits": 3
++      },
++      "source": {
++        "boat_ref": "historical (寸法 34.9×5.3 m・最大 41 kt は boats.json の de_s100（S-100 級。39〜42 kt）。旋回 16°/秒・加速 0.9 はその design 値)",
++        "name_short_ja": "design (v0.8.5 S0・spec-v0850 §4.4。HUD の文の名（米PT の記録には無い＝無ければ「米PT」。文に名を渡すのは v0.8.5 S2）)",
++        "torpedo_immune": "historical / design (S-100 級の吃水 約 1.5〜1.7 m は Mk 13 の最小の深さより浅い＝米PT の記録と同じ理由。us_07 には狙う深い船体が無いので魚雷は発射の時に決着＝us_03 と同じ)",
++        "detection": "design (v0.8.5 S0・spec-v0850 §4.4・§4.5。base_detect_m 2000 は us_pt_enemy と同じ。昼は rescue.daylight.moon_factor 1.8 を月の係数の代わりに掛ける（us_07 だけ）＝停止 1,440・静音 1,800・巡航 3,600・全速 5,760 m。detect_from_s 60: 出撃から 60 秒は見つけない（西の縁の哨戒の線から寄って来るまでの間。史実に無い想定の襲撃なので、救助を始める前に襲わない）。reaction_delay_s 1.5 は us_pt_enemy と同じ)",
++        "patrol": "design (v0.8.5 S0・spec-v0850 §4.4。12 kt で西の縁の線を往復（旧 ai.patrol_speed_kt 12 のまま）。arrive_m は us_pt_enemy と同じ)",
++        "attack": "design (v0.8.5 S0・spec-v0850 §4.4。us_pt_enemy の attack の写しで、変えたのは 5 つ: run_in_speed_kt 35 → 40（Higgins の 39 kt より速い＝振り切れない。S-100 の最大 41 kt の内）・有効射程 600 m（20 mm の昼）に合わせて hold_off_m 550 → 700・commit_max_m 900 → 1,050・break_off_m 650 → 800（effective_night_m < hold_off_m < commit_max_m・< break_off_m）・pass_offset_m 120 → 150。ほかは us_pt_enemy と同じ（航過 25 kt・1 回 10 発・1 隻 4 回・予告から 2.5 秒）。S3 の測りで直す)",
++        "guns": "historical (S-100 級は艇首の 20 mm・中央の 20 mm 連装・艇尾の 37 mm／40 mm（boats.json の de_s100.guns）) / design (v0.8.5 S0。1 門にまとめた値。effective_night_m 600: 鍵の名は夜のままで、昼の 20 mm の有効射程（昼の視程 2,700 m の内＝見えない S ボートから撃たない）。damage 4 × rounds_per_pass 10 ＝ 40・burst 6 × 4 ＝ 24 は Higgins の HP 100 未満（1 回の航過・連射では砲だけで沈まない）。dispersion_m 42 は有効射程での半径（us_pt_enemy の 32 m／450 m と同じ角）。range_m 2,000・rof 240・shell_speed 500・fire 0.03・engine 0.15 は us_pt_enemy と同じ)",
++        "tactics": "design (v0.8.5 S0。us_pt_enemy と同じ形で、station_m だけ 600 → 750（hold_off_m 700 < 750 < 2 × 700 − 600 ＝ 800）)",
++        "under_fire": "design (v0.8.5 S0・spec-v0850 §9 の 7。retreat_hp 90（HP 150 の 6 割＝us_pt_enemy の 60/100 と同じ割合）・casualty_chance 0.03 は us_pt_enemy と同じ。fire_chance 0.003 → 0.001: ディーゼルなので燃えにくい（boats.json の de_s100.fire_risk low）)",
++        "chase": "design (v0.8.5 S0。us_pt_enemy の chase の写しで speed_kt 39 → 40 だけ（Higgins の 39 kt より速い＝振り切れない。S-100 の最大 41 kt の内）)",
++        "torpedo_attack": "design (v0.8.5 S0・spec-v0850 §4.4。置かない: 米PT の斉射（core/pt-torpedo）は揚陸する輸送船に結びつく。フィッチへの雷撃は候補（spec §9）。旧 ai.torpedo_launch_range_m 1200・retreat_after_salvo は捨てた)",
++        "history": "historical (S ボート（第5・第9戦隊）は 1944-06-06 の 05:00〜05:15 にシェルブールを出て最大射程で船団へ雷撃し、06:00 ごろには戻っていた。セーヌ湾への襲撃は 6 月 7〜9 日（medium。WebSearch の抜粋のみ・本文未読）。コリーの救助（06:33 以降の昼）の間にユタ沖へ来た記録は無い＝us_07 の襲撃はユーザーの決め（2026-11-24「両方で出す」）による史実に無い想定)"
++      },
++      "notes": "v0.8.5 S0。米PT の記録（core/pt-data の PtDataRecord）の形に書き直した（前は v0.6 の ai の形で、どこからも読まれていなかった）。us_07 の敵（ノーマル 2 隻・ハード 3 隻）。動き（長さ・幅・旋回・加速・最大速力）は boats.json の de_s100。今の米PT の AI（航過と追撃）で自艇を襲う。斉射は付けない"
+     }
+   ]
+ }
+diff --git a/data/missions_seed.json b/data/missions_seed.json
+index f2911a4..9dada35 100644
+--- a/data/missions_seed.json
++++ b/data/missions_seed.json
+@@ -720,7 +720,7 @@
+     {
+       "id": "us_05",
+       "campaign": "us_pt",
+-      "order": 5,
++      "order": 6,
+       "playable_from": "v0.8.2",
+       "title_ja": "スリガオ海峡・最初の接触",
+       "date": "1944-10-24",
+@@ -966,7 +966,7 @@
+     {
+       "id": "us_06",
+       "campaign": "us_pt",
+-      "order": 6,
++      "order": 7,
+       "playable_from": "v0.8.1",
+       "title_ja": "オルモック湾の決着",
+       "date": "1944-12-11",
+@@ -1139,26 +1139,35 @@
+     {
+       "id": "us_07",
+       "campaign": "us_pt",
+-      "order": 7,
++      "order": 5,
++      "order_source": "design (v0.8.5 S0・spec-v0850 §2.3・§9 の 1。Title の並びを年代順に: us_07（1944-06-06）5・us_05（1944-10-24）6・us_06（1944-12-11）7。order を読むのは Title の並びだけ（解放は id の一覧）。遊べる任務の並びの前後は変わらない。ユーザー未確認の設計の既定)",
+       "title_ja": "D-Day・生存者救助",
+       "date": "1944-06-06",
+       "place": "ノルマンディー沖（ユタ・ビーチ）",
+       "type": "rescue",
+-      "player_boat": "us_elco80",
++      "player_boat": "us_higgins78",
++      "player_boat_source": "historical (コリーの生存者を救った PT は初期の Higgins の艇（第2戦隊。medium。WebSearch の抜粋のみ・本文未読）) / design (v0.8.5 S0。前の種は us_elco80)",
+       "torpedo_type": "us_mk13",
+-      "objective": "触雷した駆逐艦の生存者を制限時間内に収容し、Sボートの襲撃を避ける",
++      "objective": "6時33分、ユタ沖で駆逐艦コリーが沈んでいく。砲台の210\u00a0mm弾の下、海に浮かぶ生存者を拾い、沖の駆逐艦フィッチへ渡せ。掃海された水路の外には機雷。西からSボートが来る（ゲームの想定）。",
+       "enemies": [
++        "de_sboat_enemy",
+         "de_sboat_enemy"
+       ],
+       "hazards": [
++        "shore_battery",
+         "mine",
++        "enemy_ship_gunfire_or_ram",
++        "grounding",
+         "friendly_fire"
+       ],
+-      "moon": "dark",
++      "moon": "day",
++      "moon_label_ja": "昼（日の出の後）",
++      "moon_source": "historical (日の出 06:00（UTC+2。v0.8.0 の astronomy-engine の計算）、コリーの被害は 06:33＝昼) / design (v0.8.5 S0。前の種は dark。視程の昼の倍率は v0_1_prototype.rescue.daylight)",
+       "duration_min": 5,
+-      "success": "生存者40名以上収容して帰投",
+-      "historical_note": "PT-199が駆逐艦Corryの生存者61名を救助。",
+-      "source_url": "https://www.ibiblio.org/hyperwar/USN/CloseQuarters/PT-7.html",
++      "success": "生存者40名以上をフィッチへ渡して帰投",
++      "historical_note": "1944年6月6日6時33分、駆逐艦 Corry（DD-463）がユタ・ビーチ沖で被害を受けて沈んだ。公式の喪失報告は機関区の下の触雷、NavSource はサン＝マルクフ（クリスベック）砲台の 21 cm 弾とする（死因が食い違う。medium）。日の出は 6 時ごろ（UTC+2。v0.8.0 の astronomy-engine の計算は満月 99%・月没 06:04）で、生存者は約 2 時間、砲撃の下で海にいた（medium）。救ったのは駆逐艦 Fitch・Hobson・Butler と初期の Higgins の PT-199（第2戦隊）で、PT の乗員の回想は約 60 名を Fitch へ移したとする（v0.8.4 までの種の「61 名」と少し違う。medium）。S ボート（第5・第9戦隊）は 6 月 6 日 05:00〜05:15 にシェルブールを出て最大射程で船団へ雷撃し、06:00 ごろには戻っていた。セーヌ湾への襲撃は 6 月 7〜9 日（medium）。この任務の S ボートの襲撃はユーザーの決め（2026-11-24「両方で出す」＝ノーマル・ハードとも）による史実に無い想定。すべて lead の 2026-11-24 の WebSearch の抜粋のみ・本文未読。出典: https://en.wikipedia.org/wiki/USS_Corry_(DD-463) ／ https://www.navsource.org/archives/05/463.htm ／ https://ibiblio.org/hyperwar/USN/ships/dafs/DD/dd463.html ／ https://uss-corry-dd463.com/d-day_u-boat_photos/d-day_pt-199.htm ／ https://bletchleypark.org.uk/our-story/d-day-decrypts-transcripts/ ／ https://www.usni.org/magazines/naval-history-magazine/2009/june/d-days-wake ／ https://en.wikipedia.org/wiki/E-boat。確かめていない事: Higgins の乗せられる数・初期の Higgins の魚雷の発射の形（管／架台）・PT が何回に分けて移したか・砲台と機雷原の正確な位置・掃海水路の幅（どれも design）",
++      "source_url": "https://en.wikipedia.org/wiki/USS_Corry_(DD-463)",
++      "briefing_note_ja": "1944年6月6日6時33分、ユタ・ビーチ沖で駆逐艦コリーが触雷して沈んだ（岸の砲台の210\u00a0mm弾も受けており、どちらが沈めたかは記録で食い違う）。乗員は約2時間、砲撃の下で海にいた。駆逐艦フィッチ・ホブソン・バトラーと初期のHiggins型のPT\u00a01隻が救い、PTは約60名をフィッチへ移した。この朝、Sボートはユタ沖に来ていない。このゲームの襲撃は想定。",
+       "optional": true,
+       "dawn_air": {
+         "control": "own",
+@@ -1177,6 +1186,272 @@
+           }
+         ],
+         "source": "historical (control・enemy_ships_at_dawn。refs は 2026-10-18 の WebSearch の抜粋のみ・本文未読) / design (v0.6.1。play_as・label_ja。遊べる世界はまだ無い)"
++      },
++      "v0_1_prototype": {
++        "enemies": [
++          "de_sboat_enemy",
++          "de_sboat_enemy"
++        ],
++        "enemy_behavior": "ai (v0.8.5 S0・spec-v0850 §4.4。S ボート 2 隻（ハード 3 隻）の隊は今の米PT の AI（core/pt-boats・pt-chase。凍結のまま）: 西の縁の線を 12 kt で往復し、出撃から 60 秒は見つけない。見つけたら突撃 → 予告（赤い線）→ 20 mm の航過 → 逃げる艇には追撃。フィッチの砲火で退く規則（core/sboat-cover）は v0.8.5 S1・世界の配線は S2。斉射は付けない。救助の時間の終わり（duration_s）に西へ去る（leave_heading_deg 270・dawn_air.enemy_ships_at_dawn none）)",
++        "main_weapon": "guns",
++        "main_weapon_source": "design (v0.8.5 S0。S ボートは魚雷が下を抜ける（torpedo_immune）ので main_weapon は guns か none（config/mission-data の検査）。CLAUDE.md §2「兵装」: 魚雷と機銃はどの任務でも両方表示・両方使える（右下の角が魚雷・その左が機銃）。狙う艦が無いので魚雷は発射の時に決着（us_03 と同じ）。Higgins の機銃（boats.json の gun_battery・弾倉つき）が S ボートを撃つ（今の systems/pt-squadron の自艇の砲の道）)",
++        "duration_s": 300,
++        "duration_s_source": "design (v0.8.5 S0・spec-v0850 §4.5。救助の時間（世界の夜明けの時計をそのまま使い、言葉だけ「救助」に替える＝v0.8.5 S4）。300 秒で残りの生存者は他艦の内火艇が拾い、S ボートは西へ去る。昼から始まる（海の色は最初から昼＝setup の dayStart。rescue のある任務）)",
++        "fuel_allotment_gal": 41,
++        "fuel_allotment_gal_source": "design (v0.8.5 S0。戦闘に使える割当（us_02 と同じ考え）の初めの値。上限は tests/dawn-air の「止まって待つと 1,500 秒未満で漂流」で Higgins（燃料は Elco 80 と同じ値）は 41.6 gal まで。core/fuel の 1 km あたり（静音 4.0・巡航 4.7 gal）で、出発 → コリー 3.3 km → フィッチ 2.1 km → コリー 2.1 km → 帰投の輪 3.6 km ≈ 11 km は静音でも約 44 gal＝足りない見込み（既知の制約）。S3 の測りで、輪・フィッチの位置を寄せるか、救助の時間は燃料を数えない（jp_03 の fuel_free_until_s の形）かを lead が決める)",
++        "shallows": [
++          {
++            "x_m": 0,
++            "y_m": 3750,
++            "width_m": 6000,
++            "height_m": 250,
++            "label_ja": "浅瀬（干潟）"
++          }
++        ],
++        "bounds_m": {
++          "width": 6000,
++          "height": 4000
++        },
++        "player_start": {
++          "x_m": 5300,
++          "y_m": 800,
++          "heading_deg": 225
++        },
++        "return_point": {
++          "x_m": 5400,
++          "y_m": 500,
++          "radius_m": 250,
++          "call_margin": 1.5,
++          "torpedo_settle_max_s": 10,
++          "torpedo_end_settle_s": 5
++        },
++        "map_source": "design (v0.8.5 S0・spec-v0850 §3 の地図。向きは作り: 海域の南の縁＝コタンタン半島の東岸（北＝沖＝実の東、西＝実の北＝シェルブールの方、東＝実の南＝ユタ・ビーチの南）。今の岸は side: south だけなのでこの回し方で今の岸・浅瀬・沿岸砲をそのまま使う。帰投の輪＝沖の集合点 (5400, 500)・半径 250（フィッチの輪と別）、出発 (5300, 800)・225°。浅瀬は y 3,750〜4,000 の帯（干潟。座礁は今の規則）)",
++        "coast": {
++          "side": "south",
++          "land_m": 600,
++          "label_ja": "コタンタン半島（サン＝マルクフ〜ユタ・ビーチ）"
++        },
++        "shore_battery": {
++          "x_m": 1600,
++          "params": {
++            "gun": {
++              "id": "skoda_21cm",
++              "count": 3,
++              "range_m": 30000,
++              "effective_night_m": 2600,
++              "rof_per_min": 2,
++              "damage": 34,
++              "shell_speed_mps": 600,
++              "dispersion_m": 80,
++              "splash_radius_m": 10,
++              "fire_chance": 0.2,
++              "engine_damage_chance": 0.15
++            },
++            "base_detect_m": 6000,
++            "inland_m": 600,
++            "source": "historical (サン＝マルクフ（クリスベック）の砲台は 21 cm 砲で、NavSource はコリーを沈めたのはこの砲台の弾とする（公式の喪失報告は触雷＝食い違い。medium。WebSearch の抜粋のみ・本文未読）。砲の門数・射程の range_m 30,000 は抜粋の要約で未確認) / design (v0.8.5 S0・spec-v0850 §4.3。形は risk_events の shore_battery.params と同じ（今の規則＝core/shore-battery をそのまま使う。us_03 には無い＝75 mm のまま）。21 cm 3 門・1 門 rof_per_min 2＝隊で 10 秒に 1 発。effective_night_m 2,600: 鍵の名は夜のままで昼の有効射程（射界の半円がコリーと生存者を覆い、フィッチの輪は外＝約 4,100 m）。damage 34（Higgins の HP 100 は 3 発で沈む）・dispersion_m 80（有効射程での散り）・splash_radius_m 10・shell_speed_mps 600。base_detect_m 6,000: 昼なので射界の内なら速力に依らず見えている（世界が速力・月の係数を掛けないで使うのは v0.8.5 S2）。inland_m 600: 岸の線から陸へ 600 m（実の位置関係＝コリーの北西の陸）。fire 0.2・engine 0.15 は 75 mm と同じ。S3 の測りで直す)"
++          }
++        },
++        "hazards": [
++          "shore_battery",
++          "mine",
++          "enemy_ship_gunfire_or_ram",
++          "grounding"
++        ],
++        "hazards_source": "design (v0.8.5 S0・spec-v0850 §2.2。遊べる世界で起きる危険を出会う順に: 砲台（コリーの周り）・機雷（水路の外）・S ボートの 20 mm・浅瀬。種の hazards の friendly_fire は v0_1_prototype に置かない（味方機の block＝friendly_aircraft を置かない＝昼の味方の誤射は起きない）。dawn_air_strike なし（昼の空は味方）)",
++        "night": {
++          "hazard_scale": 1,
++          "optional_hazards": [],
++          "enemy_jitter": {
++            "x_m": 200,
++            "y_m": 100,
++            "heading_deg": 0
++          },
++          "shore_battery_jitter_m": 0,
++          "mirror_chance": 0
++        },
++        "night_source": "design (v0.8.5 S0・spec-v0850 §4.0。今夜の揺らぎ（seed+16）は S ボートの隊の出発点のずれ（線に沿って ±200 m・南北 ±100 m）だけ。砲台は動かさない（shore_battery_jitter_m 0）・東西の反転なし（mirror_chance 0＝岸・コリー・フィッチ・水路は動かない）。生存者の群と機雷の置き方は新しい系列 seed+47（v0.8.5 S1）)",
++        "pt_boats": {
++          "legs_m": [
++            [
++              200,
++              1200,
++              2400,
++              2000
++            ],
++            [
++              200,
++              1800,
++              2300,
++              2500
++            ]
++          ],
++          "start_along_m": 0,
++          "leave_heading_deg": 270,
++          "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。フィッチの輪から最寄りの線まで 1,785 m ＞ cover_m 1,200（V-D2＝出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
++        },
++        "rescue": {
++          "groups": [
++            [
++              2700,
++              2600,
++              7
++            ],
++            [
++              2780,
++              2540,
++              6
++            ],
++            [
++              2850,
++              2650,
++              5
++            ],
++            [
++              2650,
++              2480,
++              5
++            ],
++            [
++              2840,
++              2560,
++              4
++            ],
++            [
++              2550,
++              2580,
++              6
++            ],
++            [
++              2750,
++              2720,
++              5
++            ],
++            [
++              2760,
++              2460,
++              4
++            ],
++            [
++              2480,
++              2660,
++              3
++            ],
++            [
++              2620,
++              2820,
++              4
++            ],
++            [
++              2880,
++              2760,
++              5
++            ],
++            [
++              2600,
++              2420,
++              6
++            ]
++          ],
++          "group_jitter_m": 40,
++          "capacity": 20,
++          "pickup_m": 40,
++          "pickup_max_kt": 5,
++          "per_person_s": 0.8,
++          "transfer_per_person_s": 0.25,
++          "shell_kill_m": 20,
++          "objective_delivered": 40,
++          "ships": {
++            "fitch": {
++              "x_m": 4300,
++              "y_m": 1500,
++              "ring_m": 180,
++              "heading_deg": 45,
++              "cover_m": 1200,
++              "cover_s": 4,
++              "label_ja": "フィッチ"
++            },
++            "corry": {
++              "x_m": 2600,
++              "y_m": 2700,
++              "heading_deg": 30,
++              "label_ja": "コリー"
++            }
++          },
++          "daylight": {
++            "moon_factor": 1.8,
++            "source": "design (v0.8.5 S0・spec-v0850 §4.5 V-U1。昼の倍率: hit_rate_model.json の visibility.moon_factor.day 1.0 は jp_03 も読むので変えず、us_07 だけ月の係数の代わりに 1.8 を使う（config/game-data の getVisibilityParams の任意の 4 つ目の引数）。自艇の視程 1,500 × 1.8 ＝ 2,700 m・S ボートが巡航の艇を見つける 2,000 × 1.8 ＝ 3,600 m（史実モード 4,680 m）。1〜3 の内で、S ボートの「出発で見つからない」を満たす（config/pt-mission-data の今の検査がこの値で回る）)"
++          },
++          "source": "historical (生存者は約 2 時間、砲撃の下で海にいて、駆逐艦フィッチ・ホブソン・バトラーと初期の Higgins の PT 1 隻が救った。PT の乗員の回想は約 60 名をフィッチへ移した（medium。WebSearch の抜粋のみ・本文未読）) / design (v0.8.5 S0・spec-v0850 §3・§4.1・§9 の 2。生存者はコリー (2600, 2700)・艇首 30°（沈座＝動かない・当たりなし）の 300 m の内に 12 群・計 60 名（[x, y, 人数]・1 群 3〜7 名。主に北東＝流れの下）、群の位置のずれ ±group_jitter_m 40 m（seed+47。v0.8.5 S1）。拾うには群の pickup_m 40 m（＋艇の半長）の内で pickup_max_kt 5 kt 以下（静音のボタンが効く）・1 名 per_person_s 0.8 秒（体感）・乗せられるのは capacity 20 名まで（< objective_delivered 40＝1 往復では達成しない）。フィッチ (4300, 1500)・輪 ring_m 180 m の内で 5 kt 以下なら 1 名 transfer_per_person_s 0.25 秒で移す。砲台の着弾が群の shell_kill_m 20 m の内なら 1 名を失う。S ボートがフィッチから cover_m 1,200 m の内に cover_s 4 秒続けて居れば退く（フィッチの砲火。v0.8.5 S1 の core/sboat-cover）。帰投で終われば乗せている分も渡したに数える。達成は帰投 ＋ 渡した 40 名以上。世界の配線は v0.8.5 S2・数は S3 の測りで直す)"
++        },
++        "minefield": {
++          "fields": [
++            [
++              1200,
++              1600,
++              1200,
++              900,
++              6,
++              2
++            ],
++            [
++              3100,
++              2400,
++              1300,
++              900,
++              6,
++              2
++            ],
++            [
++              2600,
++              600,
++              1400,
++              700,
++              6,
++              2
++            ],
++            [
++              4700,
++              1700,
++              1100,
++              1200,
++              6,
++              2
++            ]
++          ],
++          "lanes": [
++            [
++              5400,
++              500,
++              4300,
++              1500,
++              300
++            ],
++            [
++              4300,
++              1500,
++              2600,
++              2300,
++              300
++            ]
++          ],
++          "clear_m": 80,
++          "source": "historical (上陸の前に掃海された水路があり、コリーが被害を受けた場も火力支援区域だった（medium。WebSearch の抜粋のみ・本文未読）。機雷原と水路の正確な位置・幅は未確認) / design (v0.8.5 S0・spec-v0850 §3・§4.2・§9 の 6。fields は区画の矩形 [x, y, 幅, 高さ, ノーマルの数, ハードで足す数]＝4 区画に 24 個（ハード 32）。lanes は掃海済みの水路の帯 [x0, y0, x1, y1, 幅]＝帰投の輪 (5400, 500) → フィッチ (4300, 1500) → コリーの北 400 m (2600, 2300) の幅 300 m の 2 本（ブイの列）。置かない円: 水路の幅の内・帰投の輪・出発・コリー・群・フィッチの輪から clear_m 80 m（引き当てた点が入れば捨てる＝引く回数は変えない。置き方は v0.8.5 S1 の core/minefield・seed+47）。1 個の値（被害・見える距離・触れる距離）は risk_events の mine.params)"
++        },
++        "hard": {
++          "extra_pt_legs_m": [
++            [
++              200,
++              2400,
++              2100,
++              3000
++            ]
++          ],
++          "objective_ja": "6時33分、ユタ沖で駆逐艦コリーが沈んでいく。砲台の210\u00a0mm弾の下、海に浮かぶ生存者を拾い、沖の駆逐艦フィッチへ渡せ。掃海された水路の外には機雷が多い。西からSボート3隻が来る（ゲームの想定）。",
++          "success_ja": "生存者40名以上をフィッチへ渡して帰投",
++          "note_ja": "1944年6月6日6時33分、ユタ・ビーチ沖で駆逐艦コリーが触雷して沈んだ（岸の砲台の210\u00a0mm弾も受けており、どちらが沈めたかは記録で食い違う）。乗員は約2時間、砲撃の下で海にいた。駆逐艦フィッチ・ホブソン・バトラーと初期のHiggins型のPT\u00a01隻が救い、PTは約60名をフィッチへ移した。この朝、Sボートはユタ沖に来ていない。このゲームの襲撃は想定。3隻目のSボートと多い機雷も想定。",
++          "source": "design (v0.8.5 S0・spec-v0850 §2.2・§8.1。難易度ハード: S ボート 3 隻（3 本目の線は西の縁から岸寄りにコリーの方へ。フィッチの輪から 2,662 m ＞ cover_m）。機雷はハードで 1 区画 2 個ずつ足して 32 個（minefield.fields の 6 番目）。ユーザーの決め（2026-11-24「両方で出す」）でノーマル・ハードとも S ボートが襲う＝3 隻目も史実に無い想定)"
++        }
+       }
+     },
+     {
+diff --git a/data/risk_events.json b/data/risk_events.json
+index 6cc49f1..13f2033 100644
+--- a/data/risk_events.json
++++ b/data/risk_events.json
+@@ -130,7 +130,15 @@
+       "trigger": "機雷原帯に進入",
+       "counterplay": "航路選択",
+       "penalty": "大ダメージ",
+-      "version": "v0.4"
++      "version": "v0.4",
++      "params": {
++        "damage": 60,
++        "fire_chance": 0.5,
++        "engine_damage_chance": 0.5,
++        "sight_m": 150,
++        "contact_m": 6,
++        "source": "design (v0.8.5 S0・spec-v0850 §4.2。us_07 の機雷原（missions_seed の v0_1_prototype.minefield）の 1 個の値。触れれば必ず爆発する（確率なし）: 浮いている自艇の船体（core/shells の pointNearBoat。半幅 + contact_m 6 m）の内。被害は今の被弾の作法（HitSpec）で damage 60・火災 0.5・機関損傷 0.5＝Higgins の HP 100 は 1 個では沈まず 2 個で沈む。昼なので艇から sight_m 150 m の内に入った機雷は見えて、以後見えたまま（全速 39 kt＝約 20 m/秒では 150 m は game の 7.5 秒＝体感 1.5 秒＝全速では避けきれない）。S ボート・砲弾・魚雷は触れない。史実: コリーの喪失の公式報告は機関区の下の触雷（NavSource は砲台の 21 cm 弾とする＝食い違い。medium。WebSearch の抜粋のみ・本文未読）。数は S3 の測りで直す)"
++      }
+     },
+     {
+       "id": "collision_accident",
+diff --git a/data/scoring.json b/data/scoring.json
+index e692a02..72be25e 100644
+--- a/data/scoring.json
++++ b/data/scoring.json
+@@ -12,12 +12,13 @@
+     "intercept_destroyer": 300,
+     "barge_hunt": 300,
+     "escort_vip": 300,
+-    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない。patrol_and_evade（v0.6.3。jp_05）は帰投（輪に入って終わる）で 300＝達成。撃つ相手のいない任務なので『沈めて死ぬ』は無く、帰投 700 ＞ 沈没 0 は崩れない。escort_convoy（v0.6.4。jp_01）は帰投地点の輪で任務が終わった時点で上陸した大発が convoy.arrive_quota（2）隻以上（帰投が要る。escort_vip と同じ）。evacuate_under_air_raid（v0.6.11。jp_03）は帰投（空襲が去る 240 秒に操作中の隊が隠れているか、その後に隠れ場所で止まる）と同じに数える終わりで、残存（座席の艇を含む 18 隻中）が evac_raid.survivor_quota（6）隻以上。帰投の 700 ＞ 残して沈む（残った艇の点 最大 510）は崩れない。recon_and_attack（v0.8.2。us_05 スリガオ海峡・最初の接触）は報告が届いて（戦艦を目で確かめ、レーダーで追って送るか、無線が壊れて隣の分隊の輪で中継して）帰投と同じに数える終わりで 300（帰投が要る。沈めば報告が届いていても 0）。回避の点（evade）は付けない（史実は見つかった夜で、見つからないことは報告の手柄でない）。報告して帰投 ≥ 700 ＋ 300 ＝ 1,000 は、戦艦を弾薬庫の誘爆で沈めて沈む（命中 4 本 × 最大 200（1,200〜2,000 yd）＋ 轟沈 200 ＝ 1,000 以下）・重巡を沈めて沈む（3 × 200 ＋ 200 ＝ 800）を下回らない（≥ 2,000 yd の 4 本だけ崩れうる＝扇 1 回 0.2% 未満。spec-v0820 §4.8 D-P3。tests/scoring-recon で固定))",
++    "source": "design (任務達成＝大。帰投の有無に関係なく付く。intercept_destroyer は駆逐艦の撃沈、barge_hunt（v0.4.2）は大発を missions_seed の kill_quota（3）隻以上撃破。escort_vip（v0.4.4）は帰投地点に僚艇（要人）が生きて着く（帰投が要る。帰投せずに達成は無い）。v0.4 で任務の type を増やすときはここに足す。attack_and_survive（v0.6.0。jp_06 慶良間の夜）は敵艦（米駆逐艦）の撃沈＝intercept_destroyer と同じ 300。生還 700 が沈めて死ぬ最大 600 を上回る関係は変わらない。patrol_and_evade（v0.6.3。jp_05）は帰投（輪に入って終わる）で 300＝達成。撃つ相手のいない任務なので『沈めて死ぬ』は無く、帰投 700 ＞ 沈没 0 は崩れない。escort_convoy（v0.6.4。jp_01）は帰投地点の輪で任務が終わった時点で上陸した大発が convoy.arrive_quota（2）隻以上（帰投が要る。escort_vip と同じ）。evacuate_under_air_raid（v0.6.11。jp_03）は帰投（空襲が去る 240 秒に操作中の隊が隠れているか、その後に隠れ場所で止まる）と同じに数える終わりで、残存（座席の艇を含む 18 隻中）が evac_raid.survivor_quota（6）隻以上。帰投の 700 ＞ 残して沈む（残った艇の点 最大 510）は崩れない。recon_and_attack（v0.8.2。us_05 スリガオ海峡・最初の接触）は報告が届いて（戦艦を目で確かめ、レーダーで追って送るか、無線が壊れて隣の分隊の輪で中継して）帰投と同じに数える終わりで 300（帰投が要る。沈めば報告が届いていても 0）。回避の点（evade）は付けない（史実は見つかった夜で、見つからないことは報告の手柄でない）。報告して帰投 ≥ 700 ＋ 300 ＝ 1,000 は、戦艦を弾薬庫の誘爆で沈めて沈む（命中 4 本 × 最大 200（1,200〜2,000 yd）＋ 轟沈 200 ＝ 1,000 以下）・重巡を沈めて沈む（3 × 200 ＋ 200 ＝ 800）を下回らない（≥ 2,000 yd の 4 本だけ崩れうる＝扇 1 回 0.2% 未満。spec-v0820 §4.8 D-P3。tests/scoring-recon で固定)) rescue（v0.8.5 S0・spec-v0850 §4.6。us_07 の D-Day・生存者救助）は帰投（輪に入って終わる）で、生存者を rescue.objective_delivered（40）名以上フィッチへ渡していれば 300（帰投が要る＝escort_convoy と同じ）。",
+     "attack_and_survive": 300,
+     "patrol_and_evade": 300,
+     "escort_convoy": 300,
+     "evacuate_under_air_raid": 300,
+-    "recon_and_attack": 300
++    "recon_and_attack": 300,
++    "rescue": 300
+   },
+   "hit": {
+     "base": 100,
+@@ -46,9 +47,10 @@
+       "ijn_transport": 400,
+       "us_pt_enemy": 140,
+       "ijn_battleship_fuso": 200,
+-      "ijn_cruiser_mogami": 200
++      "ijn_cruiser_mogami": 200,
++      "de_sboat_enemy": 70
+     },
+-    "source": "design (v0.4.2。砲で撃破した敵 1 隻ごとの点（魚雷の命中点の代わり。距離の倍率は無い）。75: 4 隻撃破して沈んでも 300 + 4 × 75 = 600 で、撃たずに帰投 700 を下回る（100 だと 700 で並ぶ）。3 隻で帰投 700 + 300 + 225 + 燃料 + 乗員 ≈ 1,340、2 隻で帰投 850（ノルマ未達で達成点・燃料点・乗員点なし）、撃たずに帰投 700）。ijn_transport 400（v0.4.7。魚雷で沈めた輸送船。命中点（帯の倍率 100〜300）とは別に付く。駆逐艦の撃沈（達成 300）より少し上＝「輸送船を先に狙う」が割に合い、両方沈めれば 700 + 300 + 400 + 命中 2 本）。us_pt_enemy 140（v0.6.3 実機 1 回目。jp_05 で T-14 の 13mm が沈めた米PT 1 隻（炎上。ごくまれ）: 2 隻沈めて沈んでも 2 × 140 = 280 < 帰投 700（生還が先）、隊の 2 隻 × 140 = 280 < 回避 300（見つからずに帰るのがいちばん上。撃てば閃光で見つかる。初めの 200 は 1 隻だけを回避と比べていて、2 隻で 400 > 300 となり、模擬の 2 隻撃沈の帰投 1,528〜1,566 点が見つからずに帰投の最高 1,471 点を超えた。レビュー F1）。撃退（死傷・損傷で去る）は点なし＝ご褒美は航過が減って HP・乗員・燃料が残ること。模擬の中央値で 見つからずに帰投 約 1,460 > 見つかって転舵と撃ち返しで 1 隻沈めて帰投 約 1,270 > 見つかって転舵で帰投 約 1,130 > 2 隻沈めて沈没 280）。ijn_battleship_fuso 200・ijn_cruiser_mogami 200（v0.8.2。us_05）: 魚雷で沈めた戦艦（艇の 4 本では弾薬庫の誘爆の時だけ）・重巡（3 本）1 隻ごと。命中点とは別に付く（輸送船の 400 と同じ扱い）。轟沈の点 200 × 扇 1 回 約 5% ＝ 10 点は同じ扇の命中点（約 3.2 本 × 150）の 2% で、戦艦を沈めるのが「いつもの目標」にならない（spec-v0820 §4.4 D-G3・§4.8 D-P2）。駆逐艦の撃沈は今のとおり点なし（ijn_destroyer を足すと us_01・us_02・us_04 の点が変わる）。読むのは v0.8.2 S1 の core/scoring の shipKills（無い任務は 0＝今の式）)"
++    "source": "design (v0.4.2。砲で撃破した敵 1 隻ごとの点（魚雷の命中点の代わり。距離の倍率は無い）。75: 4 隻撃破して沈んでも 300 + 4 × 75 = 600 で、撃たずに帰投 700 を下回る（100 だと 700 で並ぶ）。3 隻で帰投 700 + 300 + 225 + 燃料 + 乗員 ≈ 1,340、2 隻で帰投 850（ノルマ未達で達成点・燃料点・乗員点なし）、撃たずに帰投 700）。ijn_transport 400（v0.4.7。魚雷で沈めた輸送船。命中点（帯の倍率 100〜300）とは別に付く。駆逐艦の撃沈（達成 300）より少し上＝「輸送船を先に狙う」が割に合い、両方沈めれば 700 + 300 + 400 + 命中 2 本）。us_pt_enemy 140（v0.6.3 実機 1 回目。jp_05 で T-14 の 13mm が沈めた米PT 1 隻（炎上。ごくまれ）: 2 隻沈めて沈んでも 2 × 140 = 280 < 帰投 700（生還が先）、隊の 2 隻 × 140 = 280 < 回避 300（見つからずに帰るのがいちばん上。撃てば閃光で見つかる。初めの 200 は 1 隻だけを回避と比べていて、2 隻で 400 > 300 となり、模擬の 2 隻撃沈の帰投 1,528〜1,566 点が見つからずに帰投の最高 1,471 点を超えた。レビュー F1）。撃退（死傷・損傷で去る）は点なし＝ご褒美は航過が減って HP・乗員・燃料が残ること。模擬の中央値で 見つからずに帰投 約 1,460 > 見つかって転舵と撃ち返しで 1 隻沈めて帰投 約 1,270 > 見つかって転舵で帰投 約 1,130 > 2 隻沈めて沈没 280）。ijn_battleship_fuso 200・ijn_cruiser_mogami 200（v0.8.2。us_05）: 魚雷で沈めた戦艦（艇の 4 本では弾薬庫の誘爆の時だけ）・重巡（3 本）1 隻ごと。命中点とは別に付く（輸送船の 400 と同じ扱い）。轟沈の点 200 × 扇 1 回 約 5% ＝ 10 点は同じ扇の命中点（約 3.2 本 × 150）の 2% で、戦艦を沈めるのが「いつもの目標」にならない（spec-v0820 §4.4 D-G3・§4.8 D-P2）。駆逐艦の撃沈は今のとおり点なし（ijn_destroyer を足すと us_01・us_02・us_04 の点が変わる）。読むのは v0.8.2 S1 の core/scoring の shipKills（無い任務は 0＝今の式）) de_sboat_enemy 70（v0.8.5 S0・spec-v0850 §4.6。us_07 で Higgins の機銃が沈めた S ボート 1 隻（炎上。ディーゼルなのでごくまれ）: ハードの 3 隻 × 70 ＝ 210 と生存者 60 名 × 8 ＝ 480 で 690 ＜ 帰投 700＝沈んで死ぬより帰る方が上。米PT の 140 の半分＝救助の任務なので撃沈は主でない）。"
+   },
+   "evade": {
+     "points_by_type": {
+@@ -68,5 +70,9 @@
+   "evac": {
+     "points_per_survivor": 30,
+     "source": "design (v0.6.11。jp_03「運天港・空襲下の退避」。残った艇（決着の 240 秒で浮いている艇。座席＝操作中の隊長艇は帰投の 700 で数えるので除く）1 隻ごとに 30 点（帰投の有無に関わらず＝大発の上陸 convoy.points_per_arrival の作法）。最大 17 × 30 ＝ 510 < 帰投 700＝『残して死ぬより隠れて帰る方が上』（S6 の tests で固定）。見失わせた編隊・撃墜に点は付けない（文だけ）。燃料・乗員の点は今までどおり)"
++  },
++  "rescue": {
++    "points_per_survivor": 8,
++    "source": "design (v0.8.5 S0・spec-v0850 §4.6。us_07「D-Day・生存者救助」。フィッチへ渡した生存者 1 名ごとに 8 点（帰投の有無に関わらず＝大発の上陸 convoy.points_per_arrival・evac の作法。core/scoring の deliveries に足すのは v0.8.5 S1）。帰投で終われば乗せている分も渡したに数える（設計の既定）。60 名 × 8 ＝ 480 ＋ S ボート 3 隻 × 70 ＝ 210 → 690 ＜ 帰投 700＝『沈んで死ぬより帰る方が上』（S1 の tests/scoring-rescue で固定）。回避の点は付けない（昼で隠れられない）)"
+   }
+ }
+diff --git a/src/config/game-data.ts b/src/config/game-data.ts
+index d2ac5d2..01e3084 100644
+--- a/src/config/game-data.ts
++++ b/src/config/game-data.ts
+@@ -28,6 +28,7 @@ import { isTorpedoDataRecord, type TorpedoDataRecord, type TorpedoReliability }
+ import { type MoonPhase, type VisibilityParams } from '../core/visibility';
+ import { ktToMps } from '../core/units';
+ import { isNum, type PrototypeMission } from './mission-data';
++import { missionShoreBatteryRecord } from './shore-guns-mission-data';
+ 
+ export const gameData = {
+   boats,
+@@ -178,7 +179,7 @@ export function getShoreBatteryParams(data: GameData, mission: PrototypeMission)
+ export function getShoreBatteryParamsList(data: GameData, mission: PrototypeMission): ShoreBatteryParams[] {
+   if (!mission.shoreBattery) return [];
+   const rec = data.riskEvents.events.find((e) => e.id === 'shore_battery') as Record<string, unknown> | undefined;
+-  const p = rec?.['params'];
++  const p = missionShoreBatteryRecord(data, mission) ?? rec?.['params']; // 任務の shore_battery.params（v0.8.5 S0。us_07 の 210 mm。無い任務＝us_03 は risk_events の 75 mm のまま）
+   if (!isShoreBatteryDataRecord(p)) throw new Error('risk_events.json の shore_battery に params（gun / base_detect_m / inland_m）が無い（docs/02 §6.8）');
+   return mission.shoreBatteryXs.map((x) => shoreBatteryParamsFromData(p, x, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s));
+ }
+@@ -257,14 +258,14 @@ export function getBoatDamageParams(data: GameData, boatId: string): DamageParam
+ 
+ /**
+  * 視界パラメータ（docs/02 §6.5）: hit_rate_model.visibility に月齢を当て、史実モード（v0.5.2 で Title の切り替え。省けば data の enabled_default）なら発見距離の倍率を掛ける。
+- * 起動時に 1 回作り、以後は数値だけ読む（§7）。
++ * 起動時に 1 回作り、以後は数値だけ読む（§7）。moonFactor（v0.8.5 S0・spec-v0850 §4.5）は月の係数の代わり（us_07 の昼の倍率＝config/rescue-mission-data の rescueMoonFactor。省けば今のまま）
+  */
+-export function getVisibilityParams(data: GameData, moon: MoonPhase, historical: boolean = data.hitRateModel.historical_mode.enabled_default): VisibilityParams {
++export function getVisibilityParams(data: GameData, moon: MoonPhase, historical: boolean = data.hitRateModel.historical_mode.enabled_default, moonFactor?: number): VisibilityParams {
+   const v = data.hitRateModel.visibility;
+   const hm = data.hitRateModel.historical_mode;
+   return {
+     visPlayerBaseM: v.vis_player_base_m,
+-    moonFactor: v.moon_factor[moon],
++    moonFactor: moonFactor ?? v.moon_factor[moon],
+     speedFactor: v.speed_factor,
+     smokeFactor: v.smoke_factor,
+     detectHoldS: v.detect_hold_s,
+diff --git a/src/config/pt-config.ts b/src/config/pt-config.ts
+index 5bd68ef..8b1c4c3 100644
+--- a/src/config/pt-config.ts
++++ b/src/config/pt-config.ts
+@@ -14,6 +14,8 @@ export const PT_PASS_LINE_LEN_M = 700;
+ export const PT_MUZZLE_FLASH_SCALE = 0.3;
+ export const PT_MUZZLE_FLASH_S = 0.08;
+ export const PT_MUZZLE_FLASH_TINT = 0xff8a7a;
++/** 米PT の絵（tex-pt-boat）の寸法を取る PT の記録の boat_ref（v0.8.5 S0・spec-v0850 §4.4。Boot は「この boat_ref の PT の隊を持つ最初の任務」から描く。種の配列で jp_* より前の us_07 の S ボート＝de_s100 の寸法に変わらない） */
++export const US_PT_BOAT_REF = 'us_elco80';
+ /** 画面外の矢印のラベル（米PT の任務。駆逐艦は「敵」、大発は「大発」） */
+ export const PT_MARKER_LABEL = 'PT';
+ /** 2 行目の米PT までの距離の刻み m（切り上げ。表示が実際より遠くならない。画面外の矢印も米PT の任務は切り上げ）。T-14 の 13mm の行（ui/pt-gun-lines）も同じ刻み */
+diff --git a/src/config/pt-mission-data.ts b/src/config/pt-mission-data.ts
+index 1773689..3874369 100644
+--- a/src/config/pt-mission-data.ts
++++ b/src/config/pt-mission-data.ts
+@@ -7,6 +7,7 @@
+ import { getBoatDamageParams, getBoatRecord, getGunBatteryParams, getVisibilityParams, type GameData } from './game-data';
+ import type { PrototypeMission } from './mission-data';
+ import { getDawnAir } from './dawn-data';
++import { rescueMoonFactor } from './rescue-mission-data';
+ import { PT_ATTACK_KEYS, isPtDataRecord, ptParamsFromData, ptStartAt, type PtParams } from '../core/pt-data';
+ import type { NightBlock } from '../core/night';
+ import { clamp, degToRad } from '../core/units';
+@@ -32,7 +33,8 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
+   const hp = getBoatDamageParams(data, mission.playerBoatId).maxHp;
+   if (!(a.rounds_per_pass * gun.damage < hp)) bad(`rounds_per_pass × damage（${a.rounds_per_pass * gun.damage}）は自艇の HP（${hp}）未満（1 回の航過では砲だけで沈まない）`);
+   if (!(rec.chase.burst_rounds * gun.damage < hp)) bad(`chase.burst_rounds × damage（${rec.chase.burst_rounds * gun.damage}）は自艇の HP（${hp}）未満（1 回の連射では砲だけで沈まない）`);
+-  const vis = getVisibilityParams(data, mission.moon, false);
++  const daylight = rescueMoonFactor(data, mission); // 昼の倍率（v0.8.5 S0。us_07 の rescue.daylight。無い任務は undefined＝今の月の係数＝V-U1 はこの値で下の検査が回る）
++  const vis = getVisibilityParams(data, mission.moon, false, daylight);
+   const visM = playerVisRangeM(vis);
+   if (!(gun.effective_night_m <= visM)) bad(`effective_night_m（${gun.effective_night_m} m）は自艇の視程（${visM} m）以下（見えない PT から撃たない）`);
+   const own = getGunBatteryParams(data, mission);
+@@ -45,7 +47,7 @@ export function getPtParams(data: GameData, mission: PrototypeMission, timeScale
+   }
+   // 出発で見つからない: 今夜の揺らぎの取りうる出発点（線に沿って ±x・南北 ±y・東西反転）のどれも、巡航で見つかる距離より遠い。
+   // 距離はノーマルと史実モード（Title の切り替え。見つかる距離に enemy_detection_multiplier を掛ける）の遠い方（v0.6.3 レビュー: ノーマルだけ見ていたので、史実モードの 3 夜に 1 夜は出発で見つかった）
+-  const histVis = getVisibilityParams(data, mission.moon, true);
++  const histVis = getVisibilityParams(data, mission.moon, true, daylight);
+   const detectM = Math.max(enemyDetectRangeM(p.baseDetectM, vis.speedFactor.cruise, vis, false), enemyDetectRangeM(p.baseDetectM, histVis.speedFactor.cruise, histVis, false));
+   const nearM = nearestStartM(p, mission.night, mission.playerStart.x, mission.playerStart.y);
+   if (!(nearM >= detectM)) bad(`今夜の揺らぎで出発点が自艇の出発点から ${Math.round(nearM)} m（巡航で見つかる ${Math.round(detectM)} m（史実モード込み）より近い。出発で見つかる）`);
+diff --git a/src/core/dawn-air.ts b/src/core/dawn-air.ts
+index f7789f2..110e845 100644
+--- a/src/core/dawn-air.ts
++++ b/src/core/dawn-air.ts
+@@ -123,6 +123,14 @@ export interface DawnTelemetry {
+   dayStart: boolean;
+ }
+ 
++/**
++ * 昼から始まる任務か（v0.8.5 S0・spec-v0850 §4.5）: 空襲下の退避（evac。jp_03 の day_start）か、生存者の救助（rescue。us_07）のある世界。海の色を最初から昼にし（systems/world-dawn・world-art）、
++ * 夜明けのテレメトリの dayStart にする（systems/dawn-telemetry。救助の言葉「救助 残り」は v0.8.5 S4 の ui/dawn-lines の rescue の枝）。setup の鍵は足さない（ほかの任務の setup の snapshot が変わらない）
++ */
++export function setupDayStart(s: { readonly evac?: { readonly dayStart: boolean }; readonly rescue?: object }): boolean {
++  return s.evac ? s.evac.dayStart : s.rescue !== undefined;
++}
++
+ export function createDawnTelemetry(): DawnTelemetry {
+   return {
+     reached: false,
+diff --git a/src/scenes/boot-scene.ts b/src/scenes/boot-scene.ts
+index 6891e3a..a8c86e8 100644
+--- a/src/scenes/boot-scene.ts
++++ b/src/scenes/boot-scene.ts
+@@ -67,6 +67,10 @@ import { validateColumnMissions } from '../config/column-mission-data';
+ import { validateReconMissions } from '../config/recon-mission-data';
+ import { validateMagazineRecords } from '../config/magazine-data';
+ import { validateLoadouts } from '../config/loadout-data';
++import { validateShoreGunsMissions } from '../config/shore-guns-mission-data';
++import { validateRescueMissions } from '../config/rescue-mission-data';
++import { validateMinefieldMissions } from '../config/minefield-mission-data';
++import { US_PT_BOAT_REF } from '../config/pt-config';
+ import { COAST_MARKER_COLOR } from '../config/hunt-config';
+ import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
+ 
+@@ -94,6 +98,7 @@ export class BootScene extends Phaser.Scene {
+       if (pm.escort) boatIds.add(pm.escort.boat);
+       getEngineParams(gameData, m['id']); // 機関の不調（v0.6.5）の data と同居の検査（壊れていれば Boot で止まる。不調の無い任務は null）
+       getPatrolAirParams(gameData, m['id']); // 夜の哨戒機（v0.6.7。jp_02）の data・置き場・夜の出撃の検査（壊れていれば Boot で止まる。無い任務は null）
++      getPtParams(gameData, pm, gameData.hitRateModel.world.time_scale); // 米PT の隊（v0.8.5 S0 からノーマルも。us_07 の S ボートの「出発で見つからない」を昼の倍率で＝V-U1。無い任務は null）
+       const hm = hasHardVariant(gameData, m['id']) ? getPrototypeMission(gameData, m['id'], true) : null; // ハード（v0.6.6）も 1 回組んで米PT と輸送隊を検査（3 本目の哨戒線の出発点・ノルマ。壊れていれば Boot で止まる）
+       if (hm) { getPtParams(gameData, hm, gameData.hitRateModel.world.time_scale); getConvoyParams(gameData, hm); }
+       const gb = hm ? getGunboatParams(gameData, hm) : null; // 隼艇（v0.6.6。jp_01 のハード）の data と同居の検査、艇の絵
+@@ -146,7 +151,8 @@ export class BootScene extends Phaser.Scene {
+     const convoy = convoyMission ? getConvoyParams(gameData, getPrototypeMission(gameData, convoyMission.id)) : null;
+     if (convoy) generateFriendlyBargeTexture(this, { lengthUnits: convoy.params.boundsMarginM * 2, beamUnits: (convoy.params.halfBeamM * 2 * spriteScale) / gameData.hitRateModel.world.hit_scale });
+     // 米PT（v0.6.3）: 米PT の隊を持つ最初の任務の値から（us_elco80 の寸法 × sprite_scale）。getPtParams は米PT の data の検査も兼ねる（壊れていれば Boot で止まる）
+-    const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats']);
++    // v0.8.5 S0（spec-v0850 §4.4）: PT の記録の boat_ref が us_elco80（US_PT_BOAT_REF）の最初の任務から（種の配列で jp_* より前の us_07 の S ボートの寸法に変わらない。S ボートの絵は S2 の別の鍵）
++    const ptMission = gameData.missionsSeed.missions.find((m) => (m as Record<string, unknown>)['v0_1_prototype'] && ((m as Record<string, unknown>)['v0_1_prototype'] as Record<string, unknown>)['pt_boats'] && ptBoatRefOf(m as Record<string, unknown>) === US_PT_BOAT_REF);
+     const pt = ptMission ? getPtParams(gameData, getPrototypeMission(gameData, ptMission.id), gameData.hitRateModel.world.time_scale) : null;
+     if (pt) generatePtBoatTexture(this, { lengthUnits: pt.spriteLengthUnits, beamUnits: pt.spriteBeamUnits });
+     // 味方の輸送船（v0.6.9。jp_04）: 揚陸の任務（ハードも）の data・置き場・幾何と V12（艇に煙幕なし）の検査（壊れていれば Boot で止まる）、最初の揚陸の任務の輸送船の絵（薄い青）
+@@ -169,6 +175,10 @@ export class BootScene extends Phaser.Scene {
+     validateColumnMissions(gameData);
+     validateReconMissions(gameData);
+     validateMagazineRecords(gameData);
++    // D-Day・生存者救助（v0.8.5 S0。us_07）: 任務ごとの沿岸砲の値（V-U2）・救助（V-Q1〜V-Q8・V-D1〜V-D2・V-U1）・機雷原（V-X1・V-X3〜V-X5）をハードも 1 回（世界の配線は S2）
++    validateShoreGunsMissions(gameData);
++    validateRescueMissions(gameData);
++    validateMinefieldMissions(gameData);
+     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
+     if (DEBUG_ENABLED) generateDebugRingTexture(this);
+ 
+@@ -188,10 +198,20 @@ function allyMissionId(shipId: string): string {
+   return m ? String(m['id']) : '';
+ }
+ 
+-/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない） */
++/** 任務の PT の隊の記録（v0_1_prototype.enemies の最初の id の enemies.json の記録）の boat_ref（無ければ ''） */
++function ptBoatRefOf(m: Record<string, unknown>): string {
++  const ids = (m['v0_1_prototype'] as Record<string, unknown>)['enemies'];
++  const id = Array.isArray(ids) ? ids[0] : undefined;
++  const rec = (gameData.enemies.enemies as readonly Record<string, unknown>[]).find((e) => e['id'] === id);
++  return typeof rec?.['boat_ref'] === 'string' ? rec['boat_ref'] : '';
++}
++
++/** ?debug&mission= の任務が出撃できなければ（v0_1_prototype が無い・打ち間違い）us_02 で直行する（黒画面にしない）。v0.8.5 S0: 救助（rescue）の世界はまだ無い（S2 で配線）ので us_07 も us_02 へ */
+ function debugMissionId(): string {
+   try {
+     getPrototypeMission(gameData, DEBUG_MISSION_ID);
++    const m = (gameData.missionsSeed.missions as readonly Record<string, unknown>[]).find((x) => x['id'] === DEBUG_MISSION_ID);
++    if ((m?.['v0_1_prototype'] as Record<string, unknown> | undefined)?.['rescue'] !== undefined) throw new Error('救助の世界は v0.8.5 S2 で配線する');
+     return DEBUG_MISSION_ID;
+   } catch (e) {
+     console.warn(`?debug&mission=${DEBUG_MISSION_ID} は出撃できない（${e instanceof Error ? e.message : String(e)}）。${PROTOTYPE_MISSION_ID} で始める`);
+diff --git a/src/systems/dawn-telemetry.ts b/src/systems/dawn-telemetry.ts
+index 242ed0f..20e9b14 100644
+--- a/src/systems/dawn-telemetry.ts
++++ b/src/systems/dawn-telemetry.ts
+@@ -20,7 +20,7 @@ import {
+   strikeThreat,
+ } from '../core/air-strike';
+ import { bearingJa } from '../core/briefing';
+-import { createDawnTelemetry, daylightS, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
++import { createDawnTelemetry, daylightS, setupDayStart, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
+ import type { WorldDawn } from './world-dawn';
+ import type { WorldSetup } from './world-setup';
+ 
+@@ -51,7 +51,7 @@ export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
+   d.ships = w.dawn.ships;
+   d.retireJa = w.dawn.retireJa;
+   d.forceJa = w.dawn.retireJa ? w.setup.dawnAir.retireForceJa : '';
+-  d.dayStart = w.setup.evac ? w.setup.evac.dayStart : false; // 昼から始まる任務（v0.6.11 S5。jp_03）
++  d.dayStart = setupDayStart(w.setup); // 昼から始まる任務（v0.6.11 S5。jp_03。v0.8.5 S0 から救助の us_07 も＝言葉の rescue の枝は S4）
+   fillDawn(d, w);
+   return d;
+ }
+diff --git a/src/systems/world-art.ts b/src/systems/world-art.ts
+index 7dbe296..62a423e 100644
+--- a/src/systems/world-art.ts
++++ b/src/systems/world-art.ts
+@@ -9,6 +9,7 @@
+ // v0.8.2 S2b（D-A4・L31）: 弾薬庫の誘爆の見た目（systems/magazine-fx。隊に弾薬庫のある世界＝us_05 だけ。無い任務は null＝毎フレームの仕事も物も増えない）。爆発のプールの後・沈没の段の前に進める。
+ import type Phaser from 'phaser';
+ import { SEA_LIGHT_STEPS } from '../config/dawn-config';
++import { setupDayStart } from '../core/dawn-air';
+ import { BackdropFx, type BackdropFxWorldView } from './backdrop-fx';
+ import { CoastFx } from './coast-fx';
+ import { ExplosionFx } from './explosion-fx';
+@@ -48,7 +49,7 @@ export class WorldArt {
+   private readonly magazine: MagazineFx | null;
+ 
+   constructor(scene: Phaser.Scene, w: ArtWorldView) {
+-    this.sea = new SeaFx(scene, w.setup.mission.moon, w.setup.evac ? w.setup.evac.dayStart : false, w.setup.mission.bounds);
++    this.sea = new SeaFx(scene, w.setup.mission.moon, setupDayStart(w.setup), w.setup.mission.bounds); // v0.8.5 S0: 救助（rescue。us_07）も昼から
+     this.wake = new WakeFx(scene, w);
+     this.sparks = new SparkFx(scene);
+     registerSparkFx(this.sparks); // 世界の作成前・破棄後の水柱・砲口・火の粉の火花は何もしない（R12 と同じ）
+diff --git a/src/systems/world-dawn.ts b/src/systems/world-dawn.ts
+index c322562..16ef58e 100644
+--- a/src/systems/world-dawn.ts
++++ b/src/systems/world-dawn.ts
+@@ -11,7 +11,7 @@ import type Phaser from 'phaser';
+ import { SEA_LIGHT_POST_S, SEA_LIGHT_PRE_S, SEA_LIGHT_STEPS } from '../config/dawn-config';
+ import type { AirStrikeParams, AirStrikeState } from '../core/air-strike';
+ import type { BoatState } from '../core/boat-motion';
+-import { dawnAirCode, dawnReached, seaLightStep, type ShipsAtDawn } from '../core/dawn-air';
++import { dawnAirCode, dawnReached, seaLightStep, setupDayStart, type ShipsAtDawn } from '../core/dawn-air';
+ import { retireDirJa, retireHeadingDeg } from '../core/dawn-withdraw';
+ import { SeaLight } from '../ui/sea-light';
+ import type { WorldSetup } from './world-setup';
+@@ -86,7 +86,7 @@ export class WorldDawn {
+     this.retireHeadingDeg = edge ? retireHeadingDeg(edge, setup.night.mirrored) : NaN;
+     this.retireJa = edge ? retireDirJa(edge, setup.night.mirrored) : '';
+     this.seaLight = new SeaLight(scene.cameras.main);
+-    this.dayStart = setup.evac ? setup.evac.dayStart : false;
++    this.dayStart = setupDayStart(setup); // v0.8.5 S0: 救助（rescue。us_07）も昼から
+   }
+ 
+   /**
+diff --git a/src/systems/world-setup-types.ts b/src/systems/world-setup-types.ts
+index 1173b5e..92f8ea5 100644
+--- a/src/systems/world-setup-types.ts
++++ b/src/systems/world-setup-types.ts
+@@ -15,6 +15,8 @@ import type { AnchorSetup } from '../config/anchor-mission-data';
+ import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
+ import type { SeaplaneNightSetup } from '../config/seaplane-mission-data';
+ import type { ReconSetup, ReconSetupOptions } from '../config/recon-mission-data';
++import type { RescueSetup } from '../config/rescue-mission-data';
++import type { MinefieldSetup } from '../config/minefield-mission-data';
+ import type { MagazineSetupOptions } from '../config/magazine-data';
+ import type { BargeParams } from '../core/barge-data';
+ import type { BoatParams } from '../core/boat-motion';
+@@ -132,6 +134,8 @@ export interface WorldSetup {
+   seaplaneNight?: SeaplaneNightSetup; // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。config/seaplane-mission-data。無い任務と ?debug&noplane では鍵ごと出ない＝凍結の 1 任務 1 回のまま）
+   pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
+   recon?: ReconSetup; // 報告・無線・中継（v0.8.2。v0_1_prototype.recon のある任務＝us_05 だけ。config/recon-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
++  rescue?: RescueSetup; // 生存者の救助（v0.8.5。v0_1_prototype.rescue のある任務＝us_07 だけ。config/rescue-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない＝海を最初から昼にするだけ（core/dawn-air の setupDayStart））
++  minefield?: MinefieldSetup; // 機雷原（v0.8.5。v0_1_prototype.minefield のある任務＝us_07 だけ。config/minefield-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
+ }
+ 
+ /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */
+diff --git a/src/systems/world-setup.ts b/src/systems/world-setup.ts
+index c53ad11..3176538 100644
+--- a/src/systems/world-setup.ts
++++ b/src/systems/world-setup.ts
+@@ -42,6 +42,8 @@ import { shoresSetupPart } from '../config/shores-mission-data';
+ import { anchorSetupPart, getAnchorParams } from '../config/anchor-mission-data';
+ import { backdropSetupPart } from '../config/backdrop-mission-data';
+ import { reconSetupPart } from '../config/recon-mission-data';
++import { rescueMoonFactor, rescueSetupPart } from '../config/rescue-mission-data';
++import { minefieldSetupPart } from '../config/minefield-mission-data';
+ import { fixedNight, rollNight } from '../core/night';
+ import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
+ import { destroyerSetup, picketSetup, type TransportSetup } from './destroyer-setup';
+@@ -113,7 +115,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+   const fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
+   const fuelAllotmentGal = effectiveFuelAllotmentGal(data, mission, debugFuelAllotmentGal);
+   if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
+-  const vis = getVisibilityParams(data, mission.moon, historical);
++  const vis = getVisibilityParams(data, mission.moon, historical, rescueMoonFactor(data, mission)); // 昼の倍率（v0.8.5 S0。us_07 の rescue.daylight だけ。無い任務は今の月の係数）
+   const visRange = playerVisRangeM(vis);
+   const baseDetectM = destroyer ? destroyer.baseDetectM : barges ? barges.baseDetectM : ptBoats ? ptBoats.baseDetectM : visRange; // 艦艇のいない夜の哨戒機の任務（v0.6.7。jp_02）は自艇の視程
+   const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
+@@ -191,6 +193,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
+     ...seaplaneNightSetupPart(data, mission, seaplane), // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。無い任務と水上機の無い夜は鍵ごと出ない）
+     ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
+     ...reconSetupPart(data, mission, o), // 報告・無線・中継（v0.8.2。us_05 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
++    ...rescueSetupPart(data, mission), // 生存者の救助（v0.8.5。us_07 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない＝海の色の昼だけ core/dawn-air の setupDayStart）
++    ...minefieldSetupPart(data, mission), // 機雷原（v0.8.5。us_07 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
+   };
+ }
+ 
