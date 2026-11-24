@@ -116,6 +116,15 @@
     "enemy_evasion_multiplier": 1.5,
     "aim_assist": "none",
     "title_ja": "史実モード",
+    "smoke_barrage": {
+      "max_range_m": 600,
+      "min_range_m": 100,
+      "scatter_max_m": 120,
+      "scatter_min_m": 25,
+      "puff_search_m": 100,
+      "rate_factor": 0.5,
+      "source": "design (v0.8.4。ユーザーの要望 2026-11-23「史実モードをオンにした時に…500M以下での至近距離での煙幕発動効果を敵が見失っているものの、煙幕の範囲に無作為に攻撃をしてくるように…見失って煙幕の中に向かって乱射するので命中率は高くない。でも近づくにつれて命中率があがるように」。範囲の答え「敵の艦すべて」＝探照灯で照らして撃つ艦（駆逐艦・列の艦・輸送船・駆潜艇。大発・沿岸砲・米PT・機は変えない）。史実モードのときだけ: 自艇を見つけている（見失うまでの detect_hold_s 込み）のに煙幕で線が遮られ、艦から自艇まで max_range_m 以内なら、最後に見た点から puff_search_m 以内の煙の 1 つ（無ければ最後に見た点）へ、半径 scatter（艦から狙う点まで min_range_m 以下で scatter_min_m・max_range_m 以上で scatter_max_m・間は直線）の円盤に一様に撃つ。見越しなし。砲ごとの発射間隔は普段の 1 / rate_factor 倍。乱数は seed+46 の別系列（オフの世界と煙を使わない夜は普段と 1 ビットも同じ）。値は scripts/smoke-barrage-sim.ts の表（CHANGELOG v0.8.4）。v0.8.4 実機 1 回目: max_range_m 500 → 600・scatter_max_m 90 → 120（ユーザーの決め U-B1「微調整で撃ち始める距離を600mからにし、600mで1発が当たる確率は1％程度に」。120 m で止まった Elco 80・睦月型の 600 m の 1 発が 1.0%）)"
+    },
     "source": "design (v0.5.2 で Title の切り替えに。enabled_default は切り替えの初期値（false＝ノーマル）。オンのとき: 駆逐艦の見張り・回避に enemy_evasion_multiplier（雷跡に気づく割合と転舵率に掛け、反応遅れを割る）、敵が艇を見つける距離に enemy_detection_multiplier、魚雷の不発・蛇行の確率を reliability で上書き（torpedoes.json の値の代わり。1942 年前半の Mk 8 の不良率の目安）、見越し点マーカーは aim_assist の none（解放していても出ない）。史実モードの魚雷は通算の命中率に数えない（通算はノーマルの調整の根拠）。模擬（scripts/hit-rate-sim.ts HISTORICAL=1）の値は CHANGELOG v0.5.2。reliability_campaigns（v0.6.0）: 不発・蛇行の上書き（米の Mk 8 の不良率）を掛けるキャンペーン。日本側（jp_hard）の 45cm 魚雷には掛けず torpedoes.json の値のまま（見張り・回避・見つかる距離の倍率は日本側にも掛かる）)"
   },
   "aim_assist": {

@@ -26,6 +26,8 @@ export interface BoatTelemetry {
   hits: number;
   /** 武装の前（100 m の内）に狙える艦の船体の下を通った自艇の魚雷の数（v0.8.2 IP1。systems/torpedo-under。2 行目の「近すぎて船体の下を通過」だけが読む） */
   torpedoUnder: number;
+  /** 煙幕への乱射（v0.8.4。史実モードだけ）の弾が自艇から近く（config/barrage-hud-config）に落ちた累計。2 行目の「煙の中へ乱射されている」だけが読む。乱射の無い世界は 0 */
+  smokeBarrage: number;
   /** 夜明けまでの実時間秒（0 で夜明け。v0.6.1 から任務は終わらない。夜明けの後の時計・空襲は dawn） */
   timeLeftS: number;
   /** 敵（駆逐艦）の自艇からの相対位置 m（画面外マーカー用）。沈没後は NaN */

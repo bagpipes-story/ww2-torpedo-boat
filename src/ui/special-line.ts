@@ -6,8 +6,9 @@ import type { BoatTelemetry } from '../core/boat-motion';
 import { evacLine } from './evac-lines';
 import type { HudLine } from './hud-lines';
 import { landingLine, type LandingEventView } from './landing-lines';
-import { MISSION_ANCHOR_EVENT, MISSION_BOW_ON, MISSION_EVAC, MISSION_RADAR_EVENT, MISSION_RECON, MISSION_RECON_EVENT, MISSION_UNDER_EVENT } from './mission-mode';
+import { MISSION_ANCHOR_EVENT, MISSION_BARRAGE_EVENT, MISSION_BOW_ON, MISSION_EVAC, MISSION_RADAR_EVENT, MISSION_RECON, MISSION_RECON_EVENT, MISSION_UNDER_EVENT } from './mission-mode';
 import { UNDER_LINE } from './under-lines';
+import { BARRAGE_LINE } from './barrage-lines';
 import { reconLine } from './recon-texts';
 import { anchorLine } from './anchor-lines';
 import { straitLine, type StraitLineView } from './strait-lines';
@@ -19,6 +20,7 @@ export function specialLine(t: BoatTelemetry, mode: number, clock: { readonly la
   if (mode === MISSION_RADAR_EVENT || mode === MISSION_BOW_ON) return clock.strait ? straitLine(mode, clock.strait) : null;
   if (mode === MISSION_ANCHOR_EVENT) return clock.strait?.anchor ? anchorLine(clock.strait.anchor) : null; // 止まった艦の任務の出来事（v0.8.1 S4。us_06。時計は strait-line-clock の anchor）
   if (mode === MISSION_UNDER_EVENT) return UNDER_LINE; // 近すぎて船体の下を通過（v0.8.2 IP1。全任務。ui/under-lines）
+  if (mode === MISSION_BARRAGE_EVENT) return BARRAGE_LINE; // 煙の中へ乱射されている（v0.8.4。史実モードだけ。ui/barrage-lines）
   if (mode === MISSION_RECON_EVENT || mode === MISSION_RECON) return reconLine(t, mode === MISSION_RECON, clock.strait?.recon); // 報告の任務の出来事と常の文（v0.8.2 S4。us_05。ui/recon-texts）
   return mode === MISSION_EVAC && t.evac.enabled ? evacLine(t.evac) : landingLine(t, mode, clock.landingEv);
 }

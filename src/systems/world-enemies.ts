@@ -4,8 +4,15 @@
 // v0.6.6: 隼艇（jp_01 のハードの WorldSetup.gunboat だけ。systems/gunboat）は米PT の隊が隊の後に作る（判断が隊を読む・標的スロットの末尾の船体・25mm は seed+22）。
 // v0.8.2 S2（us_05）: 弾薬庫（systems/ship-magazine。seed+44）は規則のある艦のいる隊だけ、報告（systems/world-recon。無線 seed+45・中継の輪の絵）は setup.recon の世界だけ作る。
 // recon の世界だけ艦の砲弾の命中の手を包んで無線の故障を引く（無い任務は世界の hitBoat そのもの＝今の手）。
+// v0.8.4: 煙幕への乱射（systems/smoke-barrage-fire。seed+46）は史実モードで煙幕のある艇と艦の隊のいる世界だけ、隊の全艦に付ける（無い世界は乱数の系列も作らない＝今のまま）。
 import type Phaser from 'phaser';
 import { boatTextureKey } from '../config/game-config';
+import type { GameData } from '../config/game-data';
+import { getSmokeBarrageParams } from '../config/smoke-barrage-data';
+import { SHELL_POOL_SIZE } from '../config/ui-config';
+import { BARRAGE_SEED_OFFSET } from '../core/smoke-barrage';
+import type { SmokeState } from '../core/smoke';
+import { ShipBarrage, type BarrageShared } from './smoke-barrage-fire';
 import type { BoatState } from '../core/boat-motion';
 import type { PtSection } from '../core/pt-boats';
 import type { HitSpec } from '../core/gunnery';
@@ -54,9 +61,11 @@ export function buildEnemies(
   hitBoat: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason) => void,
   onSunk: (x: number, y: number) => void,
   /** 僚艇の沈んだ実秒に使う時計（世界の stepTimeS を命中のときに読む）。boat は報告の世界の無線が沈み始めた自艇を引かない（v0.8.2 S2。MissionWorld がそのまま満たす） */
-  clock: { readonly stepTimeS: number; readonly boat?: { readonly sinking: boolean } },
+  clock: { readonly stepTimeS: number; readonly boat?: { readonly sinking: boolean }; readonly smoke?: SmokeState | null },
   /** 味方の大発の輸送隊（v0.6.4。systems/convoy。米PT の隊の標的スロットの的。無い任務は null） */
   convoy: PtTargetConvoy | null = null,
+  /** data（v0.8.4。煙幕への乱射の値 historical_mode.smoke_barrage を読む＝世界を作るたびに検査。省けば乱射なし） */
+  data: GameData | null = null,
 ): Enemies {
   const mission = s.mission;
   const ds = s.destroyer;
@@ -83,6 +92,12 @@ export function buildEnemies(
   const escort = s.escort && ds ? new EscortBoat(scene, s.escort, boat, mission.bounds, boatTextureKey(mission.escort!.boat)) : null;
   const escortHit = (damage: number, x: number, y: number): void => (escort!.hit(damage, clock.stepTimeS) ? onSunk(x, y) : events.onShellHit(x, y, true, false));
   destroyers?.fires.forEach((f, i) => f.setEscortHitHandler((gi, x, y) => escortHit(destroyers.gunneryAt(i).guns[gi]!.damage, x, y)));
+  // 煙幕への乱射（v0.8.4）: 史実モード・煙幕のある艇・艦の隊の 3 つが揃う世界だけ。乱数は seed+46 の 1 系列を隊の艦の順に引く（世界は smoke を敵の側の後に作るので固定ステップの時に読む）
+  const barrageParams = data ? getSmokeBarrageParams(data) : null;
+  if (destroyers && barrageParams && s.historical && s.smokeParams) {
+    const shared: BarrageShared = { params: barrageParams, rng: new SeededRng((seed + BARRAGE_SEED_OFFSET) >>> 0), world: clock };
+    destroyers.fires.forEach((f, i) => f.setBarrage(new ShipBarrage(shared, destroyers.gunneryAt(i).guns.length, SHELL_POOL_SIZE)));
+  }
   // 大発と艇の砲（v0.4.2）: 13mm の被害は砲弾と同じ経路（終了理由 barge_fire）、撃破は命中スロー＋Scene の爆発
   const hunt = s.barges && s.guns ? new BargeHunt(scene, s.barges, s.guns, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, onSunk, s.shoreBatteries, splashes) : null;
   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。

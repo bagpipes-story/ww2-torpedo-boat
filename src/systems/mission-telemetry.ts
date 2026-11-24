@@ -56,6 +56,7 @@ export function refreshTelemetry(t: BoatTelemetry, w: MissionWorld, input: Input
   t.torpedoesLeft = w.enemy.allOut || w.atHome ? 0 : w.torpedoes.remaining;
   t.hits = w.hits;
   t.torpedoUnder = w.torpedoUnder.count; // 近すぎて船体の下を通過（v0.8.2 IP1。systems/torpedo-under）
+  t.smokeBarrage = g ? g.barrageNear : 0; // 煙の中へ乱射されている（v0.8.4。史実モードだけ。systems/smoke-barrage-fire）
   t.timeLeftS = timeLeftS;
   // 敵の矢印と敵影: 駆逐艦（沈み始めたら無し）か、最も近い浮いている大発（v0.4.2。大発のスプライトの出し入れは barge-hunt）
   const e = w.enemy.focus(s.x, s.y);
