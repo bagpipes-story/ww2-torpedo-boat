@@ -21,7 +21,7 @@
 # 環境変数:
 #   AUDIO_STATES（既定 "default audio noaudio"）: ab-replay all 58 と hud-ab base 16 を回す状態
 #   SMALL_AUDIO_STATES（既定 "default"）: 小さい組（ab-replay・hud-ab の jp04base 8・jp03 4）を回す状態
-#   SKIP（既定 "art-perf"。空白区切り）: 飛ばす門 build typecheck lint test g2 ab hud us04 us06 us05 hist tex-ab art-perf snapshots（build を飛ばすと $D/site をそのまま使う）
+#   SKIP（既定 "art-perf"。空白区切り）: 飛ばす門 build typecheck lint test g2 ab hud us04 us06 us05 us07 hist tex-ab art-perf snapshots（us07 は v0.8.5 S2 の組。A07 の既定は今の木）（build を飛ばすと $D/site をそのまま使う）
 #   A05（既定 今の木の $D/site）: us_05 の組の A（S2b から S2 の commit のビルドのサイト）
 #   AB_ENV（既定 なし）: ab-replay・hud-ab だけに渡す環境変数（短い確かめ用。例 AB_ENV="MISSION=us_02 SECS=20"＝どの組も us_02 の 1 件 20 秒になる）
 #   JOBS（既定 2）
@@ -104,6 +104,19 @@ if ! skip us05; then
   A05=${A05:-$A}
   abrun05 ab-us05 ab-replay $A05 $B
   abrun05 hud-us05 hud-ab $A05 $B
+fi
+# us_07 の組（v0.8.5 S2。SET=us07＝ノーマル・ハード × seed 1・2 を 320 秒。既定の音の状態だけ。SKIP の名前 us07）: S2 は A＝B＝今の木（決定性とページのエラー）・S2 の後は A07＝S2 の commit のビルド
+abrun07(){ # name tool A B
+  local n=$1 t=$2 a=$3 b=$4
+  env $AB_ENV A=$a B=$b SET=us07 CAM=1 JOBS=$JOBS node scripts/headless/$t.mjs > $D/$n.log 2>&1
+  local line; line=$(grep -E '^cases' $D/$n.log | tail -1)
+  if echo "$line" | grep -q 'diff 0' && ! grep -q 'page errors' $D/$n.log; then ok "$n $line"; else ng "$n $line"; fi
+  grep -E 'same:(true|false)' $D/$n.log | sed -E 's/^/    /' | cut -c1-260 >> $SUM
+}
+if ! skip us07; then
+  A07=${A07:-$B}
+  abrun07 ab-us07 ab-replay $A07 $B
+  abrun07 hud-us07 hud-ab $A07 $B
 fi
 # 史実モード（v0.8.4。SET=hist＝煙を使わない夜は基準と同じ・SET=histsmoke＝止まって煙幕を張る夜も v0.8.5 では基準と同じ＝基準に乱射がある）。SKIP の名前 hist
 abrunh(){ # name tool set expect(same|diff)
