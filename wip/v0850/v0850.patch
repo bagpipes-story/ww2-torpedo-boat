@@ -1,5 +1,5 @@
 diff --git a/CHANGELOG.md b/CHANGELOG.md
-index 0c6d2c8..76b4159 100644
+index 0c6d2c8..353d5b6 100644
 --- a/CHANGELOG.md
 +++ b/CHANGELOG.md
 @@ -24,6 +24,17 @@
@@ -16,7 +16,7 @@ index 0c6d2c8..76b4159 100644
 +  - 検査 V-X2（`src/config/minefield-mission-data.ts` 156 → 188）: Boot の `validateMinefieldMissions` が `checkMinefieldPlaceable`（区画ごとに置ける所があり、置ける割合 × ノーマルの数の和がノーマルの数の 80% 以上。20 m の格子・群は ±ずれの対角を足した円で広めに）。今の data は区画ごとに 99.6〜100%。置かない所の材料 `rescueFieldSite`（S2 の世界の組み立ても使う）。
 +  - tests（＋4 ファイル）: `tests/rescue`（17。速さの縁 ±0.1 kt・距離の縁・48 ステップ目・満員・群の途中で満員・一番近い群・時計の戻り・輪の縁・着弾・時間の終わり・終わりの理由ごと・達成・ずれの 24 回・同じ入力で同じ出力・本体に確保なし）・`tests/minefield`（13。枠の順・88 回・seed ごとに同じ・ハードはノーマルを含む・置かない所・seed 1〜32 で全部置ける＝80% 以上・V-X2 の止まり方・見える縁・触雷の縁・1 回・沈んだ艇・被害の値・本体に確保なし）・`tests/sboat-cover`（11。±1 m・239／240 ステップ・外で 0 から・航過は待つ・段階ごと・乱数なし・凍結の stepPtSection を回して警戒・突撃・離脱・追撃で去らせた S ボートは戻らず海域の外へ・残りは航過を続ける・本体に確保なし）・`tests/scoring-rescue`（5。8 点・690 ＜ 700・rescued の無い入力は今の式）。直した tests: `tests/landing-imports`（外から PT_LEAVE を書いてよいファイルに core/sboat-cover を足し、書く欄が phase と timerS だけの確かめを pt-torpedo と sboat-cover の両方に）。setup の snapshot は 1 本も変わらない（S1 は世界の組み立てで seed+47 を引かない＝`tests/setup-us07` の乱数の回数 6 のまま。引くのは S2）。
 +  - spec からの違い: (1) 組み立ての関数は `core/rescue-field`（rescue と minefield の両方を 1 本の系列で順に引くため。spec は 2 ファイル）。(2) 漂流・座礁で終われば乗せている分は「乗せたまま」（spec は帰投と沈没だけ書く。Result の言い方は S4）。(3) 触雷の火災・機関の判定（applyShellHit の 2 回の chance）をどの系列で引くかは S2（spec §4.0「ステップの中では引かない」と HitSpec の作法が食い違う。案: seed+47 の続き＝触れた時だけ・ほかの系列は変わらない）。(4) V-X2 は Boot の決まった格子＋tests の seed 1〜32 の両方。
-+  - 実装者の門（`JOBS=2 run-gates v0850-s1`）: GATES_LINE
++  - 実装者の門（`JOBS=2 run-gates v0850-s1`）: 基準 main 38acd73・今の木も main@38acd73 のビルド番号。build・typecheck・lint ✓・npm test 4,377 件 ✓（378 ファイル）・g2 OK 39 DIFF 0・ab-all（既定・@audio・@noaudio）58/58（揺れも出なかった）・ab-jp04base 8/8・ab-jp03 4/4・hud-base（3 つの音の状態）16/16・hud-jp04base 8/8・hud-jp03 4/4・us04（ab・hud・noradar の 2 組）・us06・us05 の組 4/4・hist 6/6・hud-hist 6/6・histsmoke 2/2・smokeoff 2/2・tex-ab CHECK=1 の ✗ 0・snapshots untouched（setup の snapshot は 1 本も変わらない）。門の後に変えたのは CHANGELOG だけ。
  
  ## v0.8.4 — 2026-11-23（史実モード：至近の煙幕へ乱射）
  
