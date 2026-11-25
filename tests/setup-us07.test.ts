@@ -1,7 +1,7 @@
 // v0.8.5 S0（spec-v0850 §2.2・§4・§7 の S0）: us_07「D-Day・生存者救助」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
 // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.5 S0 の木で作った（新しいファイル。ほかの 8 任務の setup の snapshot は -u しない）。
 // us_07 の setup は S1〜S4 で鍵が増えうるので、書き換える時は CHANGELOG に段と理由を書く。Briefing の行は入れない（S4 で変わる）。
-// 今夜の揺らぎ（+16）はノーマル・ハードとも 6 回（S ボートの隊 1 件の x・y・針路 3・大発の先頭 1・砲台 1・反転 1）。遊べるのは S5 から（playable_from はまだ無い）。
+// 今夜の揺らぎ（+16）はノーマル 6 回（S ボートの隊 1 件の x・y・針路 3・大発の先頭 1・砲台 1・反転 1）・ハード 8 回（砲台が 3 つ＝v0.8.5 S3 で 2 つ目・S3b で 3 つ目を足した）。遊べるのは S5 から（playable_from はまだ無い）。
 // あわせて: us_07 の画面の文（題・場所・目的・成功・史実メモ・月・夜明け・岸・浅瀬・ハードの文・敵の名・船の名）に人名・階級つきの呼び方・PT の番号が無い（CLAUDE.md §11）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -29,7 +29,7 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
     const label = `us_07 ${hard ? 'hard' : 'normal'}${historical ? ' historical' : ''} seed ${seed}`;
     const { s, draws } = build(hard, historical, seed);
     expect(JSON.stringify(s, null, 1)).toMatchSnapshot(`${label} setup`);
-    expect(draws).toBe(6);
+    expect(draws).toBe(hard ? 8 : 6);
     expect(s.night.enemyOffsets.length).toBe(1);
     // S ボートの隊（米PT の記録の形。ノーマル 2・ハード 3）・Higgins・Mk 13（狙う艦なし）・昼・空は味方
     expect([s.mission.type, s.mission.enemyId, s.mission.playerBoatId, s.mission.torpedoId, s.mission.moon, s.mission.mainWeapon, s.ptBoats!.count, s.vis.moonFactor]).toEqual(['rescue', 'de_sboat_enemy', 'us_higgins78', 'us_mk13', 'day', 'guns', hard ? 3 : 2, 1.8]);
@@ -37,7 +37,7 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
     expect([s.destroyer, s.barges, s.convoy, s.escort, s.raid, s.storm, s.friendly, s.seaplane, s.airStrike, s.transport]).toEqual([null, null, null, null, null, null, null, null, null, null]);
     expect([s.dawnAir.playAs, s.dawnAir.shipsAtDawn, s.dawnAir.retireEdge, s.durationS]).toEqual(['own', 'none', null, 300]);
     // 砲台（任務の 210 mm）・岸・浅瀬・救助・機雷原
-    expect([s.shoreBatteries.length, s.shoreBattery!.x, s.shoreBattery!.y, s.shoreBattery!.gun.id, s.mission.coast!.label, s.coastEdgeY]).toEqual([1, 1600, 4600, 'skoda_21cm', 'コタンタン半島（サン＝マルクフ〜ユタ・ビーチ）', 3750]);
+    expect([s.shoreBatteries.length, s.shoreBattery!.x, s.shoreBattery!.y, s.shoreBattery!.gun.id, s.mission.coast!.label, s.coastEdgeY]).toEqual([hard ? 3 : 1, 1600, 4600, 'skoda_21cm', 'コタンタン半島（サン＝マルクフ〜ユタ・ビーチ）', 3750]);
     expect([s.rescue!.total, s.rescue!.capacity, s.rescue!.fitch.labelJa, s.minefield!.count]).toEqual([60, 20, 'フィッチ', hard ? 32 : 24]);
     expect(s.hazardsTonight).toEqual(['shore_battery', 'mine', 'enemy_ship_gunfire_or_ram', 'grounding']);
     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'radar', 'transit', 'shores', 'anchors', 'backdrop', 'seaplaneNight', 'pickets', 'recon'] as const) expect(k in s, k).toBe(false);

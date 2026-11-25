@@ -29,11 +29,12 @@ const guns = (f: (d: GameData) => void): (() => unknown) => {
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
 
 describe('既定の data（us_07。spec §3・§4.2・§4.3）', () => {
-  it('4 区画に 24 個（ハード 32）・水路 2 本（幅 300 m）・置かない余白 80 m。1 個は被害 60・火災 0.5・機関 0.5・見える 150 m・触れる 6 m', () => {
+  it('4 区画に 24 個（ハード 32）・水路 4 本（幅 300 m。v0.8.5 S3 で出発 → フィッチを足し、S3b で帰投の輪を沖へ・フィッチ → コリーを北へ回した）・置かない余白 80 m。1 個は被害 60・火災 0.5・機関 0.5・見える 150 m・触れる 6 m', () => {
     const n = getMinefieldParams(gameData, getPrototypeMission(gameData, 'us_07'))!;
     const h = getMinefieldParams(gameData, getPrototypeMission(gameData, 'us_07', true))!;
-    expect([n.fields.length, n.count, n.maxCount, h.count, h.maxCount, n.lanes.length, n.clearM]).toEqual([4, 24, 32, 32, 32, 2, 80]);
-    expect(n.lanes).toEqual([{ x0: 5400, y0: 500, x1: 4300, y1: 1500, widthM: 300 }, { x0: 4300, y0: 1500, x1: 2600, y1: 2300, widthM: 300 }]);
+    expect([n.fields.length, n.count, n.maxCount, h.count, h.maxCount, n.lanes.length, n.clearM]).toEqual([4, 24, 32, 32, 32, 4, 80]);
+    expect(n.lanes).toEqual([{ x0: 5150, y0: 1850, x1: 3750, y1: 2000, widthM: 300 }, { x0: 3750, y0: 1300, x1: 3750, y1: 2000, widthM: 300 }, { x0: 3750, y0: 2000, x1: 3250, y1: 1850, widthM: 300 }, { x0: 3250, y0: 1850, x1: 2650, y1: 2350, widthM: 300 }]);
+    expect(n.fields.map((f) => [f.x, f.y, f.w, f.h, f.normal, f.hardExtra])).toEqual([[1200, 1600, 1200, 900, 6, 2], [3140, 2240, 340, 340, 6, 2], [3480, 2270, 420, 190, 6, 2], [2900, 1400, 500, 220, 6, 2]]);
     expect(n.mine).toEqual({ damage: 60, fireChance: 0.5, engineDamageChance: 0.5, sightM: 150, sight2: 22500, contactM: 6 });
     expect(validateMinefieldMissions(gameData)?.count).toBe(24);
     expect([MINEFIELD_KEYS, MINE_PARAM_KEYS, MINEFIELD_MAX, MINEFIELD_LANE_CORRY_M]).toEqual([['fields', 'lanes', 'clear_m', 'source'], ['damage', 'fire_chance', 'engine_damage_chance', 'sight_m', 'contact_m', 'source'], 48, 400]);
@@ -47,9 +48,10 @@ describe('既定の data（us_07。spec §3・§4.2・§4.3）', () => {
       }
     }
   });
-  it('沿岸砲: us_07 は任務の 210 mm（3 門・10 秒に 1 発・射界 2,600 m・陸へ 600 m）、us_03 は risk_events の 75 mm のまま（ハードの 2 門目も）', () => {
+  it('沿岸砲: us_07 は任務の 210 mm（3 門・10 秒に 1 発・射界 2,600 m・陸へ 600 m。ハードは x 1,300・2,400 の 2 つ目・3 つ目も同じ値＝v0.8.5 S3・S3b。散布 110 m は S3b）、us_03 は risk_events の 75 mm のまま（ハードの 2 門目も）', () => {
     const [b] = getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07'));
-    expect([b!.x, b!.y, b!.gun.id, b!.gun.count, b!.gun.roundsPerMinPerGun, b!.gun.effectiveM, b!.gun.damage, b!.gun.dispersionM, b!.gun.splashRadiusM, b!.gun.shellSpeedMps, b!.baseDetectM, b!.arc2]).toEqual([1600, 4600, 'skoda_21cm', 3, 2, 2600, 34, 80, 10, 600, 6000, 6_760_000]);
+    expect([b!.x, b!.y, b!.gun.id, b!.gun.count, b!.gun.roundsPerMinPerGun, b!.gun.effectiveM, b!.gun.damage, b!.gun.dispersionM, b!.gun.splashRadiusM, b!.gun.shellSpeedMps, b!.baseDetectM, b!.arc2]).toEqual([1600, 4600, 'skoda_21cm', 3, 2, 2600, 34, 110, 10, 600, 6000, 6_760_000]);
+    expect(getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07', true)).map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM])).toEqual([[1600, 4600, 'skoda_21cm', 2600], [1300, 4600, 'skoda_21cm', 2600], [2400, 4600, 'skoda_21cm', 2600]]);
     for (const hard of [false, true]) {
       const us03 = getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_03', hard));
       expect(us03.map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM, x.baseDetectM])).toEqual([[4600, 2560, 'type41_75mm', 900, 1200], ...(hard ? [[2600, 2560, 'type41_75mm', 900, 1200]] : [])]);
@@ -81,13 +83,15 @@ describe('起動時の検査（V-X1・V-X3〜V-X5・V-U2）', () => {
     expect(build((d) => (mineOf(d)['fire_chance'] = 1.5))).toThrow(/fire_chance・engine_damage_chance は 0〜1/);
   });
   it('V-X4: 水路が帰投の輪・フィッチの輪・コリーの 400 m の内をつなぐ', () => {
-    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[]).splice(1, 1)))).toThrow(/minefield\.lanes は帰投の輪からコリーの 400 m の内へつながらない（道が無い）（V-X4/);
-    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[]).splice(0, 1)))).toThrow(/minefield\.lanes は帰投の輪からフィッチの輪へつながらない（道が無い）（V-X4/);
-    // 2 本目の端をコリーから 400 + 150 m より離すとつながらない・縁ちょうどはつながる
-    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[1] = [4300, 1500, 2600, 2149, 300]))).toThrow(/コリーの 400 m の内へつながらない/);
-    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[1] = [4300, 1500, 2600, 2150, 300]))).not.toThrow();
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[]).splice(3, 1)))).toThrow(/minefield\.lanes は帰投の輪からコリーの 400 m の内へつながらない（道が無い）（V-X4/);
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[]).splice(2, 1)))).toThrow(/minefield\.lanes は帰投の輪からコリーの 400 m の内へつながらない（道が無い）（V-X4/); // フィッチ → 曲がり角（v0.8.5 S3b）を外すと 4 本目が離れる
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[]).splice(1, 1)))).toThrow(/minefield\.lanes は帰投の輪からフィッチの輪へつながらない（道が無い）（V-X4/);
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[]).splice(0, 1)))).not.toThrow(); // 出発 → フィッチの水路（v0.8.5 S3）は道の検査に要らない（出発は帰投の輪の外）
+    // 4 本目（v0.8.5 S3 までは 3 本目）の端をコリーから 400 + 150 m より離すとつながらない・縁ちょうどはつながる
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[3] = [3250, 1850, 2600, 2149, 300]))).toThrow(/コリーの 400 m の内へつながらない/);
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[3] = [3250, 1850, 2600, 2150, 300]))).not.toThrow();
     // 帯どうしが離れればつながらない
-    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[1] = [3900, 1800, 2600, 2300, 300]))).toThrow(/V-X4/);
+    expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[3] = [3300, 2300, 2600, 2300, 300]))).toThrow(/V-X4/);
   });
   it('V-X5: minefield は hazards に mine のある任務だけ・mine のある任務には要る', () => {
     expect(build((d) => (protoOf(d, 'us_07')['hazards'] = ['shore_battery', 'enemy_ship_gunfire_or_ram', 'grounding']))).toThrow(/us_07\.v0_1_prototype\.minefield は hazards に mine のある任務だけ（V-X5/);

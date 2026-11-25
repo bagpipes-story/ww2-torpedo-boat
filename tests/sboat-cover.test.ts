@@ -33,8 +33,8 @@ const cover = (b: Bench, n: number, r: SboatCoverRules = F): void => {
 };
 
 describe('data（us_07）', () => {
-  it('フィッチ (4300, 1500) から 1,200 m の内に 4 秒。S ボートはノーマル 2・ハード 3', () => {
-    expect([F.x, F.y, COVER_M, F.coverS, P.count, buildWorldSetup(gameData, 'us_07', { hard: true }).ptBoats!.count]).toEqual([4300, 1500, 1200, 4, 2, 3]);
+  it('フィッチ (3750, 2000。v0.8.5 S3 で寄せた) から 1,200 m の内に 4 秒。S ボートはノーマル 2・ハード 3', () => {
+    expect([F.x, F.y, COVER_M, F.coverS, P.count, buildWorldSetup(gameData, 'us_07', { hard: true }).ptBoats!.count]).toEqual([3750, 2000, 1200, 4, 2, 3]);
   });
 });
 

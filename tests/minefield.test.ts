@@ -99,7 +99,7 @@ describe('V-X2 の起動時の検査（決まった格子）', () => {
   });
   it('置ける所の無い区画（掃海済みの水路の上）・置ける見込みが 80% 未満（余白が広すぎる）は鍵を名指して止まる', () => {
     const onLane = clone();
-    (((onLane.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!['v0_1_prototype'] as Rec)['minefield'] as Rec)['fields'] = [[4800, 950, 100, 100, 6, 2], [3100, 2400, 1300, 900, 6, 2]];
+    (((onLane.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!['v0_1_prototype'] as Rec)['minefield'] as Rec)['fields'] = [[4400, 1875, 100, 100, 6, 2], [3100, 2400, 1300, 900, 6, 2]];
     expect(() => validateMinefieldMissions(onLane)).toThrow(/us_07\.v0_1_prototype\.minefield\.fields\[0\] に置ける所が無い.*V-X2/);
     const wide = clone();
     const wf = ((wide.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!['v0_1_prototype'] as Rec)['minefield'] as Rec;
