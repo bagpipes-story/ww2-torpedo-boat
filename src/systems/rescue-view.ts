@@ -1,10 +1,11 @@
 // 救助の任務の絵（v0.8.5 S2。us_07。spec-v0850 §6・§7 S2）: 掃海済みの水路の帯（任務の開始に 1 回描く Graphics）・水路のブイ・フィッチ（味方のフレッチャー級と渡す輪）・
-// 沈んでいくコリー（暗く・傾き・救助の時間につれて薄れる。油の輪）・生存者の群（人数の frame と札）・見えた機雷・フィッチの砲火（S ボートが砲火の距離の内に居る間の砲口の閃光と周りの水柱）。
+// 沈んでいくコリー（暗く・傾き・救助の時間につれて薄れる。油の輪）・生存者の群（人数の frame と札）・見えた機雷・フィッチの砲火（S ボートが砲火の距離の内に居る間の砲口の閃光と周りの水柱）・
+// 味方の艇（v0.8.5 IP3。systems/friendly-boats-view）。
 // 読むだけ（世界の状態・AI・乱数に書かない）。フィッチの砲火の閃光と水柱は世界の水柱のプール（SplashPool の muzzle・splash）＝絵が出すので音（遠い砲・水柱）も鳴る（音は絵と HUD に従う）。
 // 機雷原の区画（data の fields の矩形）は描かない（v0.8.5 IP1。実機 1 回目のユーザー「わざわざ赤くエリアを示さなくていい」。機雷は見えた物だけ＝昼の 150 m）。
 // §7: 物は起動時に数を決めて作り（群 ≤ 16・機雷 ≤ 64・ブイ ≤ BUOY_MAX）、毎フレームは変わった時だけ setVisible・setFrame・setText・setAlpha。平方根なし。
 import type Phaser from 'phaser';
-import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
+import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale, boatTextureKey } from '../config/game-config';
 import { hudTextStyle, RETURN_RING_TEX_RADIUS_UNITS } from '../config/ui-config';
 import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
 import { rescueArtScale } from '../assets/rescue-art';
@@ -19,6 +20,8 @@ import {
 import { corryLabelSpot } from '../ui/rescue-label-spot';
 import { MINE_SEEN } from '../core/minefield';
 import type { PtSection } from '../core/pt-boats';
+import type { FriendlyState } from '../core/friendly-boats';
+import { FriendlyBoatsView } from './friendly-boats-view';
 import type { SplashPool } from './splash-pool';
 import type { WorldSetup } from './world-setup';
 
@@ -27,6 +30,8 @@ export interface RescueViewSource {
   readonly state: { readonly n: number; readonly gx: Float64Array; readonly gy: Float64Array; readonly left: Int16Array };
   readonly mines: { readonly max: number; readonly x: Float64Array; readonly y: Float64Array; readonly state: Uint8Array } | null;
   readonly cover: { readonly inS: Float64Array } | null;
+  /** 味方の艇（v0.8.5 IP3。無い任務は null。絵は systems/friendly-boats-view） */
+  readonly friendly?: FriendlyState | null;
 }
 
 /** 毎フレーム読む世界の部分 */
@@ -55,6 +60,7 @@ export class RescueView {
   private fireN = 0;
   private readonly fitchX: number;
   private readonly fitchY: number;
+  private readonly friendly: FriendlyBoatsView | null;
 
   constructor(
     scene: Phaser.Scene,
@@ -99,6 +105,8 @@ export class RescueView {
     const m = src.mines;
     this.mineShown = new Uint8Array(m ? m.max : 0);
     if (m) for (let k = 0; k < m.max; k++) this.mines.push(scene.add.image(m.x[k]!, m.y[k]!, RESCUE_TEX_MINE).setScale(sc).setDepth(DEPTH.wake).setVisible(false));
+    // 味方の艇（v0.8.5 IP3）: 自艇と同じ船形を味方の青で。出るまでは隠す
+    this.friendly = src.friendly && r.friendly ? new FriendlyBoatsView(scene, src.friendly, boatTextureKey(s.mission.playerBoatId), r.friendly.labelJa) : null;
     this.refresh();
   }
 
@@ -158,6 +166,7 @@ export class RescueView {
   /** 毎フレーム: 群・機雷・コリーの沈み（救助の時間につれて薄れる。段が変わった時だけ）・フィッチの砲火（S ボートが砲火の距離の内に居る間） */
   update(realDt: number, w: RescueViewWorld): void {
     this.refresh();
+    this.friendly?.update();
     const p = Math.min(1, Math.max(0, w.stepTimeS / this.durationS));
     const k = Math.round(p * CORRY_ALPHA_STEPS);
     if (k !== this.corryStep) {
@@ -195,5 +204,6 @@ export class RescueView {
     for (const o of this.counts) o.destroy();
     for (const o of this.mines) o.destroy();
     for (const o of this.buoys) o.destroy();
+    this.friendly?.destroy();
   }
 }

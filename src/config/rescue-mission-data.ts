@@ -11,9 +11,10 @@ import type { SurvivorShellRules } from '../core/survivor-shelling';
 import type { SboatWaveRules } from '../core/sboat-wave';
 import { ktToMps } from '../core/units';
 import { readRescueShelling, readSboatWave2 } from './rescue-wave-data';
+import { readFriendlyBoats, type FriendlySetup } from './rescue-friendly-data';
 
 /** V-Q1: rescue・ships・daylight の鍵（ちょうどこれ）と群の数の上限（固定長の状態の大きさ） */
-export const RESCUE_KEYS = ['groups', 'group_jitter_m', 'capacity', 'pickup_m', 'pickup_max_kt', 'per_person_s', 'transfer_per_person_s', 'shell_kill_m', 'objective_delivered', 'ships', 'daylight', 'shelling', 'sboat_wave2', 'source'] as const;
+export const RESCUE_KEYS = ['groups', 'group_jitter_m', 'capacity', 'pickup_m', 'pickup_max_kt', 'per_person_s', 'transfer_per_person_s', 'shell_kill_m', 'objective_delivered', 'ships', 'daylight', 'shelling', 'sboat_wave2', 'friendly_boats', 'source'] as const;
 export const RESCUE_FITCH_KEYS = ['x_m', 'y_m', 'ring_m', 'heading_deg', 'cover_m', 'cover_s', 'label_ja'] as const;
 export const RESCUE_CORRY_KEYS = ['x_m', 'y_m', 'heading_deg', 'label_ja'] as const;
 export const RESCUE_DAYLIGHT_KEYS = ['moon_factor', 'source'] as const;
@@ -43,6 +44,8 @@ export interface RescueSetup {
   /** 砲台が生存者の海を撃つ（v0.8.5 IP2。V-H。間隔は難易度で選んだ値。砲台の無い任務は null）・S ボートの第二波（v0.8.5 IP2。V-W。線は第一波の隻数ぶん。S ボートの無い任務は null） */
   shelling: SurvivorShellRules | null;
   wave2: SboatWaveRules | null;
+  /** 味方の艇（v0.8.5 IP3。V-F。渡した数が達成に届けば帰投の輪から救助に来る。無い任務は null） */
+  friendly: FriendlySetup | null;
 }
 
 type Rec = Record<string, unknown>;
@@ -171,6 +174,8 @@ export function getRescueParams(data: GameData, mission: PrototypeMission): Resc
   // V-H・V-W（v0.8.5 IP2。config/rescue-wave-data）: 砲台が生存者の海を撃つ・S ボートの第二波（S ボートの無い任務は sboat_wave2 を null に）
   const shelling = readRescueShelling(mission, raw['shelling'], groups, batteries, bad);
   const wave2 = readSboatWave2(data, mission, raw['sboat_wave2'], { x: fx, y: fy, ringM: ring, coverM }, bad);
+  // V-F（v0.8.5 IP3。config/rescue-friendly-data）: 味方の艇（水路の帯の内か＝V-F4 は config/minefield-mission-data の Boot の検査）
+  const friendly = readFriendlyBoats(mission, raw['friendly_boats'], { pickupM: raw['pickup_m'] as number, fitch: { x: fx, y: fy, ringM: ring } }, bad);
   const pk = raw['pickup_max_kt'] as number;
   const sk = raw['shell_kill_m'] as number;
   return {
@@ -191,6 +196,7 @@ export function getRescueParams(data: GameData, mission: PrototypeMission): Resc
     moonFactor: mf as number,
     shelling,
     wave2,
+    friendly,
   };
 }
 

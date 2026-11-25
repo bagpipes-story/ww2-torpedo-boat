@@ -45,8 +45,8 @@ describe('data（us_07。v0.8.5 IP2）', () => {
     const g = N.shoreBattery!.gun;
     expect(60 / (g.roundsPerMinPerGun * g.count)).toBe(10);
   });
-  it('第二波: 第一波がみな去って 60 秒・第一波と同じ隻数（ノーマル 2・ハード 3）の線・揺らぎ ±200・±100（波で 1 つ）。S ボートの無い任務は null', () => {
-    expect([R.wave2!.delayS, R.wave2!.legs.length, H.rescue!.wave2!.legs.length, R.wave2!.jitterXM, R.wave2!.jitterYM]).toEqual([60, 2, 3, 200, 100]);
+  it('第二波: 第一波がみな去って 90 秒（v0.8.5 IP3 で 60 → 90）・第一波と同じ隻数（ノーマル 2・ハード 3）の線・揺らぎ ±200・±100（波で 1 つ）。S ボートの無い任務は null', () => {
+    expect([R.wave2!.delayS, H.rescue!.wave2!.delayS, R.wave2!.legs.length, H.rescue!.wave2!.legs.length, R.wave2!.jitterXM, R.wave2!.jitterYM]).toEqual([90, 90, 2, 3, 200, 100]);
     expect(R.wave2!.legs).toEqual([[200, 1200, 1800, 1950], [200, 1800, 2000, 2500]]);
     expect(H.rescue!.wave2!.legs[2]).toEqual([200, 2400, 2100, 3000]);
     expect([RESCUE_SHELLING_KEYS, RESCUE_WAVE_KEYS]).toEqual([['interval_s', 'hard_interval_s', 'dispersion_factor', 'source'], ['delay_s', 'legs_m', 'jitter', 'source']]);
@@ -161,7 +161,7 @@ describe('S ボートの第二波（core/sboat-wave）', () => {
     const hq = sboatWaveParams(H.ptBoats!, H.rescue!.wave2!, new SeededRng(7));
     expect(hq.count).toBe(6);
   });
-  it('出るまでは海域の外（凍結の stepPtSection は動かさない）・第一波がみな去って 60 秒（3,600 ステップ目）で哨戒に 1 回・救助の時間が先に終われば出ない', () => {
+  it('出るまでは海域の外（凍結の stepPtSection は動かさない）・第一波がみな去って 90 秒（5,400 ステップ目。v0.8.5 IP3）で哨戒に 1 回・救助の時間が先に終われば出ない', () => {
     const p = sboatWaveParams(P, R.wave2!, new SeededRng(1));
     const q = createPtSection(p, PT_SHELL_POOL_SIZE);
     const w = createSboatWave(q, 2);
@@ -179,9 +179,9 @@ describe('S ボートの第二波（core/sboat-wave）', () => {
     q.boats[0]!.phase = PT_LEAVE;
     q.boats[1]!.phase = PT_SUNK;
     let spawnedAt = -1;
-    for (let k = 600; k < 600 + 3700 && spawnedAt < 0; k++) if (step(k)) spawnedAt = k - 600;
-    expect([spawnedAt, w.spawned, w.seq, sboatWaveAppeared(w)]).toEqual([3599, true, 1, 4]);
-    for (let k = 0; k < 600; k++) expect(step(5000 + k)).toBe(false);
+    for (let k = 600; k < 600 + 5500 && spawnedAt < 0; k++) if (step(k)) spawnedAt = k - 600;
+    expect([spawnedAt, w.spawned, w.seq, sboatWaveAppeared(w)]).toEqual([5399, true, 1, 4]);
+    for (let k = 0; k < 600; k++) expect(step(7000 + k)).toBe(false);
     expect(q.boats[2]!.x === at[0] && q.boats[2]!.y === at[1]).toBe(false); // 出た後は凍結の AI が動かす
     const q2 = createPtSection(p, PT_SHELL_POOL_SIZE);
     const w2 = createSboatWave(q2, 2);

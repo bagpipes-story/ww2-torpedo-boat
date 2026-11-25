@@ -21,6 +21,7 @@ export function rescueResultPart(w: RescueResultWorld): { rescue?: RescueResult 
   let onWater = 0;
   for (let i = 0; i < st.n; i++) onWater += st.left[i]!;
   const m = r.mines;
+  const fr = r.friendly;
   const wv = w.pts ? w.pts.wave ?? null : null; // 第二波（v0.8.5 IP2）: 出なければ隻数に入れない
   return {
     rescue: {
@@ -29,6 +30,7 @@ export function rescueResultPart(w: RescueResultWorld): { rescue?: RescueResult 
       sboats: w.pts ? (wv ? sboatWaveAppeared(wv) : w.pts.section.boats.length) : 0, sboatRetreated: r.cover ? r.cover.count : 0,
       batteryShots: w.shoreGuns ? w.shoreGuns.shoreShots : 0, batteryHits: w.shoreGuns ? w.shoreGuns.shoreHits : 0, fitchJa: r.rules.fitch.labelJa,
       sboatWave2: wv && wv.spawned ? wv.n : 0, batterySeaShots: w.shoreGuns ? w.shoreGuns.seaShots ?? 0 : 0,
+      friendlyBoats: fr && fr.dispatched ? fr.n : 0, friendlyPicked: fr ? fr.picked : 0, friendlyJa: r.rules.friendly ? r.rules.friendly.labelJa : '', // 味方の艇（v0.8.5 IP3）
     },
   };
 }

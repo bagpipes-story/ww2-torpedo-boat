@@ -3,7 +3,8 @@
 //   拾えない（離れた・速い・満員・沈んだ・群が空いた・ほかの群に替わった）ステップで時計は 0 に戻す（拾った 1 名ずつは数えたまま）。
 // - 移す: フィッチの輪（ring_m）の内で速さ ≤ pickup_max_kt の間、transfer_per_person_s ごとに 1 名を「渡した」へ。輪を出れば時計は 0。
 // - 砲撃: 砲台の着弾が群の shell_kill_m の内なら、その群（一番近い 1 群だけ）から 1 名を失う（rescueShell。S ボートの小口径の弾は数えない＝呼ばない）。
-// - 救助の時間の終わり（世界の夜明けの時計。rescueTimeUp）: 残りの群はみな「他艦が拾った」へ。乗せている分はそのまま移せる。
+// - 救助の時間の終わり（世界の夜明けの時計。rescueTimeUp）: 残りの群はみな「他艦が拾った」へ。乗せている分はそのまま移せる。v0.8.5 IP3: 味方の艇（core/friendly-boats）が出ていれば
+//   残りは海に置いたまま（艇が拾い続ける。自艇はもう拾わない＝拾うのは救助の時間の内だけ。終わりに海に残った人は Result の「味方の艇に任せた」）。
 // - 終わり（finishRescue）: 帰投と同じに数える終わりは乗せている分も渡したに数える（沖の集合点で移す。設計の既定）。沈めば「沈没で失った」。漂流・座礁は乗せたまま。
 // - 群の位置のずれ（rollRescueGroups）: 組み立ての時に 1 回、seed+47 の系列から群ごとに x・y の 2 回（±group_jitter_m の一様）。core/rescue-field が機雷の置き方の前に呼ぶ。ステップの中では引かない。
 // 達成は core/mission-flow の rescueObjectiveDone（帰投と同じに数える終わりで渡した数 ≥ objective_delivered）。点は core/scoring の rescued（渡した 1 名ごと）。
@@ -121,7 +122,7 @@ export function stepRescue(st: RescueState, r: RescueRules, x: number, y: number
   if (st.ended) return;
   const slow = afloat && speedMps <= r.pickupMaxMps;
   // 拾う
-  const g = slow && st.aboard < r.capacity ? nearestRescueGroup(st, x, y, st.reach2) : -1;
+  const g = slow && !st.timeUp && st.aboard < r.capacity ? nearestRescueGroup(st, x, y, st.reach2) : -1; // 救助の時間の後は拾わない（v0.8.5 IP3。それまでは海が空いていた＝同じ動き）
   if (g < 0) {
     st.pickGroup = -1;
     st.pickS = 0;
@@ -184,10 +185,13 @@ export function rescueShell(st: RescueState, r: RescueRules, x: number, y: numbe
   return g;
 }
 
-/** 救助の時間の終わり（世界の夜明けのラッチ。1 回だけ効く）: 残りの群はみな他艦が拾った。乗せている分はそのまま */
-export function rescueTimeUp(st: RescueState): void {
+/** 救助の時間の終わり（世界の夜明けのラッチ。1 回だけ効く）: 残りの群はみな他艦が拾った。乗せている分はそのまま。keepOnWater（味方の艇が出ている。v0.8.5 IP3）なら海に置いたまま */
+export function rescueTimeUp(st: RescueState, keepOnWater = false): void {
   if (st.timeUp || st.ended) return;
   st.timeUp = true;
+  st.pickGroup = -1;
+  st.pickS = 0;
+  if (keepOnWater) return;
   for (let i = 0; i < st.n; i++) {
     st.byOthers += st.left[i]!;
     st.left[i] = 0;

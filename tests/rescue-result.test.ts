@@ -32,7 +32,7 @@ const R = S.rescue!;
 const RESULT_MAX_PX = 1232;
 const rr = (o: Partial<RescueResult> = {}): RescueResult => ({
   total: 60, objective: 40, delivered: 0, deliveredAtReturn: 0, lostShell: 0, byOthers: 0, lostSunk: 0, aboard: 0, onWater: 0, minesPlaced: 24, minesSeen: 0, minesBlown: 0, sboats: 2, sboatRetreated: 0,
-  batteryShots: 0, batteryHits: 0, fitchJa: 'フィッチ', sboatWave2: 0, batterySeaShots: 0, ...o,
+  batteryShots: 0, batteryHits: 0, fitchJa: 'フィッチ', sboatWave2: 0, batterySeaShots: 0, friendlyBoats: 0, friendlyPicked: 0, friendlyJa: '味方の艇', ...o,
 });
 const pt = (o: Partial<PtResult> = {}): PtResult => ({ enemyId: 'de_sboat_enemy', nameJa: 'Sボート', passes: 3, hits: 4, retired: 0, sunk: 1, ...o }) as PtResult;
 
@@ -137,11 +137,11 @@ describe('Briefing（spec §8.1。systems/briefing-numbers の救助の鍵）', 
     const rec = { ...getBriefingRecord(gameData, 'us_07', hard), hazardIds: s.hazardsTonight, absentHazardIds: s.absentHazards };
     return briefingRows(rec, briefingNumbers(s, '', ptLookOf(gameData, s.mission.enemyId).nameJa), (e) => enemyNameJa(gameData, e), (h) => riskLabelJa(gameData, h));
   };
-  it('時の行（昼）・条件の「救助の時間 300 秒（昼の空は味方）」・機銃の句（「1挺」と言わない・魚雷は Sボートの下を抜ける）。「夜明け」と言わない', () => {
+  it('時の行（昼）・条件の「救助の時間 390 秒（昼の空は味方）」（v0.8.5 IP3 で 300 → 390）・機銃の句（「1挺」と言わない・魚雷は Sボートの下を抜ける）。「夜明け」と言わない', () => {
     const r = rows(false);
     expect(r.map((x) => x.label)).toEqual(['目的', '成功', '時', '敵', '危険', '条件']);
     expect(r[2]!.text).toBe('昼（日の出の後） ・ 見える 2700 m ・ 見つかる 巡航 3600 m／静音 1800 m');
-    expect(r[5]!.text).toBe('救助の時間 300 秒（昼の空は味方） ・ 燃料 56 gal ・ 機銃40mm・20mm・12.7mm（撃つと閃光で見つかる。魚雷はSボートの下を抜ける）');
+    expect(r[5]!.text).toBe('救助の時間 390 秒（昼の空は味方） ・ 燃料 70 gal ・ 機銃40mm・20mm・12.7mm（撃つと閃光で見つかる。魚雷はSボートの下を抜ける）');
     expect(r[3]!.text).toBe('独Sボート ×2（西から）');
     expect(rows(true)[3]!.text).toBe('独Sボート ×3（西から）');
     for (const h of [false, true]) for (const x of rows(h)) expect(x.text, x.label).not.toContain('夜明け');

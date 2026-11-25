@@ -35,7 +35,7 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
     expect([s.mission.type, s.mission.enemyId, s.mission.playerBoatId, s.mission.torpedoId, s.mission.moon, s.mission.mainWeapon, s.ptBoats!.count, s.vis.moonFactor]).toEqual(['rescue', 'de_sboat_enemy', 'us_higgins78', 'us_mk13', 'day', 'guns', hard ? 3 : 2, 1.8]);
     expect([s.ptBoats!.baseDetectM, s.ptBoats!.detectFromS, s.ptBoats!.hullHp, s.ptBoats!.retreatHp, s.ptBoats!.leaveHeadingDeg, s.ptBoats!.gun.effectiveM, s.guns !== null, s.guns!.magazine !== null]).toEqual([2000, 60, 150, 90, 270, 600, true, true]);
     expect([s.destroyer, s.barges, s.convoy, s.escort, s.raid, s.storm, s.friendly, s.seaplane, s.airStrike, s.transport]).toEqual([null, null, null, null, null, null, null, null, null, null]);
-    expect([s.dawnAir.playAs, s.dawnAir.shipsAtDawn, s.dawnAir.retireEdge, s.durationS]).toEqual(['own', 'none', null, 300]);
+    expect([s.dawnAir.playAs, s.dawnAir.shipsAtDawn, s.dawnAir.retireEdge, s.durationS]).toEqual(['own', 'none', null, 390]); // 救助の時間は v0.8.5 IP3 で 300 → 390 秒
     // 砲台（任務の 210 mm）・岸・浅瀬・救助・機雷原
     expect([s.shoreBatteries.length, s.shoreBattery!.x, s.shoreBattery!.y, s.shoreBattery!.gun.id, s.mission.coast!.label, s.coastEdgeY]).toEqual([hard ? 3 : 1, 1600, 4600, 'skoda_21cm', 'コタンタン半島（サン＝マルクフ〜ユタ・ビーチ）', 3750]);
     expect([s.rescue!.total, s.rescue!.capacity, s.rescue!.fitch.labelJa, s.minefield!.count]).toEqual([60, 20, 'フィッチ', hard ? 64 : 48]); // 機雷は v0.8.5 IP1 で 24・32 → 48・64
@@ -55,7 +55,7 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
 });
 
 describe('us_07 の種の直し（spec-v0850 §2.2）と人名・PT の番号（CLAUDE.md §11）', () => {
-  it('題・日付・場所・type はそのまま、順は年代順の 5・Higgins・昼・S ボート 2 隻（ハード 3）・危険・救助の時間 300 秒・夜明けの空は own のまま・遊べるのは S5 から（playable_from "v0.8.5"）', () => {
+  it('題・日付・場所・type はそのまま、順は年代順の 5・Higgins・昼・S ボート 2 隻（ハード 3）・危険・救助の時間 390 秒（v0.8.5 IP3）・夜明けの空は own のまま・遊べるのは S5 から（playable_from "v0.8.5"）', () => {
     const m = missionOf('us_07');
     expect([m['title_ja'], m['date'], m['place'], m['type'], m['order'], m['player_boat'], m['torpedo_type'], m['moon'], m['moon_label_ja'], m['duration_min'], m['success']]).toEqual(['D-Day・生存者救助', '1944-06-06', 'ノルマンディー沖（ユタ・ビーチ）', 'rescue', 5, 'us_higgins78', 'us_mk13', 'day', '昼（日の出の後）', 5, '生存者40名以上をフィッチへ渡して帰投']);
     expect([m['enemies'], m['hazards'], m['playable_from']]).toEqual([['de_sboat_enemy', 'de_sboat_enemy'], ['shore_battery', 'mine', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire'], 'v0.8.5']);

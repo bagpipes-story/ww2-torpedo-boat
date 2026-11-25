@@ -23,7 +23,7 @@ import { patrolBombResultJa, patrolSearchResultJa } from './patrol-result-lines'
 import { ptResultLines } from './pt-lines';
 import { radarResultLineJa, type RadarResult } from './radar-result';
 import { reconFleetLineJa, reconReportLineJa, type ReconResult } from './recon-result';
-import { rescueResultLines } from './rescue-result';
+import { rescueFriendlyLineJa, rescueResultLines } from './rescue-result';
 import type { RescueResult } from '../core/rescue-telemetry';
 import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EvacResult, GunboatResult, LandingResult, PatrolResult, PtResult } from './result-types';
 import { straitResultLineJa, type StraitResult } from './strait-result';
@@ -69,6 +69,8 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
     // 救助の任務（v0.8.5 S4。us_07）: 生存者の行方（24 px）・機雷と砲台・S ボート・S ボートは想定の注（20 px・KPI の色。data を合わせる根拠＝CLAUDE.md §9）。魚雷の行は出さない（狙う艦が無い）
     const [a, b, c, d] = rescueResultLines(r.rescue, r.pt, r.returned);
     line(a, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+    const fl = rescueFriendlyLineJa(r.rescue); // 味方の艇が拾った（v0.8.5 IP3。0 なら出さない）
+    if (fl) line(fl, HUD_FONT_STATUS_PX, HUD_COLOR_STRONG);
     section();
     for (const l of [b, c, d]) line(l, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
   } else if (r.pt) {

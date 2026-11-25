@@ -28,6 +28,7 @@ export function rescueTelemetryPart(w: RescueTelemetryWorld): { rescue?: RescueT
     pickSeq: 0, pickRun: 0, transferSeq: 0, transferRun: 0, shellSeq: 0, nearDx: NaN, nearDy: NaN, nearCount: 0, fitchDx: 0, fitchDy: 0,
     minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,
     seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN,
+    friendlySeq: 0, friendlyCount: 0, friendlyPicked: 0, friendlyJa: p.friendly ? p.friendly.labelJa : '',
   };
   refreshRescueTelemetry(t, w);
   return { rescue: t };
@@ -88,6 +89,12 @@ export function refreshRescueTelemetry(t: RescueTelemetry | undefined, w: Rescue
     t.sboatCovered = n;
   }
   t.seaShellSeq = r.seaSeq;
+  const fr = r.friendly;
+  if (fr) {
+    t.friendlySeq = fr.seq;
+    t.friendlyCount = fr.dispatched ? fr.n : 0;
+    t.friendlyPicked = fr.picked;
+  }
   const wv = w.pts ? w.pts.wave : null;
   if (wv) {
     t.wave2Seq = wv.seq;

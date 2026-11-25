@@ -20,6 +20,11 @@ export interface RescueTelemetry {
    * 第二波・生存者の海への砲撃の無い任務は 0 と NaN
    */
   seaShellSeq: number; wave2Seq: number; wave2Count: number; wave2Dx: number; wave2Dy: number;
+  /**
+   * v0.8.5 IP3: 味方の艇が出た通し番号（0 か 1）とその隻数（出た時。出なければ 0）・拾った数（自艇の渡したに数えない）・艇の名（data の label_ja。艇の無い任務は ''）。
+   * 味方の艇の無い任務は 0 と ''
+   */
+  friendlySeq: number; friendlyCount: number; friendlyPicked: number; friendlyJa: string;
 }
 
 /** PT の隊の HUD の名（config/pt-look-data の PtLook のうち文に要る 2 つ） */
@@ -36,6 +41,8 @@ export interface RescueResult {
   minesPlaced: number; minesSeen: number; minesBlown: number; sboats: number; sboatRetreated: number; batteryShots: number; batteryHits: number;
   /** v0.8.5 IP2: S ボートの第二波の隻数（出なければ 0。sboats の内）・生存者の海へ撃った弾の数（batteryShots の外） */
   sboatWave2: number; batterySeaShots: number;
+  /** v0.8.5 IP3: 味方の艇の隻数（出なければ 0）・拾った数（delivered の外）・艇の名 */
+  friendlyBoats: number; friendlyPicked: number; friendlyJa: string;
   /** フィッチの名（v0.8.5 S4。Result の行「生存者: フィッチへ 44 名」） */
   fitchJa: string;
 }

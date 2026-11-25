@@ -10,6 +10,7 @@ import { segDistM } from '../core/ally-geometry';
 import { minefieldFreeShare } from '../core/minefield';
 import { createRescueState } from '../core/rescue';
 import { mineKeepOut, type RescueFieldSite } from '../core/rescue-field';
+import { checkFriendlyRoute } from './rescue-friendly-data';
 
 /** V-X1: minefield の鍵（ちょうどこれ）・機雷の数の上限（固定長の配列の大きさ。v0.8.5 IP1 で 48 → 64＝実機 1 回目のユーザー「機雷の敷設エリアを現在の2倍ほど」で面積と数を約 2 倍＝ノーマル 48・ハード 64）。V-X3: mine.params の鍵。V-X4: 水路がつなぐコリーの周りの円の半径 m。V-X5: 危険の id */
 export const MINEFIELD_KEYS = ['fields', 'lanes', 'clear_m', 'source'] as const;
@@ -171,7 +172,7 @@ export function checkMinefieldPlaceable(mission: PrototypeMission, field: Minefi
   return shares;
 }
 
-/** Boot の検査: v0_1_prototype を持つ全任務（ハードも）を 1 回組む（壊れていれば Boot で止まる）。V-X2 も（v0.8.5 S1）。最初の機雷原の任務の値（ノーマル）を返す（無ければ null） */
+/** Boot の検査: v0_1_prototype を持つ全任務（ハードも）を 1 回組む（壊れていれば Boot で止まる）。V-X2 も（v0.8.5 S1）・V-F4 も（v0.8.5 IP3）。最初の機雷原の任務の値（ノーマル）を返す（無ければ null） */
 export function validateMinefieldMissions(data: GameData): MinefieldSetup | null {
   let first: MinefieldSetup | null = null;
   for (const m of data.missionsSeed.missions as readonly Rec[]) {
@@ -180,7 +181,9 @@ export function validateMinefieldMissions(data: GameData): MinefieldSetup | null
     for (const hard of hasHardVariant(data, id) ? [false, true] : [false]) {
       const mission = getPrototypeMission(data, id, hard);
       const p = getMinefieldParams(data, mission);
-      if (p) checkMinefieldPlaceable(mission, p, getRescueParams(data, mission)!);
+      const r = p ? getRescueParams(data, mission)! : null;
+      if (p && r) checkMinefieldPlaceable(mission, p, r);
+      if (p && r && r.friendly) checkFriendlyRoute(mission, r.friendly, p, r.groups, r.groupJitterM); // V-F4（v0.8.5 IP3）: 味方の艇の道は水路の帯の内
       if (p && !first) first = p;
     }
   }

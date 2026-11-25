@@ -56,7 +56,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    1600
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -67,7 +67,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -149,20 +149,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1440,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -566,7 +566,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -583,6 +583,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -720,7 +752,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    1600
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -731,7 +763,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -813,20 +845,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1440,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -1230,7 +1262,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -1247,6 +1279,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -1384,7 +1448,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    1600
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -1395,7 +1459,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -1477,20 +1541,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1872,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -1894,7 +1958,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -1911,6 +1975,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -2048,7 +2144,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    1600
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -2059,7 +2155,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -2141,20 +2237,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1872,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -2558,7 +2654,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -2575,6 +2671,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -2716,11 +2844,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
-   2400
+   800,
+   3900
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -2731,7 +2859,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -2813,20 +2941,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1440,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -3067,7 +3195,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 800,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -3091,7 +3219,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 2400,
+   "x": 3900,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -3287,7 +3415,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -3310,6 +3438,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -3451,11 +3611,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
-   2400
+   800,
+   3900
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -3466,7 +3626,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -3548,20 +3708,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1440,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -3802,7 +3962,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 800,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -3826,7 +3986,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 2400,
+   "x": 3900,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -4022,7 +4182,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -4045,6 +4205,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -4186,11 +4378,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
-   2400
+   800,
+   3900
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -4201,7 +4393,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -4283,20 +4475,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1872,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -4537,7 +4729,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 800,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -4561,7 +4753,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 2400,
+   "x": 3900,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -4757,7 +4949,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -4780,6 +4972,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {
@@ -4921,11 +5145,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
-   2400
+   800,
+   3900
   ],
   "escort": null,
-  "durationS": 300,
+  "durationS": 390,
   "enemyHitsToSink": null,
   "moon": "day",
   "returnPoint": {
@@ -4936,7 +5160,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 56,
+  "fuelAllotmentGal": 70,
   "shallows": [
    {
     "x": 0,
@@ -5018,20 +5242,20 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "baseDetectM": 2000,
  "visRange2": 7290000,
  "detectRangeAtStartM": 1872,
- "durationS": 300,
+ "durationS": 390,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 28.000000000000004,
+  "idleGph": 36,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.9116583433082042,
+  "exponent": 1.9694797764883596,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 56,
- "fuelStartGal": 56,
+ "fuelAllotmentGal": 70,
+ "fuelStartGal": 70,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -5272,7 +5496,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 800,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -5296,7 +5520,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 2400,
+   "x": 3900,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -5492,7 +5716,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "dispersionFactor": 0.6
   },
   "wave2": {
-   "delayS": 60,
+   "delayS": 90,
    "legs": [
     [
      200,
@@ -5515,6 +5739,38 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "jitterXM": 200,
    "jitterYM": 100
+  },
+  "friendly": {
+   "count": 2,
+   "speedKt": 20,
+   "speedMps": 10.288,
+   "capacity": 10,
+   "staggerS": 3,
+   "parkOffsetM": 20,
+   "route": [
+    [
+     3750,
+     750
+    ],
+    [
+     3750,
+     1450
+    ],
+    [
+     3100,
+     1250
+    ],
+    [
+     2550,
+     1750
+    ],
+    [
+     2550,
+     2300
+    ]
+   ],
+   "fitchIdx": 1,
+   "labelJa": "味方の艇"
   }
  },
  "minefield": {

@@ -75,3 +75,6 @@ export const CORRY_OIL_ALPHA = 0.32;
 /** フィッチの砲火の見せ方（絵だけ・乱数なし）: S ボートがフィッチの砲火の距離の内に居る間の発砲の間隔（実秒）と、S ボートの周りの水柱の決まった 4 点（S ボートからの m） */
 export const FITCH_FIRE_INTERVAL_S = 0.9;
 export const FITCH_SPLASH_OFFSETS: readonly (readonly [number, number])[] = [[60, -40], [-50, 30], [35, 55], [-40, -60]];
+
+/** 味方の艇（v0.8.5 IP3。systems/friendly-boats-view）: 前の艇からこの距離 m の内の艇は名の札を出さない（隣の群で拾う 2 隻の札が重ならない＝札は 1 つで足りる） */
+export const FRIENDLY_LABEL_MERGE_M = 120;

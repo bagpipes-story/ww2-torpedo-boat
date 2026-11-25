@@ -1,7 +1,7 @@
 // 救助の任務（v0.8.5 S4。us_07「D-Day・生存者救助」の type rescue）の 2 行目の文・呼びかけの頭・中央の帯（spec-v0850 §8.2）。時計は ui/rescue-lines（ここを再 export する）。
 // - 出来事（モード 46。1 回・4 秒）: 収容した・フィッチへ移した・40 名を渡した・フィッチの砲火で S ボートが退いた（ここまで知らせ）／S ボートが来た・砲弾で生存者を失った・機雷が見えた・
 //   触雷（ここから急ぎ＝米PT の赤い線のすぐ下に出る。ui/mission-mode）。文は出来事の時に 1 回だけ組む。v0.8.5 IP2: S ボートの第二波（S ボートが来たと同じ種類）・
-//   砲台が生存者の海を撃った弾で失った（砲弾と同じ種類。文だけ替える）。
+//   砲台が生存者の海を撃った弾で失った（砲弾と同じ種類。文だけ替える）。v0.8.5 IP3: 40 名を渡した時に味方の艇が出れば「 ・ 味方の艇 2 隻が救助に来る」を足す（同じ種類）。
 // - 常の文（モード 47。値が変わった時だけ）: 移している・収容中・満員・フィッチの輪で速い・群のそばで速い・平常（乗せている・渡した・海に）。後ろに今の沿岸砲の句（hud-lines の withWarnings）。
 //   出すのは救助の任務で、燃料少でなく・浅瀬の外で、拾っている／移している間か、呼びかけ（救助の時間の終わり・40 名を渡した）が無い時（rescueStandingShown。見えている S ボートの平常の行より上）。
 // - 呼びかけの頭（rescueCallHeadJa）: 魚雷なし（狙う艦が無い任務）と救助の時間の終わりの前の「夜明け近し」は呼びかけにしない（rescueCallOf）。救助の時間の後は「救助の時間の終わり ・ 」、
@@ -23,6 +23,8 @@ export const rescueEventUrgent = (kind: number): boolean => kind >= RESCUE_EV_SB
 export const rescuePickedJa = (n: number, aboard: number, cap: number): string => `収容 ${n} 名 ・ 乗せている ${aboard}/${cap}${aboard >= cap ? ' ・ 満員' : ''}`;
 export const rescueTransferJa = (fitchJa: string, n: number, delivered: number): string => `${fitchJa}へ ${n} 名を移した ・ 計 ${delivered} 名`;
 export const rescueObjectiveJa = (n: number): string => `${n} 名を渡した ・ 帰投すれば達成`;
+/** 40 名を渡して味方の艇が出た（v0.8.5 IP3。実機 1 回目のユーザー「40人救助達成したら帰投水域の方から味方の艇が救助応援に駆けつける演出にする？」。拾い続けても帰投してもよい） */
+export const rescueObjectiveFriendlyJa = (n: number, nm: string, k: number): string => `${n} 名を渡した ・ 帰投すれば達成 ・ ${nm} ${k} 隻が救助に来る`;
 export const rescueShellJa = (n: number): string => `砲弾が生存者のそばに落ちた ・ ${n} 名を失った ・ 煙幕で砲台の目を切れ`;
 /** 砲台が自艇でなく生存者の海を撃った弾で失った（v0.8.5 IP2。自艇がどこにいても出る） */
 export const rescueSeaShellJa = (n: number): string => `砲台が生存者の海を砲撃 ・ ${n} 名を失った ・ 急いで拾え`;
@@ -120,7 +122,8 @@ export function rescueBannerLines(t: BoatTelemetry): readonly string[] {
   const p = t.pt;
   const sboat = p.enabled && p.alive > 0 ? ` ・ ${rescuePtNameJa(t)}は${p.leaveDirJa}へ去る` : '';
   const home = r.aboard > 0 ? `乗せている ${r.aboard} 名は${r.fitchJa}へ移すか、${RESCUE_HOME_JA}へ帰投して渡す` : `${RESCUE_HOME_JA}へ帰投せよ`;
-  return ['救助の時間が終わった', `残りは${RESCUE_OTHER_SHIPS_JA}の内火艇が拾う${sboat}`, home];
+  const rest = r.friendlyCount > 0 ? r.friendlyJa : `${RESCUE_OTHER_SHIPS_JA}の内火艇`; // 味方の艇が出ていれば艇が拾い続ける（v0.8.5 IP3）
+  return ['救助の時間が終わった', `残りは${rest}が拾う${sboat}`, home];
 }
 
 /** 3 行目（ui/boat-hud。救助の任務だけ）の倍率: 幅 maxPx に収める（収まれば 1）。文を組み直した時だけ呼ぶ */

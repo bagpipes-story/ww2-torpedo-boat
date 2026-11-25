@@ -2,7 +2,7 @@
 // 出来事と同じ作法: 2 行目に出ていた ms の和が RESCUE_EVENT_SHOW_MS に届くまで旗＝上の行に隠れている間は待つ）。文は ui/rescue-texts。
 // 出来事はテレメトリの数の変わり目で拾う（1 フレームに固定ステップが幾つあっても読み落とさない）:
 // - 収容した・移した: 拾った／移した 1 名ごとの通し番号を足しておき、拾う／移すのが止まった時に 1 回（群を替えながら続けて拾えば 1 つにまとめる）。
-// - 40 名を渡した（1 回）・フィッチの砲火で S ボートが退いた（退いた通し番号）・S ボートが来た（隊を初めて見たか、隊に初めて見つかった時。1 回）・第二波が出た（v0.8.5 IP2。1 回）・
+// - 40 名を渡した（1 回。v0.8.5 IP3: 味方の艇が出れば文に足す）・フィッチの砲火で S ボートが退いた（退いた通し番号）・S ボートが来た（隊を初めて見たか、隊に初めて見つかった時。1 回）・第二波が出た（v0.8.5 IP2。1 回）・
 //   砲弾で生存者を失った（通し番号。IP2 から生存者の海へ撃った弾なら文を替える）・
 //   機雷が見えた（見えた通し番号。方角と距離は出来事の 1 回だけ atan2・平方根）・触雷（爆発の通し番号。HP の減りは前のフレームの HP から）。
 // 出ている間に来た出来事: 同じ種類は数を足して言い直す（砲弾・機雷）、重い物は出ている物に替わり（替わられた物は空いていれば後ろに待つ）、軽い物は後ろに 1 つ待つ。
@@ -14,7 +14,7 @@ import { bearingJa } from '../core/briefing';
 import { MISSION_RESCUE_EVENT, MODE_FLAG_RESCUE_EVENT, MODE_FLAG_RESCUE_URGENT } from './mission-mode';
 import {
   RESCUE_EV_BLOW, RESCUE_EV_MINE, RESCUE_EV_NONE, RESCUE_EV_OBJECTIVE, RESCUE_EV_PICKED, RESCUE_EV_RETREAT, RESCUE_EV_SBOAT, RESCUE_EV_SHELL, RESCUE_EV_TRANSFER, rescueBlowJa, rescueEventUrgent, rescueMineJa,
-  rescueObjectiveJa, rescuePickedJa, rescuePtNameJa, rescueRetreatJa, rescueSboatJa, rescueSeaShellJa, rescueShellJa, rescueTransferJa, rescueWave2Ja, type RescueLineView,
+  rescueObjectiveFriendlyJa, rescueObjectiveJa, rescuePickedJa, rescuePtNameJa, rescueRetreatJa, rescueSboatJa, rescueSeaShellJa, rescueShellJa, rescueTransferJa, rescueWave2Ja, type RescueLineView,
 } from './rescue-texts';
 
 export { RESCUE_EV_BLOW, RESCUE_EV_MINE, RESCUE_EV_NONE, RESCUE_EV_OBJECTIVE, RESCUE_EV_PICKED, RESCUE_EV_RETREAT, RESCUE_EV_SBOAT, RESCUE_EV_SHELL, RESCUE_EV_TRANSFER } from './rescue-texts';
@@ -46,7 +46,7 @@ export class RescueLineClock implements RescueLineView {
     if (r.pickSeq > this.pickSeen) { this.pickRun += r.pickSeq - this.pickSeen; this.pickSeen = r.pickSeq; }
     if (!r.picking && this.pickRun > 0) { this.push(RESCUE_EV_PICKED, rescuePickedJa(this.pickRun, r.aboard, r.capacity)); this.pickRun = 0; }
     if (r.transferSeq > this.trSeen) { this.trRun += r.transferSeq - this.trSeen; this.trSeen = r.transferSeq; }
-    if (!this.objDone && r.objectiveReached) { this.objDone = true; this.push(RESCUE_EV_OBJECTIVE, rescueObjectiveJa(r.objective)); }
+    if (!this.objDone && r.objectiveReached) { this.objDone = true; this.push(RESCUE_EV_OBJECTIVE, r.friendlyCount > 0 ? rescueObjectiveFriendlyJa(r.objective, r.friendlyJa, r.friendlyCount) : rescueObjectiveJa(r.objective)); } // 味方の艇（v0.8.5 IP3）は同じステップに出る
     if (!r.transferring && this.trRun > 0) { this.push(RESCUE_EV_TRANSFER, rescueTransferJa(r.fitchJa, this.trRun, r.delivered)); this.trRun = 0; }
     const p = t.pt;
     if (r.sboatRetreatSeq > this.retreatSeen) { this.retreatSeen = r.sboatRetreatSeq; this.push(RESCUE_EV_RETREAT, rescueRetreatJa(r.fitchJa, rescuePtNameJa(t))); }

@@ -5,6 +5,7 @@
 //   2 行目（20 px・KPI の色）「機雷: 見えた 6/24 ・ 触雷 0 ・ 砲台: 砲撃 24 発 ・ 生存者の海へ 12 発 ・ 命中 1」（data を合わせる根拠＝CLAUDE.md §9。生存者の海は v0.8.5 IP2・0 なら出さない）
 //   3 行目（20 px・KPI の色）「Sボート 4 隻（第二波 2）: 航過 3 回 ・ 被弾 4 発 ・ フィッチの砲火で退いた 1 ・ 撃退 0 ・ 撃沈 0」（第二波は v0.8.5 IP2・出なければ出さない）
 //   4 行目（20 px・KPI の色）「この朝、史実ではSボートはユタ沖に来ていない（ゲームの想定）」
+//   v0.8.5 IP3: 1 行目の下（20 px）に「味方の艇 2 隻が拾った 12 名（自艇の渡したに数えない）」（拾った数が 0 なら出さない）。帰投で海に残った人は味方の艇が出ていれば「味方の艇に任せた」
 // 見出し: 達成「救助成功」・未達で帰投「帰投（渡した N 名 ・ 40 名に届かず）」・S ボートに沈められた「Sボートの掃射で沈没」。触雷は今の REASON_LABEL の「触雷で沈没」
 // （「任務終了 — 触雷で沈没」＝spec の「触雷 — 沈没」。頭の「任務終了 — 」が線を持つので 2 本にしない）。後ろの秒は「（救助の後 N 秒）」。Phaser・DOM を読まない。
 import { PT_NAME_DEFAULT_JA } from '../config/pt-config';
@@ -40,8 +41,13 @@ export function rescueSurvivorLineJa(r: RescueResult, returned = false): string 
   if (r.lostSunk > 0) parts.push(`沈没で失った ${r.lostSunk} 名`);
   if (r.aboard > 0) parts.push(`乗せたまま ${r.aboard} 名`);
   if (r.byOthers > 0) parts.push(`他艦が拾った ${r.byOthers} 名`);
-  if (r.onWater > 0) parts.push(returned ? `他艦に任せた ${r.onWater} 名` : `海に残った ${r.onWater} 名`);
+  if (r.onWater > 0) parts.push(returned ? `${r.friendlyBoats > 0 ? r.friendlyJa : '他艦'}に任せた ${r.onWater} 名` : `海に残った ${r.onWater} 名`); // 味方の艇が出ていれば「味方の艇に任せた」（v0.8.5 IP3）
   return `生存者: ${parts.join(' ・ ')}`;
+}
+
+/** 味方の艇の行（v0.8.5 IP3。拾った数が 0 なら出さない＝null）: 「味方の艇 2 隻が拾った 12 名（自艇の渡したに数えない）」 */
+export function rescueFriendlyLineJa(r: RescueResult): string | null {
+  return r.friendlyPicked > 0 ? `${r.friendlyJa} ${r.friendlyBoats} 隻が拾った ${r.friendlyPicked} 名（自艇の渡したに数えない）` : null;
 }
 
 /** 2 行目（機雷と砲台） */

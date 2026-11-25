@@ -40,8 +40,8 @@ describe('既定の data（us_07。spec §3・§4.1）', () => {
     }
     expect(validateRescueMissions(gameData)?.total).toBe(60);
     expect([RESCUE_KEYS.length, RESCUE_FITCH_KEYS, RESCUE_CORRY_KEYS, RESCUE_DAYLIGHT_KEYS, RESCUE_GROUPS_MAX, RESCUE_MISSION_TYPE, RESCUE_DAYLIGHT_RANGE]).toEqual([
-      14, ['x_m', 'y_m', 'ring_m', 'heading_deg', 'cover_m', 'cover_s', 'label_ja'], ['x_m', 'y_m', 'heading_deg', 'label_ja'], ['moon_factor', 'source'], 16, 'rescue', [1, 3],
-    ]); // 鍵は v0.8.5 IP2 で shelling・sboat_wave2 を足して 12 → 14
+      15, ['x_m', 'y_m', 'ring_m', 'heading_deg', 'cover_m', 'cover_s', 'label_ja'], ['x_m', 'y_m', 'heading_deg', 'label_ja'], ['moon_factor', 'source'], 16, 'rescue', [1, 3],
+    ]); // 鍵は v0.8.5 IP2 で shelling・sboat_wave2 を足して 12 → 14、IP3 で friendly_boats を足して 15
   });
   it('setup の鍵: us_07 だけ rescue（ノーマル・ハード）。ほかの任務は鍵ごと出ない。昼から始まるのは jp_03（evac の day_start）と us_07（rescue）だけ', () => {
     for (const id of PROTO_IDS) {
@@ -126,7 +126,7 @@ describe('起動時の検査（V-Q1〜V-Q8・V-D1〜V-D2・V-U1・V-U2 の射界
     expect(build((d) => delete protoOf(d, 'us_07')['rescue'])).toThrow(/us_07\.v0_1_prototype\.rescue は type rescue の任務に要る（生存者の群と渡す先）（V-Q8/);
     const d = clone();
     missionOf(d, 'us_06')['type'] = 'rescue';
-    protoOf(d, 'us_06')['rescue'] = { ...(JSON.parse(JSON.stringify(rescueOf(d))) as Rec), shelling: null, sboat_wave2: null }; // 砲台・S ボートの無い任務は null（v0.8.5 IP2 の V-H2・V-W2）
+    protoOf(d, 'us_06')['rescue'] = { ...(JSON.parse(JSON.stringify(rescueOf(d))) as Rec), shelling: null, sboat_wave2: null, friendly_boats: null }; // 砲台・S ボートの無い任務は null（v0.8.5 IP2 の V-H2・V-W2）・味方の艇の道は us_07 の水路（v0.8.5 IP3 の V-F3）
     expect(() => getRescueParams(d, getPrototypeMission(d, 'us_06'))).not.toThrow();
     expect(() => validateRescueMissions(d)).toThrow(/missions_seed\.json の v0_1_prototype\.rescue は 1 任務だけ（us_06・us_07。V-Q8・spec-v0850 §4）/);
   });

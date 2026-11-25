@@ -40,7 +40,7 @@ const res = (o: Partial<RescueTelemetry> = {}): RescueTelemetry => ({
   aboard: 0, delivered: 0, deliveredAtReturn: 0, onWater: R.total, lostShell: 0, byOthers: 0, lostSunk: 0, objectiveReached: false, timeUp: false, picking: false, transferring: false,
   pickSeq: 0, pickRun: 0, transferSeq: 0, transferRun: 0, shellSeq: 0, nearDx: 900, nearDy: 600, nearCount: 7, fitchDx: -1200, fitchDy: 700,
   minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,
-  seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN, ...o,
+  seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN, friendlySeq: 0, friendlyCount: 0, friendlyPicked: 0, friendlyJa: '味方の艇', ...o,
 });
 const NAMES = { nameJa: 'Sボート', sunkJa: '炎上' };
 const T = (r: RescueTelemetry | undefined, over: Partial<BoatTelemetry> = {}, pt: Parameters<typeof tele>[0] = { enabled: false }): BoatTelemetry =>

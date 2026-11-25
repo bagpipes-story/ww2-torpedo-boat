@@ -50,10 +50,10 @@ describe('既定の data（us_07。spec §3・§4.2・§4.3）', () => {
       }
     }
   });
-  it('沿岸砲: us_07 は任務の 210 mm（3 門・10 秒に 1 発・射界 2,600 m・陸へ 600 m。ハードは x 1,300・2,400 の 2 つ目・3 つ目も同じ値＝v0.8.5 S3・S3b。散布 110 m は S3b）、us_03 は risk_events の 75 mm のまま（ハードの 2 門目も）', () => {
+  it('沿岸砲: us_07 は任務の 210 mm（3 門・10 秒に 1 発・射界 2,600 m・陸へ 600 m。ハードは x 800・3,900 の 2 つ目・3 つ目も同じ値＝v0.8.5 S3・S3b・IP3〔[1300, 2400] → [800, 3900]〕。散布 110 m は S3b）、us_03 は risk_events の 75 mm のまま（ハードの 2 門目も）', () => {
     const [b] = getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07'));
     expect([b!.x, b!.y, b!.gun.id, b!.gun.count, b!.gun.roundsPerMinPerGun, b!.gun.effectiveM, b!.gun.damage, b!.gun.dispersionM, b!.gun.splashRadiusM, b!.gun.shellSpeedMps, b!.baseDetectM, b!.arc2]).toEqual([1600, 4600, 'skoda_21cm', 3, 2, 2600, 34, 110, 10, 600, 6000, 6_760_000]);
-    expect(getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07', true)).map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM])).toEqual([[1600, 4600, 'skoda_21cm', 2600], [1300, 4600, 'skoda_21cm', 2600], [2400, 4600, 'skoda_21cm', 2600]]);
+    expect(getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07', true)).map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM])).toEqual([[1600, 4600, 'skoda_21cm', 2600], [800, 4600, 'skoda_21cm', 2600], [3900, 4600, 'skoda_21cm', 2600]]);
     for (const hard of [false, true]) {
       const us03 = getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_03', hard));
       expect(us03.map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM, x.baseDetectM])).toEqual([[4600, 2560, 'type41_75mm', 900, 1200], ...(hard ? [[2600, 2560, 'type41_75mm', 900, 1200]] : [])]);
