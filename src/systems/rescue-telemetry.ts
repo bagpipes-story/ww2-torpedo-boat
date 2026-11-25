@@ -22,7 +22,7 @@ export function rescueTelemetryPart(w: RescueTelemetryWorld): { rescue?: RescueT
   let total = 0;
   for (const g of p.groups) total += g.count;
   const t: RescueTelemetry = {
-    capacity: p.capacity, objective: p.objectiveDelivered, total, fitchJa: p.fitch.labelJa, corryJa: p.corry.labelJa, fitchRingM: p.fitch.ringM,
+    capacity: p.capacity, objective: p.objectiveDelivered, total, fitchJa: p.fitch.labelJa, corryJa: p.corry.labelJa, fitchRingM: p.fitch.ringM, pickupMaxKt: p.pickupMaxKt, coverM: p.fitch.coverM,
     aboard: 0, delivered: 0, deliveredAtReturn: 0, onWater: 0, lostShell: 0, byOthers: 0, lostSunk: 0, objectiveReached: false, timeUp: false, picking: false, transferring: false,
     pickSeq: 0, pickRun: 0, transferSeq: 0, transferRun: 0, shellSeq: 0, nearDx: NaN, nearDy: NaN, nearCount: 0, fitchDx: 0, fitchDy: 0,
     minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,

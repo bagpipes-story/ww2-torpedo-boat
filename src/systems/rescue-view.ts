@@ -9,12 +9,13 @@ import { EXPLOSION_RING_RADIUS_UNITS } from '../assets/art-dims';
 import { rescueArtScale } from '../assets/rescue-art';
 import {
   BUOY_INSET_M, BUOY_MAX, BUOY_SPACING_M,
-  CORRY_ALPHA_FROM, CORRY_ALPHA_STEPS, CORRY_LABEL_GAP, CORRY_ALPHA_TO, CORRY_LIST_SCALE_X, CORRY_OIL_ALPHA, CORRY_OIL_RADIUS_M, CORRY_SETTLE_DEG, CORRY_TINT,
+  CORRY_ALPHA_FROM, CORRY_ALPHA_STEPS, CORRY_ALPHA_TO, CORRY_LIST_SCALE_X, CORRY_OIL_ALPHA, CORRY_OIL_RADIUS_M, CORRY_SETTLE_DEG, CORRY_TINT,
   FITCH_FIRE_INTERVAL_S, FITCH_RING_ALPHA, FITCH_RING_COLOR, FITCH_SPLASH_OFFSETS,
   LANE_FILL_ALPHA, LANE_FILL_COLOR, MINEFIELD_FILL_ALPHA, MINEFIELD_FILL_COLOR, MINEFIELD_LINE_ALPHA, MINEFIELD_LINE_W,
   RESCUE_TEX_ALLY_SHIP, RESCUE_TEX_BUOY, RESCUE_TEX_MINE, RESCUE_TEX_SURVIVORS, SHIP_LABEL_COLOR, SHIP_LABEL_FONT_PX, SHIP_LABEL_GAP,
-  SURVIVOR_HEADS_MAX, SURVIVOR_LABEL_COLOR, SURVIVOR_LABEL_DY, SURVIVOR_LABEL_FONT_PX,
+  SURVIVOR_HEADS_MAX, SURVIVOR_LABEL_COLOR, SURVIVOR_LABEL_DY, SURVIVOR_LABEL_FONT_PX, SURVIVOR_TEX_UNITS,
 } from '../config/rescue-art-config';
+import { corryLabelSpot } from '../ui/rescue-label-spot';
 import { MINE_SEEN } from '../core/minefield';
 import type { PtSection } from '../core/pt-boats';
 import type { SplashPool } from './splash-pool';
@@ -85,7 +86,9 @@ export class RescueView {
     this.corry = scene.add.image(r.corry.x, r.corry.y, RESCUE_TEX_ALLY_SHIP).setScale(shipScale * CORRY_LIST_SCALE_X, shipScale).setAngle(r.corry.headingDeg).setTint(CORRY_TINT).setAlpha(CORRY_ALPHA_FROM).setDepth(DEPTH.destroyer);
     const style = hudTextStyle(SHIP_LABEL_FONT_PX, SHIP_LABEL_COLOR);
     this.labels.push(scene.add.text(r.fitch.x, r.fitch.y + this.fitch.displayHeight / 2 + SHIP_LABEL_GAP, r.fitch.labelJa, style).setOrigin(0.5, 0).setDepth(DEPTH.destroyer));
-    this.labels.push(scene.add.text(r.corry.x, r.corry.y + this.corry.displayHeight / 2 + CORRY_LABEL_GAP, r.corry.labelJa, style).setOrigin(0.5, 0).setDepth(DEPTH.destroyer));
+    // コリーの名は今夜の群の札・絵と重ならない候補の所（v0.8.5 S4。ui/rescue-label-spot。S2 は艦の真下 80 m で南の群の札に重なった）
+    const spot = corryLabelSpot(r.corry.x, r.corry.y, src.state, SURVIVOR_LABEL_DY, SURVIVOR_TEX_UNITS / 2, { x: 0, y: 0 });
+    this.labels.push(scene.add.text(spot.x, spot.y, r.corry.labelJa, style).setOrigin(0.5, 0).setDepth(DEPTH.destroyer));
     // 生存者の群（今夜の位置）と人数の札
     const st = src.state;
     const sc = rescueArtScale();

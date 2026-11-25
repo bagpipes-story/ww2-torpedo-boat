@@ -2,8 +2,8 @@
 // （確保しない）。setup.rescue の無い任務は BoatTelemetry の rescue の鍵ごと無い。PT の隊の名（ptNames）は記録に name_short_ja のある隊（us_07 の S ボート）だけ鍵が出る。型だけ。
 
 export interface RescueTelemetry {
-  /** 任務で決まる値（作る時に 1 回）: 乗せられる数・達成の数・群の合計・フィッチとコリーの名・フィッチの輪の半径 m */
-  capacity: number; objective: number; total: number; fitchJa: string; corryJa: string; fitchRingM: number;
+  /** 任務で決まる値（作る時に 1 回）: 乗せられる数・達成の数・群の合計・フィッチとコリーの名・フィッチの輪の半径 m・拾う／移す速さの上限 kt・フィッチの砲火の距離 m（v0.8.5 S4 の文） */
+  capacity: number; objective: number; total: number; fitchJa: string; corryJa: string; fitchRingM: number; pickupMaxKt: number; coverM: number;
   /** 乗せている・渡した（うち帰投で数えた）・海に残る・砲撃で失った・他艦が拾った・沈没で失った・渡した数が達成に届いた・救助の時間が終わった・拾っている・移している */
   aboard: number; delivered: number; deliveredAtReturn: number; onWater: number; lostShell: number; byOthers: number; lostSunk: number;
   objectiveReached: boolean; timeUp: boolean; picking: boolean; transferring: boolean;
@@ -29,4 +29,6 @@ export interface RescueResult {
   total: number; objective: number; delivered: number; deliveredAtReturn: number; lostShell: number; byOthers: number; lostSunk: number; aboard: number; onWater: number;
   /** 機雷: 置いた・見えた・触雷（機雷原の無い任務は 0）。S ボート: 隻数・フィッチの砲火で退いた。砲台: 撃たれた・命中 */
   minesPlaced: number; minesSeen: number; minesBlown: number; sboats: number; sboatRetreated: number; batteryShots: number; batteryHits: number;
+  /** フィッチの名（v0.8.5 S4。Result の行「生存者: フィッチへ 44 名」） */
+  fitchJa: string;
 }

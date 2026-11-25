@@ -381,6 +381,10 @@ describe('4. カメラと端の矢印（jp_03 だけ）', () => {
     const e = src('src/ui/edge-marker.ts');
     expect(e).toContain('if (inset === undefined) return;');
     expect(e).toContain('const x = Math.min(Math.max(this.label.x, inset + half), GAME_WIDTH - inset - half);');
-    for (const f of ['src/ui/hud-markers.ts', 'src/ui/landing-markers.ts']) expect(src(f), f).not.toContain('labelInset');
+    expect(src('src/ui/landing-markers.ts')).not.toContain('labelInset');
+    // v0.8.5 S4: hud-markers は名のある PT の隊（us_07 の「Sボート」）の矢印だけ（ほかの任務の矢印は省く＝今のまま）
+    const hm = src('src/ui/hud-markers.ts');
+    expect(hm.match(/labelInset/g)?.length).toBe(1);
+    expect(hm).toContain('...(telemetry.ptNames ? { labelInset: HUD_MARGIN } : {})');
   });
 });

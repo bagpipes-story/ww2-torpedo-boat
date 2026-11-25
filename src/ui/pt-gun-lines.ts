@@ -9,7 +9,7 @@
 // v0.6.10 S6（卯月。jp_04）: 卯月の砲が起こした出来事は頭を「卯月 撃退！ 米PT 1 隻が離脱」など（キーの bit 16＝ui/ally-lines の K_ALLY_EVENT。隼艇と同じ頭の形・足した連射は「自艇」）。
 import { GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
-import { PT_DISTANCE_STEP_M, PT_NAME_DEFAULT_JA, PT_RESULT_SHOW_MS, PT_SUNK_DEFAULT_JA } from '../config/pt-config';
+import { PT_DISTANCE_STEP_M, PT_MARKER_LABEL, PT_NAME_DEFAULT_JA, PT_RESULT_SHOW_MS, PT_SUNK_DEFAULT_JA } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import type { PtTelemetry } from '../core/pt-boats';
 import { GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE } from '../core/gun-battery';
@@ -51,8 +51,9 @@ export function ptGunLine(t: BoatTelemetry, key: number): HudLine {
   if (st === PT_GUN_RELOAD) return { text: `弾倉交換 ・ あと ${(key >> K_RELOAD) & 7} 秒`, color: HUD_COLOR_STRONG };
   if (st === GUN_OUT_OF_ARC) return { text: '射界外 ・ 舷側に向けよ（艇首・艇尾は撃てない）', color: HUD_COLOR_WARN };
   if (st === GUN_OUT_OF_RANGE) return { text: `射程外 ・ ${p.gunRangeM} m まで引きつけよ`, color: HUD_COLOR_WARN };
-  if (st !== GUN_FIRING) return { text: '撃てる PT が見えない', color: HUD_COLOR_STRONG };
-  const head = `射撃中 ・ PT ${((key >> K_DIST) & 63) * PT_DISTANCE_STEP_M} m`;
+  const nm = t.ptNames ? t.ptNames.nameJa : PT_MARKER_LABEL; // 隊の名（v0.8.5 S4。us_07 は「Sボート」。米PT の任務は今の「PT」のまま）
+  if (st !== GUN_FIRING) return { text: `撃てる ${nm} が見えない`, color: HUD_COLOR_STRONG };
+  const head = `射撃中 ・ ${nm} ${((key >> K_DIST) & 63) * PT_DISTANCE_STEP_M} m`;
   // 速くて遠いは 1 つの文で両方を言う（レビュー ux-6: 速いだけを言うと、14 kt に落としても 550 m ではまだ当たらず、2 度目の直しが要った）
   if ((key & K_FAST) !== 0 && (key & K_FAR) !== 0) return { text: `${head} ・ 遠くて速い（${p.gunEffectiveM} m 以内・${p.silentMaxKt} kt 以下で）`, color: HUD_COLOR_WARN };
   if ((key & K_FAST) !== 0) return { text: `${head} ・ 速くて散る（${p.silentMaxKt} kt 以下で）`, color: HUD_COLOR_WARN };

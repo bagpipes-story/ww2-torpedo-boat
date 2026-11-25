@@ -17,7 +17,7 @@
 // v0.6.6（隼艇。jp_01 のハード）: 標的が隼艇（PtTelemetry.targetKind / lastPassTargetKind が 2）の航過・連射・突撃・追ってくる PT・結果は ui/gunboat-lines の文（キーの bit 30 と方角 16〜18、
 // 被弾の結果は HP 6〜11）。大発は bit 28 のまま。Result の 4 行目は自艇の分（隼艇の分を引く）、最初に捉えたのが隼艇なら「隼艇」。
 import { HOME_COLOR_TEXT, HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
-import { PT_DISTANCE_STEP_M, PT_NAME_DEFAULT_JA } from '../config/pt-config';
+import { PT_DISTANCE_STEP_M, PT_MARKER_LABEL, PT_NAME_DEFAULT_JA } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { bearingJa } from '../core/briefing';
 import { PT_ALERT, PT_CHASE, PT_RUN_IN } from '../core/pt-boats';
@@ -236,7 +236,7 @@ export function ptResultLines(r: PtResult, detections: number, returned: boolean
   const nm = r.nameJa ?? PT_NAME_DEFAULT_JA; // 隊の名（v0.8.5 S2）
   return [
     seen ? `${nm} 航過 ${r.passes} 回${onBarges}${burstsResultJa(r)}${dodged} ・ ${hitsJa(r)}` : returned ? `${nm} に一度も見つからずに抜けた` : `${nm} に一度も見つからなかった`,
-    seen ? `${convoy ? `${nm} が捉えた` : '見つかった'} ${detections} 回（最初 ${Math.round(r.firstDetectM)} m ・ ${band}） ・ 見失わせた ${r.lostContacts} 回` : `見つからず ・ PT の最接近 ${Number.isFinite(r.closestM) ? Math.round(r.closestM) : '—'} m`,
+    seen ? `${convoy ? `${nm} が捉えた` : '見つかった'} ${detections} 回（最初 ${Math.round(r.firstDetectM)} m ・ ${band}） ・ 見失わせた ${r.lostContacts} 回` : `見つからず ・ ${r.nameJa ?? PT_MARKER_LABEL} の最接近 ${Number.isFinite(r.closestM) ? Math.round(r.closestM) : '—'} m`,
     `予告から初弾まで 最短 ${Number.isFinite(r.minWarnS) ? r.minWarnS.toFixed(1) : '—'} 秒 ・ 撃たれた弾 ${r.shots} 発`,
     gunResultJa(r, gb, al),
   ];

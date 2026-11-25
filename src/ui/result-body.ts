@@ -5,7 +5,7 @@
 // v0.6.10 S7: 卯月のいる夜（LandingResult.ally）はその 3 行の下に卯月の 1 行（ui/ally-result）、米PT の 4 行目（自艇の砲）から卯月の分を引く。卯月の無い夜は前の行のまま。
 // v0.6.11 S6: 空襲下の退避（jp_03）は本文の頭に 4 行（ui/evac-result。残存と達成・隠れ場所と隊ごと・編隊・記録）。魚雷の行は出さない。退避の無い任務は今までの行のまま。
 // v0.8.0 S4: 海峡の夜（us_04）は魚雷の枝の後ろにレーダーと列の通過の 1 行ずつ（ui/radar-result・strait-result。20 px・KPI の色）。鍵の無い任務は今までの行のまま。v0.8.1 S4: 止まった艦の任務（us_06）の 1 行（ui/anchor-result）。
-// v0.8.2 S4: 報告の任務（us_05）の 2 行（ui/recon-result。レーダーの行の後）。
+// v0.8.2 S4: 報告の任務（us_05）の 2 行（ui/recon-result。レーダーの行の後）。v0.8.5 S4: 救助の任務（us_07）は米PT の枝の代わりに 4 行（ui/rescue-result）。
 // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
 import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
@@ -23,6 +23,8 @@ import { patrolBombResultJa, patrolSearchResultJa } from './patrol-result-lines'
 import { ptResultLines } from './pt-lines';
 import { radarResultLineJa, type RadarResult } from './radar-result';
 import { reconFleetLineJa, reconReportLineJa, type ReconResult } from './recon-result';
+import { rescueResultLines } from './rescue-result';
+import type { RescueResult } from '../core/rescue-telemetry';
 import type { ArmsResult, BargeResult, ConvoyResult, EngineResult, EvacResult, GunboatResult, LandingResult, PatrolResult, PtResult } from './result-types';
 import { straitResultLineJa, type StraitResult } from './strait-result';
 
@@ -45,6 +47,7 @@ export interface ResultBodySource {
   strait?: StraitResult;
   anchor?: AnchorResult; // 止まった艦の任務（v0.8.1 S4。us_06）
   recon?: ReconResult; // 報告の任務（v0.8.2 S4。us_05）
+  rescue?: RescueResult; // 救助の任務（v0.8.5 S4。us_07。米PT の枝の代わりに ui/rescue-result の 4 行）
   detections: number; returned: boolean; objectiveDone: boolean;
   shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
@@ -62,6 +65,12 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
     line(`大発 撃破 ${h.sunk} / ${h.total}（ノルマ ${h.quota} ・ 上陸 ${h.beached}）`, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
     section();
     for (const l of bargeResultLines(h)) line(l, HUD_FONT_HEADING_PX);
+  } else if (r.rescue) {
+    // 救助の任務（v0.8.5 S4。us_07）: 生存者の行方（24 px）・機雷と砲台・S ボート・S ボートは想定の注（20 px・KPI の色。data を合わせる根拠＝CLAUDE.md §9）。魚雷の行は出さない（狙う艦が無い）
+    const [a, b, c, d] = rescueResultLines(r.rescue, r.pt, r.returned);
+    line(a, HUD_FONT_STEP_PX, HUD_COLOR_STRONG);
+    section();
+    for (const l of [b, c, d]) line(l, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
   } else if (r.pt) {
     // 米PT（v0.6.3）: 航過・かわした・被弾、見つかった距離と見失わせた回数、予告から初弾、13mm の射撃・命中・撃退・撃沈（実機 1 回目。data を合わせる根拠。CLAUDE.md §9）。
     // 味方の大発の輸送隊（v0.6.4。jp_01）はその上に 1 行目「大発 上陸 2/3 ・ 沈没 1（ノルマ 2） ・ 大発の被弾 9 発」（米PT の 1 行目は 20 px に）

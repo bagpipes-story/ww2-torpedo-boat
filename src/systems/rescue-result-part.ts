@@ -25,7 +25,7 @@ export function rescueResultPart(w: RescueResultWorld): { rescue?: RescueResult 
       total, objective: r.rules.objectiveDelivered, delivered: st.delivered, deliveredAtReturn: st.deliveredAtReturn, lostShell: st.lostShell, byOthers: st.byOthers, lostSunk: st.lostSunk, aboard: st.aboard, onWater,
       minesPlaced: m ? m.placed : 0, minesSeen: m ? m.seen : 0, minesBlown: m ? m.blown : 0,
       sboats: w.pts ? w.pts.section.boats.length : 0, sboatRetreated: r.cover ? r.cover.count : 0,
-      batteryShots: w.shoreGuns ? w.shoreGuns.shoreShots : 0, batteryHits: w.shoreGuns ? w.shoreGuns.shoreHits : 0,
+      batteryShots: w.shoreGuns ? w.shoreGuns.shoreShots : 0, batteryHits: w.shoreGuns ? w.shoreGuns.shoreHits : 0, fitchJa: r.rules.fitch.labelJa,
     },
   };
 }

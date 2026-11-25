@@ -4,6 +4,7 @@
 // v0.6.2 実機 2 回目: 夜明けの秒数は左上の時計だけ（2 行目には出さない。ユーザー「メインメッセージの方に夜明けまでの秒数は不用」）。
 // v0.6.10 S6（卯月。jp_04）: 夜明け近しの帰投の輪の呼びかけ（LD3）「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（callLineText。卯月の無い夜は前の「揚陸を待て」）。
 // v0.6.11 S5（jp_03。day_start の任務だけ＝t.dawn.dayStart。spec-v0611-r2 §10.3）: 時計は「空襲 残り 1:35」「空襲後 0:12」（r2 M9）、240 秒の帯は「第1次の空襲が去った」（ui/evac-lines）。ほかの任務の文は 1 字も変わらない。
+// v0.8.5 S4（us_07。t.rescue の任務だけ）: 時計「救助 残り 4:12」「救助の後 0:20」・呼びかけの頭・救助の時間の終わりの帯（ui/rescue-texts）。ほかの任務の文は 1 字も変わらない。
 // Phaser も DOM を読む config も使わない（文を組むだけ。tests から型検査ごと読める）。2 行目の文は値が変わったときだけ組む（ui/mission-line がキーでキャッシュする）。
 import { HOME_MARKER_DISTANCE_STEP_M, HUD_COLOR_STRONG, HUD_COLOR_WARN, PLANE_DISTANCE_STEP_M, SHALLOW_WARN_STEP_M } from '../config/hud-text-config';
 import { AS_T_FALLING, AS_T_INBOUND, AS_T_ORBIT, AS_T_REST, AS_T_RUN } from '../core/air-strike';
@@ -19,6 +20,7 @@ import { landingCallJa, landingCallWaits, landingLeftS, landingWaitCallJa, landi
 import { stormWarning } from './mission-mode';
 import { anchorWithdrawJa } from './anchor-lines';
 import { reconCallJa } from './recon-texts';
+import { rescueBannerLines, rescueCallHeadJa, rescueClockJa } from './rescue-texts';
 
 /** Result の「転舵 … 秒」に出す自艇を狙った爆弾の数（最初の N 発） */
 const RESULT_DODGE_SHOWN = 8;
@@ -35,6 +37,7 @@ export const strikeFallJa = (arc: boolean): string => (arc ? '爆弾投下！ �
 
 /** 左上の時計（ui/dawn-clock）の文: 夜明け前は「夜明けまで N 秒」（切り上げ）、夜明けの後は「夜明け後 N 秒」（切り捨て。1 秒ごとに進む）。v0.6.2 実機 1 回目までは 2 行目にも出していた */
 export function clockJa(t: BoatTelemetry): string {
+  if (t.rescue) return rescueClockJa(t.dawn.reached, t.dawn.reached ? mssJa(Math.floor(t.dawn.daylightS)) : mssJa(Math.max(0, Math.ceil(t.timeLeftS)))); // 救助の任務（v0.8.5 S4。us_07。昼でも「空襲」と言わない）
   if (t.dawn.dayStart) return t.dawn.reached ? `空襲後 ${mssJa(Math.floor(t.dawn.daylightS))}` : `空襲 残り ${mssJa(Math.max(0, Math.ceil(t.timeLeftS)))}`; // 昼の任務（v0.6.11 S5。キーは同じ秒）
   return t.dawn.reached ? `夜明け後 ${Math.floor(t.dawn.daylightS)} 秒` : `夜明けまで ${Math.max(0, Math.ceil(t.timeLeftS))} 秒`;
 }
@@ -99,6 +102,7 @@ export function dawnCallLabel(call: number, gunMission: boolean, air: number, co
  * 卯月のいる夜（v0.6.10 S6・LD3。data の ring_call_before_dawn）の夜明け近しは「夜明け近し ・ 帰投の輪で揚陸を待て あと N 秒」（夜明けの後は頭が「空襲下 」。「卯月に任せて」とは言わない）
  */
 export function callLineText(t: BoatTelemetry, call: number, homeStep: number): string {
+  if (t.rescue) return `${rescueCallHeadJa(t)}帰投せよ  ${homeStep * HOME_MARKER_DISTANCE_STEP_M} m`; // 救助の任務（v0.8.5 S4。us_07。ui/rescue-texts）
   const head = dawnCallLabel(call, t.gunMission, t.dawn.reached ? t.dawn.air : DAWN_AIR_NONE, t.convoy.enabled ? convoyCallJa(t.convoy) : t.landing.enabled ? landingCallJa(t.landing) : reconCallJa(t)); // 報告の任務（v0.8.2 S4。us_05）は届いた後の「撃沈！」を「報告済み ・ 」に
   if (call === CALL_DAWN && convoyWaiting(t.convoy)) return `${head}${convoyWaitShoreJa(convoyLeftStep(t.convoy))}`;
   if (call === CALL_DAWN && landingCallWaits(t.landing, call)) return `${head}・ ${allyRingWaitJa(t.ally, landingWaitTailJa(landingLeftS(t.landing)))}`;
@@ -177,6 +181,7 @@ function withdrawBannerJa(t: BoatTelemetry): string {
  */
 export function dawnBannerLines(t: BoatTelemetry): readonly string[] {
   const d = t.dawn;
+  if (t.rescue) return rescueBannerLines(t); // 救助の任務（v0.8.5 S4。us_07）: 「救助の時間が終わった」（ui/rescue-texts）
   // 昼の任務（v0.6.11 S5。jp_03）: 「第1次の空襲が去った」と残存の確定・外なら §2 の 4 機（ui/evac-lines）
   if (d.dayStart && t.evac.enabled) return evacSettleBannerLines(t.evac, d.air === DAWN_AIR_ENEMY && d.strikeEnabled ? `${d.nameJa} ${d.count} 機が${d.fromJa}から来る ・ ${STRIKE_DODGE_RULE_JA}` : '');
   const withdraw = anchorWithdrawJa(t, withdrawBannerJa(t)); // 止まった艦の任務（v0.8.1 S4。us_06）は泊地に残る輸送船の句（ui/anchor-lines。ほかの任務は同じ文）

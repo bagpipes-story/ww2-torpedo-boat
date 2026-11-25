@@ -15,6 +15,7 @@ import { SHALLOW_GROUNDED } from '../core/shallows';
 import { STORM_INSIDE, STORM_NEAR } from '../core/storm';
 import { planeApproaching, planeAttacking, planeLeaving } from './hud-lines';
 import { reconStandingShown } from './recon-texts';
+import { rescueCallOf, rescueStandingShown } from './rescue-texts';
 
 /** 2 行目の状態: 0 平常、1 帰投せよ、2 燃料切れ、3 輪の中で魚雷待ち、4 浅瀬（接近・中・座礁）、5 味方機（識別要求・航過）、6 味方機の結果（去る間） */
 export const MISSION_NORMAL = 0;
@@ -93,6 +94,11 @@ export const MODE_FLAG_ANCHOR_EVENT = 1024;
 /** 42 報告の任務の出来事（v0.8.2 S4。us_05。時計 ui/recon-lines・文 ui/recon-texts。止まった艦の出来事のすぐ下）と旗、43 報告の常の文（呼びかけ・平常の代わり。reconStandingShown） */ export const MISSION_RECON_EVENT = 42, MISSION_RECON = 43, MODE_FLAG_RECON_EVENT = 2048;
 /** 44 近すぎて船体の下を通過（v0.8.2 IP1。全任務。時計と文は ui/under-lines。報告の出来事のすぐ下）と旗 */ export const MISSION_UNDER_EVENT = 44, MODE_FLAG_UNDER_EVENT = 4096;
 /** 45 煙の中へ乱射されている（v0.8.4。史実モードだけ旗が立つ。時計と文は ui/barrage-lines。レーダーの出来事のすぐ上＝撃たれている知らせを遅らせない・水上機の未確定の接近の下）と旗 */ export const MISSION_BARRAGE_EVENT = 45, MODE_FLAG_BARRAGE_EVENT = 8192;
+/**
+ * 救助の任務（v0.8.5 S4。us_07。時計 ui/rescue-lines・文 ui/rescue-texts。t.rescue のある任務だけ＝ほかの任務は 1 ビットも変わらない）: 46 出来事（1 回・4 秒。急ぎ＝S ボート・砲弾・機雷・触雷は
+ * 米PT の赤い線のすぐ下＝接触・射撃の行より上、知らせ＝収容・移した・渡した・退いたは米PT の行の下で沿岸砲の射界の上）と旗、47 常の文（沿岸砲の射界の行の代わり。呼びかけがあれば呼びかけ）
+ */
+export const MISSION_RESCUE_EVENT = 46, MISSION_RESCUE = 47, MODE_FLAG_RESCUE_EVENT = 16384, MODE_FLAG_RESCUE_URGENT = 32768;
 
 /**
  * missionMode の flags（MissionLine が時刻と前のフレームで決める 6 つ）: 大発の撃破・上陸の直後の表示中、僚艇の被弾の直後の表示中、米PT の航過の結果の表示中（v0.6.3）、13mm の出来事の表示中（v0.6.3 実機 1 回目）、
@@ -178,7 +184,7 @@ export function bargeRunning(t: BoatTelemetry): boolean {
 /**
  * 2 行目のモード。call は topCall(t.callFlags)、flags は MODE_FLAG_*。
  * 優先順: 魚雷待ち > 燃料切れ（どちらも揚陸の決着の前の帰投の輪の中では立てない。v0.6.9 R14 A5）> 夜明けの空襲（夜の哨戒機の落下中の爆弾は夜明けの接近・旋回より上。v0.6.7）> 衝突の危険（v0.8.0 S4）> 夜の哨戒機の発見・出撃 > 捜索 > 結果（v0.6.7）> 米PT の航過（赤い線）> 輸送船が射線に入る（v0.6.9 R14 A1）> 13mm の出来事 > 輸送隊の出来事（v0.6.4）> 揚陸の出来事（v0.6.9）> 機関の過熱の出来事（v0.6.5）> 米PT の航過の結果 >
- * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 沿岸砲の射界 > 僚艇の遅れ > 煙の中へ乱射されている（v0.8.4。史実モードだけ）> レーダーの出来事（v0.8.0 S4）> 止まった艦の出来事（v0.8.1 S4。止まった艦の任務ではこの 2 つは水上機の接近の間は出さずに待つ＝v0.8.1 IP2）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
+ * 機関の限界（全速の帯）> 13mm の射撃 > 米PT との接触（突撃・離脱）> 輸送船への脅威（v0.6.9）> 機関の状態（不調・限界で冷やしている）> 揚陸の決着の前の帰投の輪の中（v0.6.9 R14 A5。自艇の命・米PT・輸送船の行の下で、呼びかけ・平常の上）> 僚艇の沈没 > 水上機の攻撃 > 味方機（要求・航過）> 座礁 > 僚艇の被弾 > 射撃 > 大発の逃走 > 撃つ前の手引き > 救助の任務の出来事・常の文・呼びかけ（v0.8.5 S4。us_07。急ぎの出来事は米PT の赤い線のすぐ下）> 沿岸砲の射界 > 僚艇の遅れ > 煙の中へ乱射されている（v0.8.4。史実モードだけ）> レーダーの出来事（v0.8.0 S4）> 止まった艦の出来事（v0.8.1 S4。止まった艦の任務ではこの 2 つは水上機の接近の間は出さずに待つ＝v0.8.1 IP2）> 浅瀬 > 暴風の警告 > 水上機の接近 > 大発の結果 > 味方機の結果 > 水上機の結果 > 暴風の情報 > 空襲の波の合間 > 帰投せよ > 米PT の平常 > 夜の哨戒機の平常（v0.6.7）> 平常（docs/02 §6.7・§6.8。米PT がみな去る（去った）夜明けの後だけ「夜明け ・ 米PT は東へ去る／去った ・ 帰投せよ」が夜明けの帰投せよより上。v0.6.3）
  */
 export function missionMode(t: BoatTelemetry, call: number, flags: number): number {
   // 揚陸の決着の前に帰投の輪の中（v0.6.9 R14 A5。jp_04 だけ。ほかの任務は偽で前のまま）: 任務は終わらない（systems/mission-end の landingHold）ので魚雷待ち・漂流の行は出さず、
@@ -203,6 +209,7 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
     // 米PT（v0.6.3）: 赤い線（航過・連射。終わって弾が飛んでいる間も MODE_FLAG_PT_HOLD で保つ）がいちばん上のまま。13mm（実機 1 回目）の撃退・撃沈・制圧の直後 > 航過・連射の結果 > 射撃中 > 突撃・追撃・離脱（何も撃てない射撃の行は突撃・追撃の下。ptGunShown）
     // v0.6.4 レビュー ux-3: 航過中に標的の大発が沈んだ・上陸した（passTargetLost。jp_01 だけ）なら赤い線の行を降ろす（沈没・上陸の出来事がすぐ出る）
     if ((t.pt.passing && !t.pt.passTargetLost) || (flags & MODE_FLAG_PT_HOLD) !== 0) return MISSION_PT_PASS;
+    if ((flags & MODE_FLAG_RESCUE_URGENT) !== 0) return MISSION_RESCUE_EVENT; // 救助の任務の急ぎの出来事（v0.8.5 S4。S ボートが来た・砲弾・機雷・触雷。us_07 だけ旗が立つ）
     if (landingFireLineShown(t)) return MISSION_LANDING_FIRE_LINE; // 輸送船が射線に入る（v0.6.9 R14 A1。出来事・結果・射撃・接触は ui/pt-line-clock がこの下で待たせる）
     if ((flags & MODE_FLAG_PT_GUN_EVENT) !== 0) return MISSION_PT_GUN_EVENT;
     if ((flags & MODE_FLAG_CONVOY_EVENT) !== 0) return MISSION_CONVOY_EVENT; // 大発の沈没・上陸（v0.6.4。沈んだ航過の結果より上）
@@ -226,6 +233,13 @@ export function missionMode(t: BoatTelemetry, call: number, flags: number): numb
   if (t.gunMission && t.gunStatus !== GUN_SAFE && !t.aaFiring && t.bargesSunk + t.bargesBeached < t.bargesTotal) return MISSION_GUN; // 機を撃っている間（v0.6.8）は「射程に大発なし」を出さない
   if (bargeRunning(t)) return MISSION_BARGE_RUN;
   if (t.gunMission && t.gunStatus === GUN_SAFE && t.enemySighted) return MISSION_BARGE_SIGHTED;
+  if (t.rescue) {
+    // 救助の任務（v0.8.5 S4。us_07）: 出来事 > 常の文（沿岸砲の射界の行・見えている S ボートの平常の行の代わり。沿岸砲の句は後ろに付く）> 呼びかけ（燃料少・救助の時間の終わり・40 名を渡した）。
+    // 浅瀬の間は今の順のまま
+    if ((flags & MODE_FLAG_RESCUE_EVENT) !== 0) return MISSION_RESCUE_EVENT;
+    if (rescueStandingShown(t)) return MISSION_RESCUE;
+    if (t.shallowState === 0 && rescueCallOf(t) !== 0) return MISSION_CALL;
+  }
   if (t.batteryInArc) return MISSION_BATTERY;
   if (t.escortEnabled && !t.escortSunk && t.escortDistM > t.escortLagWarnM) return MISSION_ESCORT_LAG;
   // v0.8.1 IP2（us_06 に夜の水上機）: 止まった艦の任務（t.anchor のある us_06 だけ）では水上機の未確定の接近（「N kt 以下に減速！」＝約 9 秒の内に答える行）が

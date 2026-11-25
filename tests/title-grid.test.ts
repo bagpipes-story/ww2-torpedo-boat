@@ -4,6 +4,7 @@
 // v0.8.0 S5: us_04 が遊べるようになり米PT のタブも 4 任務＝日本のタブと同じ 2 列の格子（2 × 2。1 列は 3 行以下のタブの形として titleRowRect に残る）。
 // v0.8.1 S4（lead の L65）: us_06 が遊べるようになり米PT のタブは 5 任務＝今の 2 列の格子で 3 段（2・2・1。日本のタブの v0.6.9 の 5 任務と同じ置き方。格子のコードは変えない）。
 // v0.8.2 S4（lead の L44）: us_05 が遊べるようになり米PT のタブは 6 任務＝2 列 × 3 段で満杯（日本のタブの v0.6.11 の 6 任務と同じ矩形。order 5 のまま＝us_05 が 3 段目の左・us_06 が右。格子のコードは変えない）。
+// v0.8.5 S4（spec-v0850 §8.4 の案 A）: 7 任務からは 2 列 × 4 段の詰めた行（titleRowLook）。us_07 の playable_from は S5 なので今の米PT は 6 行のまま＝7・8 行は数で確かめる（末尾の describe）。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -11,9 +12,9 @@ import { gameData } from '../src/config/game-data';
 import { getMenuEntries } from '../src/config/campaign-data';
 import { getPrototypeMission } from '../src/config/mission-data';
 import { TITLE_HINT_BY_CAMPAIGN_JA, TITLE_HINT_PX } from '../src/config/title-hint-config';
-import { TITLE_GRID_COL_W, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from '../src/config/title-layout-config';
+import { TITLE_GRID_COL_W, TITLE_GRID_COMPACT_FROM, TITLE_GRID_COMPACT_ROWS_MAX, TITLE_GRID_FROM, TITLE_GRID_ROWS_MAX, TITLE_HINT_Y, TITLE_ROW_H, TITLE_ROW_STATUS_PX, TITLE_ROW_SUB_PX, TITLE_ROW_TITLE_PX, TITLE_ROW_W, TITLE_ROW_X, TITLE_TOGGLE_GAP } from '../src/config/title-layout-config';
 import { shortLabelJa } from '../src/core/briefing';
-import { TITLE_GRID_W, titleGridOn, titleGridSubJa, titleRowRect, type TitleRowRect } from '../src/ui/title-grid';
+import { TITLE_GRID_W, titleCompactOn, titleGridOn, titleGridSubJa, titleRowLook, titleRowRect, type TitleRowRect } from '../src/ui/title-grid';
 import { textWidthPx } from './pt-ui-kit';
 
 const src = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
@@ -190,5 +191,68 @@ describe('title-scene の配線（ソース）', () => {
     expect(code).toContain('sub: grid ? titleGridSubJa(e.sub) : e.sub,');
     expect(code.includes('shortLabelJa'), 'shortLabelJa').toBe(false);
     for (const k of ['TITLE_ROW_X', 'TITLE_ROW_W', 'TITLE_ROW_TOP', 'TITLE_ROW_GAP']) expect(code.includes(k), k).toBe(false);
+  });
+});
+
+describe('v0.8.5 S4（spec-v0850 §8.4 の案 A）: 7 任務からは 2 列 × 4 段の詰めた行（米PT の us_07。playable_from は S5＝今の data の米PT は 6 行のまま。7・8 行は数で確かめる）', () => {
+  it('6 行以下は今の行のまま（高さ 96・題 30・副題 20・余白は MenuButton の今の 16）。7 行以上は高さ 76・題 26・副題 18・余白 10', () => {
+    for (let n = 1; n <= 6; n++) expect(titleRowLook(n), String(n)).toEqual({ h: TITLE_ROW_H, titlePx: TITLE_ROW_TITLE_PX, subPx: TITLE_ROW_SUB_PX, padY: undefined });
+    for (const n of [7, 8]) expect(titleRowLook(n), String(n)).toEqual({ h: 76, titlePx: 26, subPx: 18, padY: 10 });
+    expect([TITLE_GRID_COMPACT_FROM, TITLE_GRID_COMPACT_ROWS_MAX, titleCompactOn(6), titleCompactOn(7)]).toEqual([7, 4, false, true]);
+    // 6 行の矩形は v0.8.4 と同じ（日本のタブ・今の米PT のタブ＝1 px も変わらない）
+    for (const w of WIDTHS) expect(rects(6, w), String(w)).toEqual([0, 1, 2, 3, 4, 5].map((i) => ({ x: w / 2 - 609 + (i % 2) * 621, y: 216 + Math.floor(i / 2) * 108, w: 597 })));
+  });
+  it('7 任務の並び（行優先・order 順）: 左上 us_01・右上 us_02・左 2 us_03・右 2 us_04・左 3 us_07・右 3 us_05・左 4 us_06。段 y 216・304・392・480（下端 556 ≤ 操作の一言 560）', () => {
+    const order = ['us_01', 'us_02', 'us_03', 'us_04', 'us_07', 'us_05', 'us_06'];
+    const ms = (gameData.missionsSeed.missions as { id: string; campaign: string; order: number }[]).filter((m) => m.campaign === 'us_pt').sort((a, b) => a.order - b.order).map((m) => m.id);
+    expect(ms).toEqual(order); // data の order（S0 の年代順）
+    const l = 1560 / 2 - 609;
+    expect(rects(7, 1560)).toEqual([
+      { x: l, y: 216, w: 597 }, { x: l + 621, y: 216, w: 597 }, { x: l, y: 304, w: 597 }, { x: l + 621, y: 304, w: 597 }, { x: l, y: 392, w: 597 }, { x: l + 621, y: 392, w: 597 }, { x: l, y: 480, w: 597 },
+    ]);
+    expect(titleRowRect(6, 7, 1560).y + titleRowLook(7).h).toBe(556);
+  });
+  it('論理幅 1,280〜1,584 の全部・7〜8 任務: 画面の内・重ならない（間 ≥ 12）・下端 ≤ 560・左右の余白が同じ', () => {
+    for (const w of WIDTHS) {
+      for (let n = TITLE_GRID_COMPACT_FROM; n <= 2 * TITLE_GRID_COMPACT_ROWS_MAX; n++) {
+        const h = titleRowLook(n).h;
+        const rs = rects(n, w);
+        for (const r of rs) {
+          expect(r.x, `${w} ${n}`).toBeGreaterThanOrEqual(0);
+          expect(r.x + r.w, `${w} ${n}`).toBeLessThanOrEqual(w);
+          expect(r.y + h, `${w} ${n}`).toBeLessThanOrEqual(TITLE_HINT_Y);
+        }
+        expect(rs[0]!.x).toBeCloseTo(w - (rs[1]!.x + rs[1]!.w), 9);
+        for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+          const a = rs[i]!;
+          const b = rs[j]!;
+          const gapX = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w));
+          const gapY = Math.max(b.y - (a.y + h), a.y - (b.y + h));
+          expect(Math.max(gapX, gapY), `${w} ${n} ${i}/${j}`).toBeGreaterThanOrEqual(12);
+        }
+      }
+    }
+  });
+  it('詰めた行の文: 題（26 px）・副題（18 px）と状態（24 px）が重ならない（すき間 ≥ 16 px）。題の下端と副題の上端の間 ≥ 4 px。押す所 ≈ 326 × 41 pt', () => {
+    const us07 = (gameData.missionsSeed.missions as Record<string, unknown>[]).find((m) => m['id'] === 'us_07')!;
+    const entries = [...US.map((e) => ({ title: e.title, sub: e.sub })), { title: us07['title_ja'] as string, sub: `1944年6月6日 ・ ${us07['place'] as string}` }];
+    expect(titleGridSubJa(entries[6]!.sub)).toBe('1944年6月6日 ・ ノルマンディー沖');
+    const look = titleRowLook(7);
+    const inner = TITLE_GRID_COL_W - 2 * MENU_PAD_X;
+    const status = textWidthPx('出撃準備 →', TITLE_ROW_STATUS_PX);
+    for (const e of entries) {
+      expect(inner - status - textWidthPx(e.title, look.titlePx), e.title).toBeGreaterThanOrEqual(16);
+      expect(inner - status - textWidthPx(titleGridSubJa(e.sub), look.subPx), e.sub).toBeGreaterThanOrEqual(16);
+    }
+    expect(look.h - 2 * look.padY! - look.titlePx - look.subPx).toBeGreaterThanOrEqual(4);
+    const pt = 393 / 720;
+    expect([Math.round(TITLE_GRID_COL_W * pt), Math.round(look.h * pt)]).toEqual([326, 41]);
+  });
+  it('配線: title-scene は titleRowLook の高さ・字・余白を MenuButton へ（padY は詰めた行だけ）。menu-ui の padY の既定は MENU_PAD_Y', () => {
+    const ts = src('scenes/title-scene.ts');
+    expect(ts).toContain('const look = titleRowLook(n);');
+    expect(ts).toContain('h: look.h,');
+    expect(ts).toContain('...(look.padY !== undefined ? { padY: look.padY } : {}),');
+    expect(src('ui/menu-ui.ts')).toContain('const padY = spec.padY ?? MENU_PAD_Y;');
   });
 });

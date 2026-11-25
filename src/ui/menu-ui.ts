@@ -39,6 +39,8 @@ export interface MenuButtonSpec {
   align: 'left' | 'center';
   /** 決定の時のボタンの音を鳴らさない（v0.7.1 IP2。試聴の場の案のボタン＝押した音が聞き比べる音の頭に重ならない） */
   silent?: boolean;
+  /** left 揃えの題と 2 行目の上下の余白 px（v0.8.5 S4。Title の 7 任務の詰めた行＝ui/title-grid の titleRowLook。省けば MENU_PAD_Y） */
+  padY?: number;
 }
 
 /** 押していない印（Phaser の pointer.id は 0 以上） */
@@ -78,8 +80,9 @@ export class MenuButton {
     };
     const subPx = spec.subPx ?? MENU_SUB_PX;
     if (spec.align === 'left') {
-      this.titleText = add(x + MENU_PAD_X, y + MENU_PAD_Y, spec.title, spec.titlePx, HUD_COLOR_STRONG, 0, 0);
-      if (spec.sub !== undefined) this.subText = add(x + MENU_PAD_X, y + h - MENU_PAD_Y, spec.sub, subPx, HUD_COLOR, 0, 1);
+      const padY = spec.padY ?? MENU_PAD_Y;
+      this.titleText = add(x + MENU_PAD_X, y + padY, spec.title, spec.titlePx, HUD_COLOR_STRONG, 0, 0);
+      if (spec.sub !== undefined) this.subText = add(x + MENU_PAD_X, y + h - padY, spec.sub, subPx, HUD_COLOR, 0, 1);
     } else {
       const cx = x + w / 2;
       this.centerY = y + h / 2;

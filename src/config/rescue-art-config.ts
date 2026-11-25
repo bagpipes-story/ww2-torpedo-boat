@@ -66,8 +66,6 @@ export const FITCH_RING_ALPHA = 0.55;
 export const SHIP_LABEL_FONT_PX = 24;
 export const SHIP_LABEL_COLOR = '#b8e0ff';
 export const SHIP_LABEL_GAP = 20;
-/** コリーの名の下へのずれ（単位。南の群の札と重ならないように遠く） */
-export const CORRY_LABEL_GAP = 80;
 /** 沈んでいくコリー: 暗くする tint・初めと救助の時間の終わりの濃さ（濃さの段の数＝変わった時だけ setAlpha）・横から見た傾き（幅の縮み）・艦首を下げる回り（度）・油の輪の半径 m と濃さ */
 export const CORRY_TINT = 0xa9b6c2;
 export const CORRY_ALPHA_FROM = 0.95;

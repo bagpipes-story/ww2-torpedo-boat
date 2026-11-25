@@ -26,6 +26,8 @@ import { DETECT_RANGE_STEP_M, STATUS_GONE, STATUS_LABEL, STATUS_SUNK, STEP_LABEL
 import { shipsGoneStatusJa } from './dawn-lines';
 import { DawnClock } from './dawn-clock';
 import { evacStatusKey, evacStatusLine } from './evac-lines';
+import { EVAC_STATUS_MAX_PX } from './evac-text';
+import { statusFitScale } from './rescue-texts';
 import { LandingClock } from './landing-clock';
 import { MissionLine } from './mission-line';
 import { patrolStatusLine, patrolStatusOf } from './patrol-lines';
@@ -156,6 +158,11 @@ export class BoatHud {
         this.statusText
           .setText(`${STATUS_LABEL[status]!} ・ 見つかる距離 ${detectStep * DETECT_RANGE_STEP_M} m${rain ? '（雨）' : ''}`)
           .setColor(t.playerDetected ? HUD_COLOR_WARN : HUD_COLOR);
+      }
+      // 救助の任務（v0.8.5 S4。us_07）: 「煙幕に隠れている」の行は 612〜637 px＞596 px（W 1280 で左上の HP の箱にかかる）→ 組み直した時だけ 596 px に縮める。ほかの任務は今のまま
+      if (t.rescue) {
+        const k = statusFitScale(this.statusText.width, EVAC_STATUS_MAX_PX);
+        if (k !== this.statusText.scaleX) this.statusText.setScale(k);
       }
     }
   }
