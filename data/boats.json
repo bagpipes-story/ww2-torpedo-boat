@@ -222,7 +222,7 @@
       "fuel_hours_cruise": 15,
       "fuel_hours_full": 6,
       "fuel_capacity_gal": 3000,
-      "fuel_idle_ratio": 0.1,
+      "fuel_idle_ratio": 0.14,
       "fuel_type": "gasoline",
       "fire_risk": "high",
       "crew": 14,
@@ -286,7 +286,7 @@
         "turn_rate_deg_s": "design (Elcoより旋回性良との記述を反映)",
         "others": "design/historical as elco80",
         "fuel_capacity_gal": "design (v0.8.5 S0・spec-v0850 §2.2。us_07 の自艇になるので Elco 80 と同じ値を足した。Higgins の燃料の容量は未確認（同じ 100 オクタンのガソリン・同じ速力段＝fuel_hours_* も Elco 80 と同じ）)",
-        "fuel_idle_ratio": "design (v0.8.5 S0。Elco 80 と同じ 0.1（停止中は巡航の 1 割）。Higgins の値は未確認)",
+        "fuel_idle_ratio": "design (v0.8.5 S0。Elco 80 と同じ 0.1（停止中は巡航の 1 割）。Higgins の値は未確認。v0.8.5 IP1 で 0.1 → 0.14: us_07 の水路が北を回る遠回りになり割当を 41 → 56 gal に上げたので、止まって待つと 1,500 秒未満で漂流する規則〔tests/dawn-air〕を保つ＝56 / (200 × 0.14) × 720 ＝ 1,440 秒。v0.6.3 の jp_05 の T-14 と同じ形。巡航・全速の消費〔fuel_hours_*〕は変えない＝遅い速さだけ少し多く使う。Higgins を使うのは us_07 だけ)",
         "gun_battery": "design (v0.8.5 S0・spec-v0850 §2.2。us_07 の S ボート（PT の隊）を撃つ艇の砲＝弾倉つき（config/pt-mission-data の検査）。数は Elco 80 の gun_battery と同じ値（Higgins の値は未確認）。label_ja だけ Higgins の guns の並び（37mm なし）に合わせた。組の id は Elco 80 と同じ（core/gun-battery が読むのは数）)",
         "damage.*": "design (v0.8.5 S0。Elco 80 の damage と同じ値（機関損傷 0.7 倍・火災 20 秒で 40 HP・消火 1.0 秒・HP 10 で 1 名・乗員の減りの効き）。Higgins の値は未確認)"
       },

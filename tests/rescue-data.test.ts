@@ -25,11 +25,13 @@ const build = (f: (d: GameData) => void, id = 'us_07', hard = false): (() => unk
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
 
 describe('既定の data（us_07。spec §3・§4.1）', () => {
-  it('コリーの 300 m の内に 12 群・60 名、乗せられるのは 20 名・40 名で達成、拾うのは 40 m の内で 5 kt 以下、フィッチの輪 180 m・砲火 1,200 m に 4 秒、昼の倍率 1.8', () => {
+  it('コリーの 300 m の内に 12 群・60 名、乗せられるのは 20 名・40 名で達成、拾うのは 40 m の内で 5 kt 以下、フィッチの輪 180 m・砲火 1,550 m（IP1 で 1,200 から）に 4 秒、昼の倍率 1.8', () => {
     for (const hard of [false, true]) {
       const p = getRescueParams(gameData, getPrototypeMission(gameData, 'us_07', hard))!;
       expect([p.groups.length, p.total, p.capacity, p.objectiveDelivered, p.pickupM, p.pickupMaxKt, p.perPersonS, p.transferPerPersonS, p.shellKillM, p.shellKill2, p.groupJitterM, p.moonFactor]).toEqual([12, 60, 20, 40, 40, 5, 0.8, 0.25, 20, 400, 40, 1.8]);
-      expect(p.fitch).toEqual({ x: 3750, y: 2000, ringM: 180, ring2: 32400, headingDeg: 45, coverM: 1200, cover2: 1_440_000, coverS: 4, labelJa: 'フィッチ' });
+      expect(p.fitch).toEqual({ x: 3750, y: 1450, ringM: 180, ring2: 32400, headingDeg: 45, coverM: 1550, cover2: 2_402_500, coverS: 4, labelJa: 'フィッチ' });
+      // IP1 の目安: cover_m ≈ コリーまでの距離（1,699 m）− 約 150 m（S3 の 1,346 → 1,200 と同じ形）
+      expect(Math.round(Math.hypot(p.fitch.x - p.corry.x, p.fitch.y - p.corry.y) - p.fitch.coverM)).toBe(149);
       expect(p.corry).toEqual({ x: 2600, y: 2700, headingDeg: 30, labelJa: 'コリー' });
       for (const g of p.groups) {
         expect(Math.hypot(g.x - p.corry.x, g.y - p.corry.y)).toBeLessThanOrEqual(300);
@@ -100,14 +102,14 @@ describe('起動時の検査（V-Q1〜V-Q8・V-D1〜V-D2・V-U1・V-U2 の射界
     expect(build((d) => (rescueOf(d)['capacity'] = 0))).toThrow(/rescue\.capacity は 1 以上の整数/);
     expect(build((d) => (rescueOf(d)['capacity'] = 39))).not.toThrow();
   });
-  it('V-Q4: フィッチの輪は帰投の輪（3750, 1300・半径 250。v0.8.5 S3 で寄せ、S3b でフィッチの真北へ）に重ならない', () => {
-    expect(build((d) => Object.assign(fitchOf(d), { x_m: 3750, y_m: 1730 }))).toThrow(/rescue\.ships\.fitch の輪は帰投の輪に重ならない（V-Q4/); // 中心の間 430 ＝ 180 ＋ 250（ちょうどは重なる）
-    expect(build((d) => Object.assign(fitchOf(d), { x_m: 3750, y_m: 1731 }))).not.toThrow(/V-Q4/);
+  it('V-Q4: フィッチの輪は帰投の輪（3750, 750・半径 250。v0.8.5 S3 で寄せ、S3b でフィッチの真北へ、IP1 でフィッチと一緒に北へ）に重ならない', () => {
+    expect(build((d) => Object.assign(fitchOf(d), { x_m: 3750, y_m: 1180 }))).toThrow(/rescue\.ships\.fitch の輪は帰投の輪に重ならない（V-Q4/); // 中心の間 430 ＝ 180 ＋ 250（ちょうどは重なる）
+    expect(build((d) => Object.assign(fitchOf(d), { x_m: 3750, y_m: 1181 }))).not.toThrow(/V-Q4/);
   });
   it('V-Q5・V-U2: フィッチの輪は砲台（1600, 4600・射界 2,600 m）の外、コリーは射界の内', () => {
     expect(build((d) => Object.assign(fitchOf(d), { x_m: 3200, y_m: 2400 }))).toThrow(/rescue\.ships\.fitch の輪は砲台（1600, 4600）の射界 2600 m の外（V-Q5/);
     expect(build((d) => Object.assign(corryOf(d), { x_m: 5000, y_m: 2600 }))).toThrow(/rescue\.ships\.corry はどれかの砲台の射界（shore_battery\.params\.gun\.effective_night_m）の内（砲撃の下の救助）（V-U2/);
-    // 砲台の今夜の揺らぎも見る（v0.8.5 S3 の地図でフィッチの輪の縁まで約 3,194 m。揺らぎ 1,400 m で 1,794 ≤ 2,600）
+    // 砲台の今夜の揺らぎも見る（IP1 の地図でフィッチの輪の縁まで約 3,634 m。揺らぎ 1,400 m で 2,234 ≤ 2,600）
     expect(build((d) => ((protoOf(d, 'us_07')['night'] as Rec)['shore_battery_jitter_m'] = 1400))).toThrow(/V-Q5/);
   });
   it('V-Q6: 拾える速さは自艇の静音の上限（Higgins 18 kt）以下', () => {
@@ -137,7 +139,8 @@ describe('起動時の検査（V-Q1〜V-Q8・V-D1〜V-D2・V-U1・V-U2 の射界
   it('V-D1: フィッチの砲火の距離は S ボートの砲の有効射程（600 m）より遠い。V-D2: 輪の縁から最寄りの線（揺らぎ込み）まで cover_m より遠い（ハードの 3 本目も）', () => {
     expect(build((d) => (fitchOf(d)['cover_m'] = 600))).toThrow(/rescue\.ships\.fitch\.cover_m（600 m）は S ボート（de_sboat_enemy）の砲の有効射程 600 m より遠い（フィッチの内で航過を固めない）（V-D1/);
     expect(build((d) => (fitchOf(d)['cover_m'] = 601))).not.toThrow();
-    expect(build((d) => (fitchOf(d)['cover_m'] = 1600))).toThrow(/rescue\.ships\.fitch の輪の縁から pt_boats の線 0（今夜の揺らぎ ±224 m 込み）まで 1247 m は cover_m（1600 m）より遠い（出発で退かない）（V-D2/);
+    expect(build((d) => (fitchOf(d)['cover_m'] = 1610))).toThrow(/rescue\.ships\.fitch の輪の縁から pt_boats の線 0（今夜の揺らぎ ±224 m 込み）まで 1609 m は cover_m（1610 m）より遠い（出発で退かない）（V-D2/); // IP1: 線 0 の終わり (1800, 1950)
+    expect(build((d) => (fitchOf(d)['cover_m'] = 1609))).not.toThrow();
     expect(build((d) => ((((protoOf(d, 'us_07')['hard'] as Rec)['extra_pt_legs_m'] as number[][])[0] = [200, 2400, 3500, 1800])), 'us_07', true)).toThrow(/pt_boats の線 2/);
     expect(build((d) => ((((protoOf(d, 'us_07')['hard'] as Rec)['extra_pt_legs_m'] as number[][])[0] = [200, 2400, 3500, 1800])), 'us_07', false)).not.toThrow();
   });

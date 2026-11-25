@@ -1,7 +1,8 @@
-// 救助の任務の絵（v0.8.5 S2。us_07。spec-v0850 §6・§7 S2）: 掃海済みの水路の帯と機雷原の区画（任務の開始に 1 回描く Graphics）・水路のブイ・フィッチ（味方のフレッチャー級と渡す輪）・
+// 救助の任務の絵（v0.8.5 S2。us_07。spec-v0850 §6・§7 S2）: 掃海済みの水路の帯（任務の開始に 1 回描く Graphics）・水路のブイ・フィッチ（味方のフレッチャー級と渡す輪）・
 // 沈んでいくコリー（暗く・傾き・救助の時間につれて薄れる。油の輪）・生存者の群（人数の frame と札）・見えた機雷・フィッチの砲火（S ボートが砲火の距離の内に居る間の砲口の閃光と周りの水柱）。
 // 読むだけ（世界の状態・AI・乱数に書かない）。フィッチの砲火の閃光と水柱は世界の水柱のプール（SplashPool の muzzle・splash）＝絵が出すので音（遠い砲・水柱）も鳴る（音は絵と HUD に従う）。
-// §7: 物は起動時に数を決めて作り（群 ≤ 16・機雷 ≤ 48・ブイ ≤ 24）、毎フレームは変わった時だけ setVisible・setFrame・setText・setAlpha。平方根なし。
+// 機雷原の区画（data の fields の矩形）は描かない（v0.8.5 IP1。実機 1 回目のユーザー「わざわざ赤くエリアを示さなくていい」。機雷は見えた物だけ＝昼の 150 m）。
+// §7: 物は起動時に数を決めて作り（群 ≤ 16・機雷 ≤ 64・ブイ ≤ BUOY_MAX）、毎フレームは変わった時だけ setVisible・setFrame・setText・setAlpha。平方根なし。
 import type Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { hudTextStyle, RETURN_RING_TEX_RADIUS_UNITS } from '../config/ui-config';
@@ -11,7 +12,7 @@ import {
   BUOY_INSET_M, BUOY_MAX, BUOY_SPACING_M,
   CORRY_ALPHA_FROM, CORRY_ALPHA_STEPS, CORRY_ALPHA_TO, CORRY_LIST_SCALE_X, CORRY_OIL_ALPHA, CORRY_OIL_RADIUS_M, CORRY_SETTLE_DEG, CORRY_TINT,
   FITCH_FIRE_INTERVAL_S, FITCH_RING_ALPHA, FITCH_RING_COLOR, FITCH_SPLASH_OFFSETS,
-  LANE_FILL_ALPHA, LANE_FILL_COLOR, MINEFIELD_FILL_ALPHA, MINEFIELD_FILL_COLOR, MINEFIELD_LINE_ALPHA, MINEFIELD_LINE_W,
+  LANE_FILL_ALPHA, LANE_FILL_COLOR,
   RESCUE_TEX_ALLY_SHIP, RESCUE_TEX_BUOY, RESCUE_TEX_MINE, RESCUE_TEX_SURVIVORS, SHIP_LABEL_COLOR, SHIP_LABEL_FONT_PX, SHIP_LABEL_GAP,
   SURVIVOR_HEADS_MAX, SURVIVOR_LABEL_COLOR, SURVIVOR_LABEL_DY, SURVIVOR_LABEL_FONT_PX, SURVIVOR_TEX_UNITS,
 } from '../config/rescue-art-config';
@@ -64,13 +65,9 @@ export class RescueView {
     const r = s.rescue!;
     const mf = s.minefield ?? null;
     this.durationS = s.durationS;
-    // 水路の帯と機雷原の区画（任務の開始に 1 回だけ描く。毎フレームは触らない）
+    // 水路の帯（任務の開始に 1 回だけ描く。毎フレームは触らない）。機雷原の区画は描かない（IP1）
     const g = scene.add.graphics().setDepth(DEPTH.returnRing);
     if (mf) {
-      for (const f of mf.fields) {
-        g.fillStyle(MINEFIELD_FILL_COLOR, MINEFIELD_FILL_ALPHA).fillRect(f.x, f.y, f.w, f.h);
-        g.lineStyle(MINEFIELD_LINE_W, MINEFIELD_FILL_COLOR, MINEFIELD_LINE_ALPHA).strokeRect(f.x, f.y, f.w, f.h);
-      }
       for (const l of mf.lanes) g.lineStyle(l.widthM, LANE_FILL_COLOR, LANE_FILL_ALPHA).lineBetween(l.x0, l.y0, l.x1, l.y1);
       this.placeBuoys(scene, mf.lanes, r.fitch.x, r.fitch.y, r.fitch.ringM + BUOY_INSET_M * 4, s.mission.returnPoint);
     }

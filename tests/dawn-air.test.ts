@@ -415,8 +415,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
     // v0.6.9 の jp_04 は jp_01 と同じ T-38・19 gal で 1,453。v0.6.11 S6 の jp_03 は T-38・16 gal で 1,224 ＋ 空襲の間の 240 ＝ 1,464（V-E10 の 240 ＋ 1,224 ＋ 1.5 < 1,500）。
     // v0.8.0 S5 の us_04 は Elco 80・33 gal で 1,188（アイドル 200 × 0.1 = 20 gal/h: 33 / 20 × 720。夜明けの 260 秒より後）。v0.8.1 S4 の us_06 は Elco 80・40 gal で 1,440（40 / 20 × 720。spec-v0810 §3.1 D-M5 の上限 41.6 gal の内）。
     // v0.8.2 S4 の us_05 は Elco 80・24 gal で 864（24 / 20 × 720。S3 の燃料のつまみ 34 → 24 gal）。IP3（実機 3 回目のユーザー「燃料は24galから34galに増やしてください」）で 34 gal＝1,224（夜明けの 270 秒より後・spec-v0820 §4.1 D-M6 の上限 41.6 gal の内）
-    // v0.8.5 S5 の us_07 は Higgins（アイドルは Elco 80 と同じ値＝20 gal/h）・41 gal で 1,476（41 / 20 × 720。救助の時間 300 秒より後）
-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1224, 1440, 1476, 1453, 1440, 1464, 1453, 1440, 1224]);
+    // v0.8.5 S5 の us_07 は Higgins（アイドルは Elco 80 と同じ値＝20 gal/h）・41 gal で 1,476（41 / 20 × 720。救助の時間 300 秒より後）。IP1（水路が北を回る遠回り）で 56 gal・Higgins のアイドル 0.14（28 gal/h。jp_05 と同じ形）＝1,440（56 / 28 × 720）
+    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1224, 1440, 1440, 1453, 1440, 1464, 1453, 1440, 1224]);
   });
   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲と夜の哨戒の機体・dawn_air_strike と patrol_air の文', () => {
     const texts: string[] = [];

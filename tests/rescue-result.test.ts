@@ -138,7 +138,7 @@ describe('Briefing（spec §8.1。systems/briefing-numbers の救助の鍵）', 
     const r = rows(false);
     expect(r.map((x) => x.label)).toEqual(['目的', '成功', '時', '敵', '危険', '条件']);
     expect(r[2]!.text).toBe('昼（日の出の後） ・ 見える 2700 m ・ 見つかる 巡航 3600 m／静音 1800 m');
-    expect(r[5]!.text).toBe('救助の時間 300 秒（昼の空は味方） ・ 燃料 41 gal ・ 機銃40mm・20mm・12.7mm（撃つと閃光で見つかる。魚雷はSボートの下を抜ける）');
+    expect(r[5]!.text).toBe('救助の時間 300 秒（昼の空は味方） ・ 燃料 56 gal ・ 機銃40mm・20mm・12.7mm（撃つと閃光で見つかる。魚雷はSボートの下を抜ける）');
     expect(r[3]!.text).toBe('独Sボート ×2（西から）');
     expect(rows(true)[3]!.text).toBe('独Sボート ×3（西から）');
     for (const h of [false, true]) for (const x of rows(h)) expect(x.text, x.label).not.toContain('夜明け');

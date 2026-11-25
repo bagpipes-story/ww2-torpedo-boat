@@ -52,13 +52,9 @@ export const BUOY_SPACING_M = 420;
 export const BUOY_MAX = 24;
 export const BUOY_INSET_M = 10;
 
-/** 水路の帯（任務の開始に 1 回描く Graphics）と機雷原の区画の薄い色: 色と濃さ */
+/** 水路の帯（任務の開始に 1 回描く Graphics）の薄い色: 色と濃さ。機雷原の区画の赤い色は v0.8.5 IP1 で消した（区画を描かない。ユーザー「わざわざ赤くエリアを示さなくていい」） */
 export const LANE_FILL_COLOR = 0xbfe6ff;
 export const LANE_FILL_ALPHA = 0.07;
-export const MINEFIELD_FILL_COLOR = 0xff6a5a;
-export const MINEFIELD_FILL_ALPHA = 0.05;
-export const MINEFIELD_LINE_ALPHA = 0.22;
-export const MINEFIELD_LINE_W = 3;
 
 /** フィッチ: 輪の色（味方の青）と濃さ・艦名の字の大きさ・色・艦の下へのずれ（単位） */
 export const FITCH_RING_COLOR = 0x9ad0ff;

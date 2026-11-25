@@ -16,7 +16,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -29,19 +29,19 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ]
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -61,13 +61,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -102,7 +102,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -152,17 +152,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -298,24 +298,24 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "legs": {
    "0": 200,
    "1": 1138.5313842445612,
-   "2": 2100,
+   "2": 1800,
    "3": 1888.5313842445612,
    "4": 200,
    "5": 1738.5313842445612,
-   "6": 2100,
+   "6": 2000,
    "7": 2438.531384244561
   },
   "startX": {
-   "0": 265.9109091315254,
-   "1": 266.49110437525013
+   "0": 264.16092742552553,
+   "1": 266.041961392414
   },
   "startY": {
-   "0": 1164.5488483754266,
-   "1": 1763.028106909127
+   "0": 1168.6068189752764,
+   "1": 1764.2143692304999
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808
+   "0": 115.11483488614456,
+   "1": 111.25050550713324
   },
   "startAlongM": 0,
   "bounds": {
@@ -445,8 +445,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 265.9109091315254,
-  "y": 1164.5488483754266
+  "x": 264.16092742552553,
+  "y": 1168.6068189752764
  },
  "dawnAir": {
   "control": "own",
@@ -545,12 +545,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -565,67 +565,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 24,
-  "maxCount": 32,
+  "count": 48,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -658,7 +657,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -671,19 +670,19 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ]
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -703,13 +702,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -744,7 +743,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -794,17 +793,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -940,24 +939,24 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "legs": {
    "0": 200,
    "1": 1128.778771823272,
-   "2": 2100,
+   "2": 1800,
    "3": 1878.778771823272,
    "4": 200,
    "5": 1728.778771823272,
-   "6": 2100,
+   "6": 2000,
    "7": 2428.778771823272
   },
   "startX": {
-   "0": 335.39607340294015,
-   "1": 336.58792705573427
+   "0": 331.80121096451523,
+   "1": 335.6652847029919
   },
   "startY": {
-   "0": 1182.2245902718012,
-   "1": 1779.1006396859111
+   "0": 1190.5605894628886,
+   "1": 1781.5374936522135
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808
+   "0": 115.11483488614456,
+   "1": 111.25050550713324
   },
   "startAlongM": 0,
   "bounds": {
@@ -1087,8 +1086,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 335.39607340294015,
-  "y": 1182.2245902718012
+  "x": 331.80121096451523,
+  "y": 1190.5605894628886
  },
  "dawnAir": {
   "control": "own",
@@ -1187,12 +1186,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -1207,67 +1206,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 24,
-  "maxCount": 32,
+  "count": 48,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -1300,7 +1298,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -1313,19 +1311,19 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ]
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -1345,13 +1343,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -1386,7 +1384,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -1436,17 +1434,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -1582,24 +1580,24 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "legs": {
    "0": 200,
    "1": 1138.5313842445612,
-   "2": 2100,
+   "2": 1800,
    "3": 1888.5313842445612,
    "4": 200,
    "5": 1738.5313842445612,
-   "6": 2100,
+   "6": 2000,
    "7": 2438.531384244561
   },
   "startX": {
-   "0": 265.9109091315254,
-   "1": 266.49110437525013
+   "0": 264.16092742552553,
+   "1": 266.041961392414
   },
   "startY": {
-   "0": 1164.5488483754266,
-   "1": 1763.028106909127
+   "0": 1168.6068189752764,
+   "1": 1764.2143692304999
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808
+   "0": 115.11483488614456,
+   "1": 111.25050550713324
   },
   "startAlongM": 0,
   "bounds": {
@@ -1729,8 +1727,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 265.9109091315254,
-  "y": 1164.5488483754266
+  "x": 264.16092742552553,
+  "y": 1168.6068189752764
  },
  "dawnAir": {
   "control": "own",
@@ -1829,12 +1827,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -1849,67 +1847,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 24,
-  "maxCount": 32,
+  "count": 48,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -1942,7 +1939,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -1955,19 +1952,19 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ]
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -1987,13 +1984,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -2028,7 +2025,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -2078,17 +2075,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -2224,24 +2221,24 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "legs": {
    "0": 200,
    "1": 1128.778771823272,
-   "2": 2100,
+   "2": 1800,
    "3": 1878.778771823272,
    "4": 200,
    "5": 1728.778771823272,
-   "6": 2100,
+   "6": 2000,
    "7": 2428.778771823272
   },
   "startX": {
-   "0": 335.39607340294015,
-   "1": 336.58792705573427
+   "0": 331.80121096451523,
+   "1": 335.6652847029919
   },
   "startY": {
-   "0": 1182.2245902718012,
-   "1": 1779.1006396859111
+   "0": 1190.5605894628886,
+   "1": 1781.5374936522135
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808
+   "0": 115.11483488614456,
+   "1": 111.25050550713324
   },
   "startAlongM": 0,
   "bounds": {
@@ -2371,8 +2368,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 335.39607340294015,
-  "y": 1182.2245902718012
+  "x": 331.80121096451523,
+  "y": 1190.5605894628886
  },
  "dawnAir": {
   "control": "own",
@@ -2471,12 +2468,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -2491,67 +2488,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 24,
-  "maxCount": 32,
+  "count": 48,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -2584,7 +2580,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -2597,13 +2593,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ],
     [
@@ -2615,7 +2611,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -2637,13 +2633,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -2678,7 +2674,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -2728,17 +2724,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -2874,11 +2870,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "legs": {
    "0": 200,
    "1": 1138.5313842445612,
-   "2": 2100,
+   "2": 1800,
    "3": 1888.5313842445612,
    "4": 200,
    "5": 1738.5313842445612,
-   "6": 2100,
+   "6": 2000,
    "7": 2438.531384244561,
    "8": 200,
    "9": 2338.531384244561,
@@ -2886,18 +2882,18 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "11": 2938.531384244561
   },
   "startX": {
-   "0": 265.9109091315254,
-   "1": 266.49110437525013,
+   "0": 264.16092742552553,
+   "1": 266.041961392414,
    "2": 267.570980573646
   },
   "startY": {
-   "0": 1164.5488483754266,
-   "1": 1763.028106909127,
+   "0": 1168.6068189752764,
+   "1": 1764.2143692304999,
    "2": 2359.869588636239
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808,
+   "0": 115.11483488614456,
+   "1": 111.25050550713324,
    "2": 107.52556837372289
   },
   "startAlongM": 0,
@@ -3078,8 +3074,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 265.9109091315254,
-  "y": 1164.5488483754266
+  "x": 264.16092742552553,
+  "y": 1168.6068189752764
  },
  "dawnAir": {
   "control": "own",
@@ -3178,12 +3174,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -3198,67 +3194,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 32,
-  "maxCount": 32,
+  "count": 64,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -3291,7 +3286,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -3304,13 +3299,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ],
     [
@@ -3322,7 +3317,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -3344,13 +3339,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -3385,7 +3380,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -3435,17 +3430,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -3581,11 +3576,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "legs": {
    "0": 200,
    "1": 1128.778771823272,
-   "2": 2100,
+   "2": 1800,
    "3": 1878.778771823272,
    "4": 200,
    "5": 1728.778771823272,
-   "6": 2100,
+   "6": 2000,
    "7": 2428.778771823272,
    "8": 200,
    "9": 2328.778771823272,
@@ -3593,18 +3588,18 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "11": 2928.778771823272
   },
   "startX": {
-   "0": 335.39607340294015,
-   "1": 336.58792705573427,
+   "0": 331.80121096451523,
+   "1": 335.6652847029919,
    "2": 338.80623960749006
   },
   "startY": {
-   "0": 1182.2245902718012,
-   "1": 1779.1006396859111,
+   "0": 1190.5605894628886,
+   "1": 1781.5374936522135,
    "2": 2372.612321173006
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808,
+   "0": 115.11483488614456,
+   "1": 111.25050550713324,
    "2": 107.52556837372289
   },
   "startAlongM": 0,
@@ -3785,8 +3780,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 335.39607340294015,
-  "y": 1182.2245902718012
+  "x": 331.80121096451523,
+  "y": 1190.5605894628886
  },
  "dawnAir": {
   "control": "own",
@@ -3885,12 +3880,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -3905,67 +3900,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 32,
-  "maxCount": 32,
+  "count": 64,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -3998,7 +3992,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -4011,13 +4005,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ],
     [
@@ -4029,7 +4023,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -4051,13 +4045,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -4092,7 +4086,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -4142,17 +4136,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -4288,11 +4282,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "legs": {
    "0": 200,
    "1": 1138.5313842445612,
-   "2": 2100,
+   "2": 1800,
    "3": 1888.5313842445612,
    "4": 200,
    "5": 1738.5313842445612,
-   "6": 2100,
+   "6": 2000,
    "7": 2438.531384244561,
    "8": 200,
    "9": 2338.531384244561,
@@ -4300,18 +4294,18 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "11": 2938.531384244561
   },
   "startX": {
-   "0": 265.9109091315254,
-   "1": 266.49110437525013,
+   "0": 264.16092742552553,
+   "1": 266.041961392414,
    "2": 267.570980573646
   },
   "startY": {
-   "0": 1164.5488483754266,
-   "1": 1763.028106909127,
+   "0": 1168.6068189752764,
+   "1": 1764.2143692304999,
    "2": 2359.869588636239
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808,
+   "0": 115.11483488614456,
+   "1": 111.25050550713324,
    "2": 107.52556837372289
   },
   "startAlongM": 0,
@@ -4492,8 +4486,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 265.9109091315254,
-  "y": 1164.5488483754266
+  "x": 264.16092742552553,
+  "y": 1168.6068189752764
  },
  "dawnAir": {
   "control": "own",
@@ -4592,12 +4586,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -4612,67 +4606,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 32,
-  "maxCount": 32,
+  "count": 64,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],
@@ -4705,7 +4698,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "playerStart": {
    "x": 5150,
    "y": 1850,
-   "headingDeg": 264
+   "headingDeg": 286
   },
   "enemyStart": null,
   "enemyStarts": [],
@@ -4718,13 +4711,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     [
      200,
      1200,
-     2100,
+     1800,
      1950
     ],
     [
      200,
      1800,
-     2100,
+     2000,
      2500
     ],
     [
@@ -4736,7 +4729,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    ],
    "start_along_m": 0,
    "leave_heading_deg": 270,
-   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査)"
+   "source": "design (v0.8.5 S0・spec-v0850 §3・§4.4。S ボートの線は西の縁（シェルブールの方）から東へ。2 本の線の始めから哨戒（12 kt）で、出撃から 60 秒は見つけない（de_sboat_enemy.detection.detect_from_s）。去る向き 270°（西）。線の終わりは v0.8.5 S3 でフィッチを (3750, 2000) へ寄せたので (2400, 2000)・(2300, 2500) → (2100, 1950)・(2100, 2500)（フィッチの輪の縁から最寄りの線まで今夜の揺らぎ ±224 m 込みで 1,247 m ＞ cover_m 1,200＝V-D2・出発で退かない）。出発で見つからない（昼の倍率 1.8・史実モード込み）は config/pt-mission-data の今の検査。v0.8.5 IP1: フィッチを北の (3750, 1450) へ動かし cover_m を 1,550 に広げたので、V-D2（フィッチの輪の縁から線まで今夜の揺らぎ ±224 m 込みで cover_m より遠い＝出発で退かない）のため線の終わりを (2100, 1950)・(2100, 2500) → (1800, 1950)・(2000, 2500)（1,609 m・1,637 m。ハードの 3 本目は 1,860 m）。S ボートの数・速さ・規則・線の始めは変えない)"
   },
   "convoy": null,
   "coast": {
@@ -4758,13 +4751,13 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "moon": "day",
   "returnPoint": {
    "x": 3750,
-   "y": 1300,
+   "y": 750,
    "radiusM": 250,
    "callMargin": 1.5,
    "torpedoSettleMaxS": 10,
    "torpedoEndSettleS": 5
   },
-  "fuelAllotmentGal": 41,
+  "fuelAllotmentGal": 56,
   "shallows": [
    {
     "x": 0,
@@ -4799,7 +4792,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "playerStart": {
   "x": 5150,
   "y": 1850,
-  "headingDeg": 264
+  "headingDeg": 286
  },
  "coastEdgeY": 3750,
  "mainWeapon": "guns",
@@ -4849,17 +4842,17 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "durationS": 300,
  "fuelCurve": {
   "capacityGal": 3000,
-  "idleGph": 20,
+  "idleGph": 28.000000000000004,
   "cruiseGph": 200,
   "fullGph": 500,
   "cruiseMps": 11.831199999999999,
   "fullMps": 20.0616,
-  "exponent": 1.8573939556153365,
+  "exponent": 1.9116583433082042,
   "galPerMCruise": 0.004695682226279292,
   "galPerMFull": 0.006923121231052803
  },
- "fuelAllotmentGal": 41,
- "fuelStartGal": 41,
+ "fuelAllotmentGal": 56,
+ "fuelStartGal": 56,
  "raid": null,
  "start": {
   "fuelFactor": 1,
@@ -4995,11 +4988,11 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "legs": {
    "0": 200,
    "1": 1128.778771823272,
-   "2": 2100,
+   "2": 1800,
    "3": 1878.778771823272,
    "4": 200,
    "5": 1728.778771823272,
-   "6": 2100,
+   "6": 2000,
    "7": 2428.778771823272,
    "8": 200,
    "9": 2328.778771823272,
@@ -5007,18 +5000,18 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "11": 2928.778771823272
   },
   "startX": {
-   "0": 335.39607340294015,
-   "1": 336.58792705573427,
+   "0": 331.80121096451523,
+   "1": 335.6652847029919,
    "2": 338.80623960749006
   },
   "startY": {
-   "0": 1182.2245902718012,
-   "1": 1779.1006396859111,
+   "0": 1190.5605894628886,
+   "1": 1781.5374936522135,
    "2": 2372.612321173006
   },
   "startHeadingDeg": {
-   "0": 111.54097591853845,
-   "1": 110.22485943116808,
+   "0": 115.11483488614456,
+   "1": 111.25050550713324,
    "2": 107.52556837372289
   },
   "startAlongM": 0,
@@ -5199,8 +5192,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  ],
  "absentHazards": [],
  "enemyFrom": {
-  "x": 335.39607340294015,
-  "y": 1182.2245902718012
+  "x": 331.80121096451523,
+  "y": 1190.5605894628886
  },
  "dawnAir": {
   "control": "own",
@@ -5299,12 +5292,12 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
-   "y": 2000,
+   "y": 1450,
    "ringM": 180,
    "ring2": 32400,
    "headingDeg": 45,
-   "coverM": 1200,
-   "cover2": 1440000,
+   "coverM": 1550,
+   "cover2": 2402500,
    "coverS": 4,
    "labelJa": "フィッチ"
   },
@@ -5319,67 +5312,66 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
  "minefield": {
   "fields": [
    {
-    "x": 1200,
-    "y": 1600,
-    "w": 1200,
+    "x": 1250,
+    "y": 1650,
+    "w": 1000,
+    "h": 800,
+    "normal": 6,
+    "hardExtra": 3
+   },
+   {
+    "x": 3000,
+    "y": 1750,
+    "w": 1800,
     "h": 900,
-    "normal": 6,
-    "hardExtra": 2
+    "normal": 36,
+    "hardExtra": 11
    },
    {
-    "x": 3140,
-    "y": 2240,
-    "w": 340,
-    "h": 340,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 3480,
-    "y": 2270,
+    "x": 2780,
+    "y": 1500,
     "w": 420,
-    "h": 190,
-    "normal": 6,
-    "hardExtra": 2
-   },
-   {
-    "x": 2900,
-    "y": 1400,
-    "w": 500,
-    "h": 220,
+    "h": 800,
     "normal": 6,
     "hardExtra": 2
    }
   ],
-  "count": 32,
-  "maxCount": 32,
+  "count": 64,
+  "maxCount": 64,
   "lanes": [
    {
     "x0": 5150,
     "y0": 1850,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 1300,
+    "y0": 750,
     "x1": 3750,
-    "y1": 2000,
+    "y1": 1450,
     "widthM": 300
    },
    {
     "x0": 3750,
-    "y0": 2000,
-    "x1": 3250,
-    "y1": 1850,
+    "y0": 1450,
+    "x1": 3100,
+    "y1": 1250,
     "widthM": 300
    },
    {
-    "x0": 3250,
-    "y0": 1850,
-    "x1": 2650,
-    "y1": 2350,
+    "x0": 3100,
+    "y0": 1250,
+    "x1": 2550,
+    "y1": 1750,
+    "widthM": 300
+   },
+   {
+    "x0": 2550,
+    "y0": 1750,
+    "x1": 2550,
+    "y1": 2300,
     "widthM": 300
    }
   ],

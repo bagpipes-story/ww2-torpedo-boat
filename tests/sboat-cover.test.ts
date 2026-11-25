@@ -33,13 +33,13 @@ const cover = (b: Bench, n: number, r: SboatCoverRules = F): void => {
 };
 
 describe('data（us_07）', () => {
-  it('フィッチ (3750, 2000。v0.8.5 S3 で寄せた) から 1,200 m の内に 4 秒。S ボートはノーマル 2・ハード 3', () => {
-    expect([F.x, F.y, COVER_M, F.coverS, P.count, buildWorldSetup(gameData, 'us_07', { hard: true }).ptBoats!.count]).toEqual([3750, 2000, 1200, 4, 2, 3]);
+  it('フィッチ (3750, 1450。v0.8.5 S3 で寄せ、IP1 で北へ) から 1,550 m（IP1 で 1,200 から。コリーまでの距離 − 約 150 m）の内に 4 秒。S ボートはノーマル 2・ハード 3', () => {
+    expect([F.x, F.y, COVER_M, F.coverS, P.count, buildWorldSetup(gameData, 'us_07', { hard: true }).ptBoats!.count]).toEqual([3750, 1450, 1550, 4, 2, 3]);
   });
 });
 
 describe('退く規則', () => {
-  it('距離の縁: 1,199 m は 4 秒で去る（PT_LEAVE・timerS 0・onLeave）、1,201 m は去らない', () => {
+  it('距離の縁: cover_m − 1 m（1,549 m）は 4 秒で去る（PT_LEAVE・timerS 0・onLeave）、＋ 1 m（1,551 m）は去らない', () => {
     for (const [d, want] of [[COVER_M - 1, true], [COVER_M + 1, false]] as const) {
       const b = bench();
       put(b, 0, d, PT_RUN_IN);

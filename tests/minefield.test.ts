@@ -1,5 +1,5 @@
 // v0.8.5 S1（spec-v0850 §4.0・§4.2）: 機雷原の純粋な規則（core/minefield）と救助と機雷原の組み立て（core/rescue-field・seed+47）、V-X2（config/minefield-mission-data の checkMinefieldPlaceable）。
-// 置き方の決定性（seed ごとに同じ点）・引く回数は難易度に依らず 2 × (12 ＋ 32) ＝ 88・置かない所（水路・輪・出発・フィッチ・コリー・今夜の群・浅瀬 ＋ 80 m）・ハードはノーマルの 24 個を含む・
+// 置き方の決定性（seed ごとに同じ点）・引く回数は難易度に依らず 2 × (12 ＋ 64) ＝ 152（v0.8.5 IP1 で機雷 32 → 64）・置かない所（水路・輪・出発・フィッチ・コリー・今夜の群・浅瀬 ＋ 80 m）・ハードはノーマルの 48 個を含む・
 // seed 1〜32 でノーマルの 80% 以上を置ける・見える縁（150 m）・触雷の縁（半幅 ＋ 6 m）・1 ステップに 1 個・爆発は 1 回・沈んだ艇は触れない・被害の値・作る関数のほかの本体に確保なし。
 import { describe, expect, it, vi } from 'vitest';
 import { gameData, type GameData } from '../src/config/game-data';
@@ -24,16 +24,16 @@ const boat = (x: number, y: number, headingDeg = 0): BoatState => ({ x, y, headi
 const clone = (): GameData => JSON.parse(JSON.stringify(gameData)) as GameData;
 
 describe('置き方（seed+47・core/rescue-field）', () => {
-  it('枠の順: ノーマルの数を区画の順に（6・6・6・6）、その後にハードで足す数を区画の順に（2・2・2・2）。枠の外は −1', () => {
+  it('枠の順: ノーマルの数を区画の順に（6・36・6。IP1）、その後にハードで足す数を区画の順に（3・11・2）。枠の外は −1', () => {
     const m = M(true);
-    expect([0, 5, 6, 23, 24, 25, 26, 31, 32].map((k) => mineSlotField(m, k))).toEqual([0, 0, 1, 3, 0, 0, 1, 3, -1]);
+    expect([0, 5, 6, 41, 42, 47, 48, 50, 51, 61, 62, 63, 64].map((k) => mineSlotField(m, k))).toEqual([0, 0, 1, 1, 2, 2, 0, 0, 1, 1, 2, 2, -1]);
   });
-  it('引く回数は難易度に依らず 2 × (群 12 ＋ 枠 32) ＝ 88。seed ごとに同じ点（2 回の組み立てで同じ）', () => {
+  it('引く回数は難易度に依らず 2 × (群 12 ＋ 枠 64) ＝ 152（IP1）。seed ごとに同じ点（2 回の組み立てで同じ）', () => {
     for (const hard of [false, true]) {
       for (const seed of [1, 2, 12345]) {
         const spy = vi.spyOn(SeededRng.prototype, 'next');
         const a = roll(seed, hard);
-        expect(spy.mock.calls.length, `${seed} ${hard}`).toBe(88);
+        expect(spy.mock.calls.length, `${seed} ${hard}`).toBe(152);
         spy.mockRestore();
         const b = roll(seed, hard);
         expect([Array.from(b.mines!.x), Array.from(b.mines!.y), Array.from(b.mines!.state), Array.from(b.rescue.gx)]).toEqual([Array.from(a.mines!.x), Array.from(a.mines!.y), Array.from(a.mines!.state), Array.from(a.rescue.gx)]);
@@ -41,14 +41,14 @@ describe('置き方（seed+47・core/rescue-field）', () => {
     }
     expect(Array.from(roll(1, false).mines!.x)).not.toEqual(Array.from(roll(2, false).mines!.x));
   });
-  it('ハードはノーマルの 24 個を含む（どの枠も同じ点。ノーマルは 25 枠目から置かない）。群の位置も難易度で同じ', () => {
+  it('ハードはノーマルの 48 個を含む（どの枠も同じ点。ノーマルは 49 枠目から置かない。IP1）。群の位置も難易度で同じ', () => {
     for (let seed = 1; seed <= 16; seed++) {
       const n = roll(seed, false);
       const h = roll(seed, true);
       expect(Array.from(n.mines!.x)).toEqual(Array.from(h.mines!.x));
       expect(Array.from(n.rescue.gx)).toEqual(Array.from(h.rescue.gx));
-      for (let k = 0; k < 32; k++) {
-        if (k >= 24) expect(n.mines!.state[k]).toBe(MINE_NONE);
+      for (let k = 0; k < 64; k++) {
+        if (k >= 48) expect(n.mines!.state[k]).toBe(MINE_NONE);
         else expect(n.mines!.state[k]).toBe(h.mines!.state[k]);
       }
     }
@@ -75,31 +75,36 @@ describe('置き方（seed+47・core/rescue-field）', () => {
       }
     }
   });
-  it('V-X2: seed 1〜32 でノーマルの数の 80% 以上（ハードもハードの数の 80% 以上）を置ける。今の data は全部置ける', () => {
+  it('V-X2: seed 1〜32 でノーマルの数の 80% 以上（ハードもハードの数の 80% 以上）を置ける。IP1 の広い帯は水路の余白に掛かるので全部は置けない（平均 ノーマル 44.41・ハード 59.31）', () => {
+    const sum = [0, 0];
     for (const hard of [false, true]) {
       for (let seed = 1; seed <= 32; seed++) {
         const st = roll(seed, hard).mines!;
-        expect(st.placed, `${seed} ${hard}`).toBeGreaterThanOrEqual(Math.ceil((hard ? 32 : 24) * MINEFIELD_PLACEABLE_SHARE));
-        expect(st.placed).toBe(hard ? 32 : 24);
+        expect(st.placed, `${seed} ${hard}`).toBeGreaterThanOrEqual(Math.ceil((hard ? 64 : 48) * MINEFIELD_PLACEABLE_SHARE));
+        expect(st.placed).toBeLessThanOrEqual(hard ? 64 : 48);
+        sum[hard ? 1 : 0]! += st.placed;
         let hidden = 0;
         for (let k = 0; k < st.max; k++) if (st.state[k] === MINE_HIDDEN) hidden++;
         expect(hidden).toBe(st.placed);
       }
     }
+    expect(sum.map((x) => +(x / 32).toFixed(2))).toEqual([44.41, 59.31]);
   });
 });
 
 describe('V-X2 の起動時の検査（決まった格子）', () => {
-  it('今の data: 区画の置ける割合は 99% 以上（20 m の格子・群は ±ずれの対角を足した円）。Boot の検査は通る', () => {
-    const shares = checkMinefieldPlaceable(mission(false), M(false), RS);
-    expect(shares.length).toBe(4);
-    for (const s of shares) expect(s).toBeGreaterThanOrEqual(0.99);
+  it('今の data: 区画の置ける割合（20 m の格子・群は ±ずれの対角を足した円。IP1 の西・東の帯・水路の弧の内）と置ける見込み（ノーマルの数の 80% 以上）。Boot の検査は通る', () => {
+    const m = M(false);
+    const shares = checkMinefieldPlaceable(mission(false), m, RS);
+    expect(shares.map((s) => +s.toFixed(3))).toEqual([1, 0.938, 0.796]);
+    const expectN = m.fields.reduce((a, f, i) => a + f.normal * shares[i]!, 0);
+    expect(expectN).toBeGreaterThanOrEqual(48 * MINEFIELD_PLACEABLE_SHARE);
     expect(MINEFIELD_GRID_STEP_M).toBe(20);
-    expect(validateMinefieldMissions(gameData)?.count).toBe(24);
+    expect(validateMinefieldMissions(gameData)?.count).toBe(48);
   });
   it('置ける所の無い区画（掃海済みの水路の上）・置ける見込みが 80% 未満（余白が広すぎる）は鍵を名指して止まる', () => {
     const onLane = clone();
-    (((onLane.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!['v0_1_prototype'] as Rec)['minefield'] as Rec)['fields'] = [[4400, 1875, 100, 100, 6, 2], [3100, 2400, 1300, 900, 6, 2]];
+    (((onLane.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!['v0_1_prototype'] as Rec)['minefield'] as Rec)['fields'] = [[4350, 1570, 100, 100, 6, 2], [3100, 2400, 1300, 900, 6, 2]]; // 1 つ目は出発 → フィッチの水路（IP1）の上
     expect(() => validateMinefieldMissions(onLane)).toThrow(/us_07\.v0_1_prototype\.minefield\.fields\[0\] に置ける所が無い.*V-X2/);
     const wide = clone();
     const wf = ((wide.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!['v0_1_prototype'] as Rec)['minefield'] as Rec;

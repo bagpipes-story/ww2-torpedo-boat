@@ -75,7 +75,7 @@ describe('文と幅（22 px・840 px の内。数と名は data と setup から
     expect(rescueShellJa(1)).toBe('砲弾が生存者のそばに落ちた ・ 1 名を失った ・ 煙幕で砲台の目を切れ');
     expect(rescueMineJa('北西', 140, 1)).toBe('機雷！ 北西 140 m ・ 水路の外');
     expect(rescueMineJa('北西', 140, 2)).toBe('機雷！ 2 個 ・ 北西 140 m ・ 水路の外');
-    expect(rescueSboatJa('Sボート', 2, '西', 'フィッチ', R.fitch.coverM)).toBe('Sボート 2 隻 西から ・ フィッチの 1200 m の内なら砲火で退く');
+    expect(rescueSboatJa('Sボート', 2, '西', 'フィッチ', R.fitch.coverM)).toBe('Sボート 2 隻 西から ・ フィッチの 1550 m の内なら砲火で退く');
     expect(rescueRetreatJa('フィッチ', 'Sボート')).toBe('フィッチの砲火 ・ Sボートが退いた');
     expect(standing({ aboard: 12, delivered: 18, onWater: 30 })).toBe('乗せている 12/20 名 ・ 渡した 18/40 名 ・ 海に 30 名');
     expect(standing({ aboard: 0, delivered: 44, onWater: 3 }, { batteryInArc: true, batteryAlerted: true })).toBe('乗せている 0/20 名 ・ 渡した 44 名 ・ 海に 3 名 ・ 沿岸砲！');
@@ -241,7 +241,7 @@ describe('出来事の時計（ui/rescue-lines）', () => {
     const d = new RescueLineClock();
     frame(d, T(res(), {}, { enabled: true, total: 2, alive: 2 }), 0);
     frame(d, T(res(), {}, p), 16);
-    expect([d.kind, d.text]).toEqual([RESCUE_EV_SBOAT, 'Sボート 2 隻 西から ・ フィッチの 1200 m の内なら砲火で退く']);
+    expect([d.kind, d.text]).toEqual([RESCUE_EV_SBOAT, 'Sボート 2 隻 西から ・ フィッチの 1550 m の内なら砲火で退く']);
     for (let i = 0, m = 32; i < 400; i++, m += 16) frame(d, T(res(), {}, p), m);
     expect(d.kind).toBe(RESCUE_EV_NONE);
     frame(d, T(res({ sboatRetreatSeq: 1 }), {}, p), 99999);

@@ -11,10 +11,10 @@ import { minefieldFreeShare } from '../core/minefield';
 import { createRescueState } from '../core/rescue';
 import { mineKeepOut, type RescueFieldSite } from '../core/rescue-field';
 
-/** V-X1: minefield の鍵（ちょうどこれ）・機雷の数の上限（固定長の配列の大きさ）。V-X3: mine.params の鍵。V-X4: 水路がつなぐコリーの周りの円の半径 m。V-X5: 危険の id */
+/** V-X1: minefield の鍵（ちょうどこれ）・機雷の数の上限（固定長の配列の大きさ。v0.8.5 IP1 で 48 → 64＝実機 1 回目のユーザー「機雷の敷設エリアを現在の2倍ほど」で面積と数を約 2 倍＝ノーマル 48・ハード 64）。V-X3: mine.params の鍵。V-X4: 水路がつなぐコリーの周りの円の半径 m。V-X5: 危険の id */
 export const MINEFIELD_KEYS = ['fields', 'lanes', 'clear_m', 'source'] as const;
 export const MINE_PARAM_KEYS = ['damage', 'fire_chance', 'engine_damage_chance', 'sight_m', 'contact_m', 'source'] as const;
-export const MINEFIELD_MAX = 48;
+export const MINEFIELD_MAX = 64;
 export const MINEFIELD_LANE_CORRY_M = 400;
 export const MINE_EVENT_ID = 'mine';
 /** V-X2: 置ける見込みの下限（ノーマルの数に対する割合）と、置ける面積を数える格子の間隔 m */
@@ -74,7 +74,7 @@ export function getMinefieldParams(data: GameData, mission: PrototypeMission): M
   if (!isText(raw['source'])) bad('V-X1', 'minefield.source は空でない文字列');
   const clearM = raw['clear_m'];
   if (!(isNum(clearM) && clearM >= 0)) bad('V-X1', 'minefield.clear_m は 0 以上');
-  // V-X1 形: 区画と水路は海域の中・数の合計（ハード）≤ 48
+  // V-X1 形: 区画と水路は海域の中・数の合計（ハード）≤ MINEFIELD_MAX
   const { width, height } = mission.bounds;
   const fs = raw['fields'];
   if (!Array.isArray(fs) || fs.length < 1) return bad('V-X1', 'minefield.fields は空でない配列');

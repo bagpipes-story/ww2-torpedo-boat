@@ -38,7 +38,7 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
     expect([s.dawnAir.playAs, s.dawnAir.shipsAtDawn, s.dawnAir.retireEdge, s.durationS]).toEqual(['own', 'none', null, 300]);
     // 砲台（任務の 210 mm）・岸・浅瀬・救助・機雷原
     expect([s.shoreBatteries.length, s.shoreBattery!.x, s.shoreBattery!.y, s.shoreBattery!.gun.id, s.mission.coast!.label, s.coastEdgeY]).toEqual([hard ? 3 : 1, 1600, 4600, 'skoda_21cm', 'コタンタン半島（サン＝マルクフ〜ユタ・ビーチ）', 3750]);
-    expect([s.rescue!.total, s.rescue!.capacity, s.rescue!.fitch.labelJa, s.minefield!.count]).toEqual([60, 20, 'フィッチ', hard ? 32 : 24]);
+    expect([s.rescue!.total, s.rescue!.capacity, s.rescue!.fitch.labelJa, s.minefield!.count]).toEqual([60, 20, 'フィッチ', hard ? 64 : 48]); // 機雷は v0.8.5 IP1 で 24・32 → 48・64
     expect(s.hazardsTonight).toEqual(['shore_battery', 'mine', 'enemy_ship_gunfire_or_ram', 'grounding']);
     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'radar', 'transit', 'shores', 'anchors', 'backdrop', 'seaplaneNight', 'pickets', 'recon'] as const) expect(k in s, k).toBe(false);
     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));
