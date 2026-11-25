@@ -5,6 +5,7 @@
 // v0.8.1 S4（lead の L65）: us_06 が遊べるようになり米PT のタブは 5 任務＝今の 2 列の格子で 3 段（2・2・1。日本のタブの v0.6.9 の 5 任務と同じ置き方。格子のコードは変えない）。
 // v0.8.2 S4（lead の L44）: us_05 が遊べるようになり米PT のタブは 6 任務＝2 列 × 3 段で満杯（日本のタブの v0.6.11 の 6 任務と同じ矩形。order 5 のまま＝us_05 が 3 段目の左・us_06 が右。格子のコードは変えない）。
 // v0.8.5 S4（spec-v0850 §8.4 の案 A）: 7 任務からは 2 列 × 4 段の詰めた行（titleRowLook）。us_07 の playable_from は S5 なので今の米PT は 6 行のまま＝7・8 行は数で確かめる（末尾の describe）。
+// v0.8.5 S5: us_07 が遊べるようになり米PT のタブは 7 任務＝詰めた行の 2 列 × 4 段（左 3 に us_07。order 5＝年代順）。日本のタブ（6 行）は今の矩形のまま。
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -47,10 +48,12 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
       ['us_02', '東京急行を迎え撃て', true],
       ['us_03', '大発を狩れ', true],
       ['us_04', 'ブラケット海峡の夜', true],
+      ['us_07', 'D-Day・生存者救助', true],
       ['us_05', 'スリガオ海峡・最初の接触', true],
       ['us_06', 'オルモック湾の決着', true],
     ]);
-    expect([US.length, 2 * TITLE_GRID_ROWS_MAX]).toEqual([6, 6]); // v0.8.2 S4: 格子が満杯（7 枚目の us_07 の置き方は v0.8.3＝CHANGELOG の既知の制約）
+    // v0.8.2 S4: 格子が満杯（6）。v0.8.5 S5: us_07 で 7＝詰めた行（2 列 × 4 段・8 枠）
+    expect([US.length, 2 * TITLE_GRID_COMPACT_ROWS_MAX, titleCompactOn(US.length), titleCompactOn(JP.length)]).toEqual([7, 8, true, false]);
   });
   it('3 つの論理幅の置き方: 列 597・間 24・計 1,218（下の 3 つの切り替えと同じ幅・同じ中心）、左 x = 幅/2 − 609・右 = 左 + 621、段 y 216・324', () => {
     expect([TITLE_GRID_COL_W, TITLE_TOGGLE_GAP, TITLE_GRID_W, 3 * TITLE_DIFF_W + 2 * TITLE_TOGGLE_GAP]).toEqual([597, 24, 1218, 1218]);
@@ -98,19 +101,20 @@ describe('Title の任務の行の矩形（ui/title-grid）', () => {
       }
     }
   });
-  it('米PT のタブ（v0.8.0 S5 から 4 行・v0.8.1 S4 から 5 行・v0.8.2 S4 から 6 行）は日本のタブの 6 任務と同じ 3 段（左上 us_01・右上 us_02・左中 us_03・右中 us_04・左下 us_05・右下 us_06。y 432・下端 528）。3 行以下のタブは v0.6.6 と同じ 1 列 x 160・y 216／324／432・w 960（N6）', () => {
-    expect([TITLE_ROW_X, TITLE_ROW_W, US.length]).toEqual([160, 960, 6]);
+  it('米PT のタブ（v0.8.0 S5 から 4 行・v0.8.1 S4 から 5 行・v0.8.2 S4 から 6 行＝日本のタブの 6 任務と同じ 3 段）は v0.8.5 S5 から 7 行の詰めた行（左上 us_01・右上 us_02・左 2 us_03・右 2 us_04・左 3 us_07・右 3 us_05・左 4 us_06。y 216・304・392・480・下端 556）。3 行以下のタブは v0.6.6 と同じ 1 列 x 160・y 216／324／432・w 960（N6）', () => {
+    expect([TITLE_ROW_X, TITLE_ROW_W, US.length]).toEqual([160, 960, 7]);
     for (const w of WIDTHS) {
       const l = w / 2 - 609;
       expect(rects(US.length, w), String(w)).toEqual([
         { x: l, y: 216, w: 597 },
         { x: l + 621, y: 216, w: 597 },
-        { x: l, y: 324, w: 597 },
-        { x: l + 621, y: 324, w: 597 },
-        { x: l, y: 432, w: 597 },
-        { x: l + 621, y: 432, w: 597 },
+        { x: l, y: 304, w: 597 },
+        { x: l + 621, y: 304, w: 597 },
+        { x: l, y: 392, w: 597 },
+        { x: l + 621, y: 392, w: 597 },
+        { x: l, y: 480, w: 597 },
       ]);
-      expect(rects(US.length, w), String(w)).toEqual(rects(JP.length, w)); // 日本のタブ（v0.6.11 から 6 任務）と同じ矩形
+      expect(rects(6, w), String(w)).toEqual(rects(JP.length, w)); // 6 行（日本のタブ・v0.8.4 までの米PT）は同じ矩形のまま
       expect(rects(3, w), String(w)).toEqual([216, 324, 432].map((y) => ({ x: 160, y, w: 960 })));
     }
   });
@@ -153,9 +157,9 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6。v0.
       expect(titleGridSubJa(e.sub), e.id).toBe(shortLabelJa(e.sub));
     }
   });
-  it('v0.8.0 S5（L59）: 米PT の札（v0.8.1 S4 から 5 つ・v0.8.2 S4 から 6 つ）も状態「出撃準備 →」と副題・題が重ならない（すき間 ≥ 16 px＝日本の格子と同じ規則。W 1,280・1,584 とも列 597 px）。us_01 は「→」の前まで（91 px）', () => {
+  it('v0.8.0 S5（L59）: 米PT の札（v0.8.1 S4 から 5 つ・v0.8.2 S4 から 6 つ・v0.8.5 S5 から 7 つ。詰めた行の字は小さいので今の字の大きさで確かめれば足りる）も状態「出撃準備 →」と副題・題が重ならない（すき間 ≥ 16 px＝日本の格子と同じ規則。W 1,280・1,584 とも列 597 px）。us_01 は「→」の前まで（91 px）', () => {
     const subs = US.map((e) => titleGridSubJa(e.sub));
-    expect(subs).toEqual(['1942年3月11日 ・ コレヒドール', '1942年12月11日 ・ ガダルカナル島沖', '1943年7月15日 ・ ニューギニア北岸', '1943年8月1日 ・ ブラケット海峡', '1944年10月24日 ・ ミンダナオ海', '1944年12月11日 ・ パロンポン沖']); // us_06 は jp_04 と同じ副題（同じ夜・同じ場所）。us_05 は「（ボホール島沖）」の前まで（spec D-H6）
+    expect(subs).toEqual(['1942年3月11日 ・ コレヒドール', '1942年12月11日 ・ ガダルカナル島沖', '1943年7月15日 ・ ニューギニア北岸', '1943年8月1日 ・ ブラケット海峡', '1944年6月6日 ・ ノルマンディー沖', '1944年10月24日 ・ ミンダナオ海', '1944年12月11日 ・ パロンポン沖']); // us_06 は jp_04 と同じ副題（同じ夜・同じ場所）。us_05 は「（ボホール島沖）」の前まで（spec D-H6）
     for (const w of [1280, 1584]) {
       US.forEach((e, i) => {
         const r = titleRowRect(i, US.length, w);
@@ -168,9 +172,9 @@ describe('格子の行の文（副題は「（」の前まで。spec §D.6。v0.
     }
     // 副題のすき間（us_01 は「→」で切らないと −30 px＝状態に食い込んでいた）と題のすき間
     const gap = (t: string, px: number): number => Math.round(TITLE_GRID_COL_W - 2 * MENU_PAD_X - textWidthPx('出撃準備 →', TITLE_ROW_STATUS_PX) - textWidthPx(t, px));
-    expect(subs.map((t) => gap(t, TITLE_ROW_SUB_PX))).toEqual([90, 38, 50, 82, 78, 78]); // v0.8.2 S4: us_05「1944年10月24日 ・ ミンダナオ海」は us_06 と同じ字の数
+    expect(subs.map((t) => gap(t, TITLE_ROW_SUB_PX))).toEqual([90, 38, 50, 82, 62, 78, 78]); // v0.8.5 S5: us_07「1944年6月6日 ・ ノルマンディー沖」62 px。v0.8.2 S4: us_05「1944年10月24日 ・ ミンダナオ海」は us_06 と同じ字の数
     expect(gap(shortLabelJa(US[0]!.sub), TITLE_ROW_SUB_PX)).toBe(-30);
-    expect(US.map((e) => gap(e.title, TITLE_ROW_TITLE_PX))).toEqual([159, 129, 249, 129, 39, 129]); // v0.8.2 S4: us_05「スリガオ海峡・最初の接触」は 39 px（日本の jp_04「多号作戦・オルモック湾へ」と同じ＝最悪の 39 の内）
+    expect(US.map((e) => gap(e.title, TITLE_ROW_TITLE_PX))).toEqual([159, 129, 249, 129, 128, 39, 129]); // v0.8.5 S5: us_07「D-Day・生存者救助」128 px。v0.8.2 S4: us_05「スリガオ海峡・最初の接触」は 39 px（日本の jp_04「多号作戦・オルモック湾へ」と同じ＝最悪の 39 の内）
   });
   it('操作の一言（18 px）: 日本は「右下の角で魚雷（効くのは駆逐艦だけ）・その左で機銃」（v0.6.8 実機 1 回目。全任務で両方使え、位置も同じ）で、格子の幅 1,218 px の内（1,037 px）。米PT も格子の幅の内（v0.8.0 S5 から 2 × 2。今の一言は 1 列の 960 px の内のまま。R12）', () => {
     const jp = TITLE_HINT_BY_CAMPAIGN_JA['jp_hard']!;
@@ -234,9 +238,9 @@ describe('v0.8.5 S4（spec-v0850 §8.4 の案 A）: 7 任務からは 2 列 × 4
     }
   });
   it('詰めた行の文: 題（26 px）・副題（18 px）と状態（24 px）が重ならない（すき間 ≥ 16 px）。題の下端と副題の上端の間 ≥ 4 px。押す所 ≈ 326 × 41 pt', () => {
-    const us07 = (gameData.missionsSeed.missions as Record<string, unknown>[]).find((m) => m['id'] === 'us_07')!;
-    const entries = [...US.map((e) => ({ title: e.title, sub: e.sub })), { title: us07['title_ja'] as string, sub: `1944年6月6日 ・ ${us07['place'] as string}` }];
-    expect(titleGridSubJa(entries[6]!.sub)).toBe('1944年6月6日 ・ ノルマンディー沖');
+    const entries = US.map((e) => ({ title: e.title, sub: e.sub })); // v0.8.5 S5: us_07 は data の 5 番目（S4 は写しで足した）
+    expect(entries.length).toBe(7);
+    expect(titleGridSubJa(entries[4]!.sub)).toBe('1944年6月6日 ・ ノルマンディー沖');
     const look = titleRowLook(7);
     const inner = TITLE_GRID_COL_W - 2 * MENU_PAD_X;
     const status = textWidthPx('出撃準備 →', TITLE_ROW_STATUS_PX);

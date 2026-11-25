@@ -34,14 +34,14 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     expect(parseIdList('["us_01","us_01","",3]')).toEqual(['us_01']);
     for (const bad of [null, undefined, '', '{', '"us_01"', '{"a":1}']) expect(parseIdList(bad)).toEqual([]);
   });
-  it('data: 米PT（default）と日本ハードモード（complete_us_pt）。米PTの遊べる任務は us_01〜06（v0.8.0 S5 で us_04・v0.8.1 S4 で us_06・v0.8.2 S4 で us_05）、日本は jp_01〜jp_06。短い名前', () => {
+  it('data: 米PT（default）と日本ハードモード（complete_us_pt）。米PTの遊べる任務は us_01〜07（v0.8.0 S5 で us_04・v0.8.1 S4 で us_06・v0.8.2 S4 で us_05・v0.8.5 S5 で us_07）、日本は jp_01〜jp_06。短い名前', () => {
     const cs = getCampaigns(gameData);
     expect(cs.map((c) => [c.id, c.shortJa, c.unlock])).toEqual([
       ['us_pt', '米PT', { kind: 'default' }],
       ['jp_hard', '日本', { kind: 'complete', campaignId: 'us_pt' }],
     ]);
     expect(defaultCampaign(gameData).id).toBe('us_pt');
-    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']); // v0.8.0 S5: us_04（ブラケット海峡の夜）に playable_from。v0.8.1 S4: us_06（オルモック湾の決着）も。v0.8.2 S4: us_05（スリガオ海峡・最初の接触）も
+    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07']); // v0.8.0 S5: us_04（ブラケット海峡の夜）に playable_from。v0.8.1 S4: us_06（オルモック湾の決着）も。v0.8.2 S4: us_05（スリガオ海峡・最初の接触）も。v0.8.5 S5: us_07（D-Day・生存者救助）も（配列順）
     expect(playableMissionIds(gameData, 'jp_hard')).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.6.4: jp_01（夜の輸送護衛）も遊べる。v0.6.7: jp_02（孤島の哨戒）も。v0.6.9: jp_04（多号作戦・オルモック湾へ）も。v0.6.11 S6: jp_03（運天港・空襲下の退避）も。配列順
     expect(getMenuEntries(gameData, 'jp_hard').campaignName).toBe('日本ハードモード');
     expect(() => getMenuEntries(gameData, 'nope')).toThrow();
@@ -65,11 +65,11 @@ describe('キャンペーンと解放（v0.6.0。core/campaign・config/campaign
     expect([us!.unlockMissionIds, jp!.unlockMissionIds]).toEqual([null, ['us_01', 'us_02', 'us_03']]);
     expect([unlockPrereqIds(gameData, us!), unlockPrereqIds(gameData, jp!)]).toEqual([[], ['us_01', 'us_02', 'us_03']]);
     expect(String((gameData.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids_source'])).toContain('design (v0.8.0 S0');
-    // v0.8.0 S5 から us_04 が遊べる（S0 の木では playable_from を足した写しで確かめた）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝v0.8.1 S4 の us_06 で 5・v0.8.2 S4 の us_05 で 6）
-    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']);
+    // v0.8.0 S5 から us_04 が遊べる（S0 の木では playable_from を足した写しで確かめた）: 一覧があれば 3 のまま、一覧を消すと v0.6.0 の規則（遊べる米PT の任務を全部＝v0.8.1 S4 の us_06 で 5・v0.8.2 S4 の us_05 で 6・v0.8.5 S5 の us_07 で 7）
+    expect(playableMissionIds(gameData, 'us_pt')).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07']);
     const later = clone();
     delete (later.missionsSeed.campaigns[1] as Record<string, unknown>)['unlock_mission_ids'];
-    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']);
+    expect(unlockPrereqIds(later, getCampaigns(later)[1]!)).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07']);
   });
   it('v0.8.0 S5（brief L50）: us_04 が遊べても日本のタブは米PT の 3 任務で開く。(a) us_01〜03 を帰投で終え us_04 は一度も → 開く (b) us_04 だけ帰投で終えた → 未解放・済 0/3 のまま', () => {
     const [us, jp] = getCampaigns(gameData);

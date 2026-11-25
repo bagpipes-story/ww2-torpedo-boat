@@ -11,6 +11,7 @@
 // v0.8.0 S4（レーダーのある任務 us_04 だけ）: 緑の「レーダー N m」（ui/radar-marker。画面の外・目の外の一番近い輝点。敵・帰投・敵機の印の後に refresh し、それらから離す）。
 // v0.8.2 S4（報告の任務 us_05 だけ。ほかの任務は作らない）: 中継待ちの間の黄色い「中継 N m」（中継の輪の縁まで。帰投の印から離し、緑の印はこれからも離す）。
 // v0.8.5 S4（救助の任務 us_07 だけ）: 「生存者 N m」「フィッチ N m」（ui/rescue-markers）と、S ボートの印のラベルは記録の名（「Sボート」。米PT の任務は今の「PT」）。
+// v0.8.5 S5（救助の任務 us_07 だけ）: S ボート・帰投・生存者・フィッチの印は一時停止と静音・倍速の衛星の塊を右へ避ける（ui/pause-cluster。左の縁の「Sボート 2700 m」が一時停止に重なった）。
 import Phaser from 'phaser';
 import { CONVOY_MARKER_LABEL, CONVOY_MARKER_STEP_M } from '../config/convoy-config';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
@@ -52,6 +53,7 @@ import { avoidPauseButton, landingRunnerMarkerShown, landingShipMarkerShown, sep
 import { avoidCorner, separateMarker, type MarkerRect, type MarkerShift } from './marker-separation';
 import { RadarEdgeMarker } from './radar-marker';
 import { RescueEdgeMarkers } from './rescue-markers';
+import { clearOfPauseCluster, pauseCluster, type PauseCluster } from './pause-cluster';
 import { RELAY_MARKER_LABEL_JA, RELAY_MARKER_STEP_M, RELAY_RING_TEXT } from '../config/recon-hud-config';
 import { RECON_PENDING } from '../core/recon-report';
 
@@ -105,6 +107,8 @@ export class HudMarkers {
   private relayMarker?: EdgeMarker;
   /** 救助（v0.8.5 S4。us_07 だけ）: 一番近い群の「生存者 N m」と乗せている間の「フィッチ N m」（ui/rescue-markers） */
   private rescueMarkers?: RescueEdgeMarkers;
+  /** 一時停止の塊（v0.8.5 S5。救助の任務だけ。作る時に 1 回） */
+  private pauseKeep?: PauseCluster;
 
   constructor(scene: Phaser.Scene, mission: PrototypeMission, telemetry: BoatTelemetry) {
     // 画面外マーカー: 敵は赤・50 m 刻み・ラベルは矢印の下（視程内だけ。大発の任務は「大発」、米PT の任務（v0.6.3）は脅威の PT を「PT」で、どちらも切り上げ＝2 行目と同じ距離）、帰投地点は青・100 m 刻み・ラベルは矢印の上（常に。画面内なら隠す）
@@ -120,7 +124,10 @@ export class HudMarkers {
     // 中継（v0.8.2 S4。報告の任務 us_05 だけ）: 中継待ちの間、黄色い「中継 N m」（輪の縁まで・100 m 刻みの切り上げ・ラベルは矢印の上＝帰投の印と同じ置き方・字は輪と同じ黄）。
     // 矢印は Boot の「岸」の砂色の絵（大発の任務だけが使う）をそのまま（青い帰投の絵に黄を掛けると暗い緑になる。新しい絵の鍵は作らない＝tex-ab は変わらない）
     if (telemetry.recon) this.relayMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: RELAY_MARKER_LABEL_JA, stepM: RELAY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: RELAY_RING_TEXT });
-    if (telemetry.rescue) this.rescueMarkers = new RescueEdgeMarkers(scene, telemetry.rescue.fitchJa, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP); // 救助（v0.8.5 S4。us_07 だけ）
+    if (telemetry.rescue) {
+      this.pauseKeep = pauseCluster(); // 救助（v0.8.5 S5。us_07 だけ）
+      this.rescueMarkers = new RescueEdgeMarkers(scene, telemetry.rescue.fitchJa, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, this.pauseKeep); // 救助（v0.8.5 S4。us_07 だけ）
+    }
     if (telemetry.radar.enabled) {
       this.radarMarker = new RadarEdgeMarker(scene);
       this.radarOthers = this.relayMarker ? [this.targetMarker, this.homeMarker, this.planeMarker, this.relayMarker] : [this.targetMarker, this.homeMarker, this.planeMarker];
@@ -134,6 +141,11 @@ export class HudMarkers {
   refresh(telemetry: BoatTelemetry): void {
     this.targetMarker?.refresh(telemetry.enemyDx, telemetry.enemyDy, telemetry.enemySighted, telemetry);
     this.homeMarker?.refresh(telemetry.homeDx, telemetry.homeDy, !telemetry.atHome, telemetry, telemetry.homeEdgeM);
+    const pk = this.pauseKeep;
+    if (pk) { // 救助の任務だけ（v0.8.5 S5）: S ボートと帰投の印を一時停止の塊から右へ
+      if (this.targetMarker) clearOfPauseCluster(this.targetMarker, pk);
+      if (this.homeMarker) clearOfPauseCluster(this.homeMarker, pk);
+    }
     const pm = this.planeMarker;
     const pdx = telemetry.planeDx;
     const patrol = telemetry.patrol.enabled;

@@ -25,7 +25,7 @@
       "unlock_mission_ids_source": "design (v0.8.0 S0・spec-v0800 §2.4。lead の既定 L2（ユーザー未確認・spec-v0800 §9 Q3）: 日本のタブを開く条件は今の米PT の 3 任務のまま（一覧で固定。core/campaign の parseUnlockMissionIds・config/campaign-data の unlockPrereqIds）。無ければ v0.6.0 のとおり相手のキャンペーンの遊べる任務を全部＝us_04〜us_07 が遊べるようになると 7 任務に増える。日本のタブは 3 任務の後に開く前提で作った・新しい任務は 1944 年の難しい夜が多い・ストアと殴り込みは別に「全クリア後」。すでに開いた端末は閉じない（開いた印）)",
       "enemy_faction": "USN",
       "enemy_faction_source": "design (v0.6.1。夜明けの空襲の機体の faction を検査する（日本の艇を零観が襲う写し間違いを起動時に止める）)",
-      "source": "design (v0.6.0。unlock complete_us_pt: 米PTキャンペーンの遊べる任務（playable_from と v0_1_prototype を持つ。v0.6.0 では us_01・us_02・us_03）を、それぞれ 1 回、帰投で終えると開く（撃沈やノルマの達成は問わない）。一度開いたら閉じない（localStorage night-hunters.unlocked）。v0.5.2 までに任務を 3 回以上終えた端末は開いたものとみなす。?debug&title&unlock で保存を変えずに開ける。CLAUDE.md §2『米PTキャンペーンの後にアンロック』の具体化)"
+      "source": "design (v0.6.0。unlock complete_us_pt: 米PTキャンペーンの遊べる任務（playable_from と v0_1_prototype を持つ。v0.6.0 では us_01・us_02・us_03。v0.8.0 からは上の unlock_mission_ids で us_01〜us_03 に固定＝v0.8.5 で us_07 が遊べるようになっても 3 任務）を、それぞれ 1 回、帰投で終えると開く（撃沈やノルマの達成は問わない）。一度開いたら閉じない（localStorage night-hunters.unlocked）。v0.5.2 までに任務を 3 回以上終えた端末は開いたものとみなす。?debug&title&unlock で保存を変えずに開ける。CLAUDE.md §2『米PTキャンペーンの後にアンロック』の具体化)"
     }
   ],
   "missions": [
@@ -1141,6 +1141,7 @@
       "campaign": "us_pt",
       "order": 5,
       "order_source": "design (v0.8.5 S0・spec-v0850 §2.3・§9 の 1。Title の並びを年代順に: us_07（1944-06-06）5・us_05（1944-10-24）6・us_06（1944-12-11）7。order を読むのは Title の並びだけ（解放は id の一覧）。遊べる任務の並びの前後は変わらない。ユーザー未確認の設計の既定)",
+      "playable_from": "v0.8.5",
       "title_ja": "D-Day・生存者救助",
       "date": "1944-06-06",
       "place": "ノルマンディー沖（ユタ・ビーチ）",

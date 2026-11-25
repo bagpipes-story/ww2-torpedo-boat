@@ -1,7 +1,7 @@
 // v0.8.5 S0（spec-v0850 §2.2・§4・§7 の S0）: us_07「D-Day・生存者救助」の世界の数値（JSON 全体）と今夜の乱数の回数を snapshot に固める
 // （ノーマル／ハード × 史実モードあり／なし × seed 1・12345）。snapshot は v0.8.5 S0 の木で作った（新しいファイル。ほかの 8 任務の setup の snapshot は -u しない）。
 // us_07 の setup は S1〜S4 で鍵が増えうるので、書き換える時は CHANGELOG に段と理由を書く。Briefing の行は入れない（S4 で変わる）。
-// 今夜の揺らぎ（+16）はノーマル 6 回（S ボートの隊 1 件の x・y・針路 3・大発の先頭 1・砲台 1・反転 1）・ハード 8 回（砲台が 3 つ＝v0.8.5 S3 で 2 つ目・S3b で 3 つ目を足した）。遊べるのは S5 から（playable_from はまだ無い）。
+// 今夜の揺らぎ（+16）はノーマル 6 回（S ボートの隊 1 件の x・y・針路 3・大発の先頭 1・砲台 1・反転 1）・ハード 8 回（砲台が 3 つ＝v0.8.5 S3 で 2 つ目・S3b で 3 つ目を足した）。遊べるのは S5 から（playable_from "v0.8.5"）。
 // あわせて: us_07 の画面の文（題・場所・目的・成功・史実メモ・月・夜明け・岸・浅瀬・ハードの文・敵の名・船の名）に人名・階級つきの呼び方・PT の番号が無い（CLAUDE.md §11）。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { gameData } from '../src/config/game-data';
@@ -55,10 +55,10 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
 });
 
 describe('us_07 の種の直し（spec-v0850 §2.2）と人名・PT の番号（CLAUDE.md §11）', () => {
-  it('題・日付・場所・type はそのまま、順は年代順の 5・Higgins・昼・S ボート 2 隻（ハード 3）・危険・救助の時間 300 秒・夜明けの空は own のまま・遊べるのは S5 から（playable_from はまだ無い）', () => {
+  it('題・日付・場所・type はそのまま、順は年代順の 5・Higgins・昼・S ボート 2 隻（ハード 3）・危険・救助の時間 300 秒・夜明けの空は own のまま・遊べるのは S5 から（playable_from "v0.8.5"）', () => {
     const m = missionOf('us_07');
     expect([m['title_ja'], m['date'], m['place'], m['type'], m['order'], m['player_boat'], m['torpedo_type'], m['moon'], m['moon_label_ja'], m['duration_min'], m['success']]).toEqual(['D-Day・生存者救助', '1944-06-06', 'ノルマンディー沖（ユタ・ビーチ）', 'rescue', 5, 'us_higgins78', 'us_mk13', 'day', '昼（日の出の後）', 5, '生存者40名以上をフィッチへ渡して帰投']);
-    expect([m['enemies'], m['hazards'], m['playable_from']]).toEqual([['de_sboat_enemy', 'de_sboat_enemy'], ['shore_battery', 'mine', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire'], undefined]);
+    expect([m['enemies'], m['hazards'], m['playable_from']]).toEqual([['de_sboat_enemy', 'de_sboat_enemy'], ['shore_battery', 'mine', 'enemy_ship_gunfire_or_ram', 'grounding', 'friendly_fire'], 'v0.8.5']);
     expect([missionOf('us_05')['order'], missionOf('us_06')['order']]).toEqual([6, 7]);
     const da = m['dawn_air'] as Rec;
     expect([da['control'], da['play_as'], da['enemy_ships_at_dawn'], da['label_ja']]).toEqual(['own', 'own', 'none', '昼の空は味方（連合軍）']);

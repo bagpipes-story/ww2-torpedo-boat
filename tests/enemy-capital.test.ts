@@ -29,7 +29,11 @@ describe('今の記録と data は main 0176202 のまま（新しい記録・�
   it('missions_seed の us_05・us_07 以外の任務（us_06 の order は v0.8.5 で 7）・risk_events の radio_failure 以外の記録（mine は v0.8.5 の params の他）は 1 字も同じ。scoring.json は v0.8.2・v0.8.5 で 3 つずつ鍵を足しただけ（今の値は変えない）', () => {
     const ms = gameData.missionsSeed as unknown as Rec;
     const missions = (ms['missions'] as Rec[]).filter((m) => m['id'] !== 'us_05' && m['id'] !== 'us_07').map((m) => (m['id'] === 'us_06' ? { ...m, order: 6 } : m));
-    expect(sha({ ...ms, missions })).toBe('1e48bf5ee682774b80d06ad8b434ab7165df73023d2e56ffce40498bb291ccd9');
+    // v0.8.5 S5: jp_hard の source に解放の一覧の注（「。v0.8.0 からは上の unlock_mission_ids で…3 任務」）を足した＝文だけ。それを外せば同じ
+    const S5_NOTE = '。v0.8.0 からは上の unlock_mission_ids で us_01〜us_03 に固定＝v0.8.5 で us_07 が遊べるようになっても 3 任務';
+    const campaigns = (ms['campaigns'] as Rec[]).map((c) => (c['id'] === 'jp_hard' ? { ...c, source: String(c['source']).replace(S5_NOTE, '') } : c));
+    expect(String((ms['campaigns'] as Rec[])[1]!['source'])).toContain(S5_NOTE);
+    expect(sha({ ...ms, campaigns, missions })).toBe('1e48bf5ee682774b80d06ad8b434ab7165df73023d2e56ffce40498bb291ccd9');
     const re = gameData.riskEvents as unknown as Rec;
     const events = (re['events'] as Rec[]).filter((e) => e['id'] !== 'radio_failure').map((e) => { if (e['id'] !== 'mine') return e; const { params: _p, ...rest } = e; return rest; });
     expect(sha({ ...re, events })).toBe('6570ba60a8b30c7c6546dea32f5f9478d379ed4820afd026797d541ad40d1103');
