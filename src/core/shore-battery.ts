@@ -51,7 +51,8 @@ export interface ShoreBatteryCheck {
 
 export interface ShoreBatteryEvents {
   onFire(x: number, y: number): void;
-  onImpact(x: number, y: number, hit: boolean): void;
+  /** gunIndex は弾の印（v0.8.5 IP2: 自艇へ撃った弾は 0、us_07 の生存者の海への弾は core/survivor-shelling の SURVIVOR_SHELL_GUN） */
+  onImpact(x: number, y: number, hit: boolean, gunIndex: number): void;
 }
 
 export function createShoreBattery(shellPoolSize: number): ShoreBatteryState {
@@ -97,7 +98,7 @@ export function stepShoreBattery(s: ShoreBatteryState, p: ShoreBatteryParams, c:
     if (!sh.active || !advanceShell(sh, dt)) continue;
     const hit = c.boatAfloat && pointNearBoat(sh.impactX, sh.impactY, boat, c.boatHalfLengthM, c.boatHalfBeamM + g.splashRadiusM);
     if (hit) s.hits++;
-    ev.onImpact(sh.impactX, sh.impactY, hit);
+    ev.onImpact(sh.impactX, sh.impactY, hit, sh.gunIndex);
   }
 }
 

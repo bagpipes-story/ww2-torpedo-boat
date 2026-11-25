@@ -2,8 +2,8 @@
 // 本文（ui/result-body の救助の枝。米PT の枝の代わり）:
 //   1 行目（24 px）「生存者: フィッチへ 44 名 ・ 帰投で 3 名 ・ 砲撃で失った 2 名 ・ 他艦が拾った 11 名」（0 の句は出さない。沈めば「沈没で失った 12 名」、漂流・座礁は「乗せたまま」、
 //     救助の時間の前に終われば「海に残った」、帰投なら「他艦に任せた」）
-//   2 行目（20 px・KPI の色）「機雷: 見えた 6/24 ・ 触雷 0 ・ 砲台: 砲撃 24 発 ・ 命中 1」（data を合わせる根拠＝CLAUDE.md §9）
-//   3 行目（20 px・KPI の色）「Sボート 2 隻: 航過 3 回 ・ 被弾 4 発 ・ フィッチの砲火で退いた 1 ・ 撃退 0 ・ 撃沈 0」
+//   2 行目（20 px・KPI の色）「機雷: 見えた 6/24 ・ 触雷 0 ・ 砲台: 砲撃 24 発 ・ 生存者の海へ 12 発 ・ 命中 1」（data を合わせる根拠＝CLAUDE.md §9。生存者の海は v0.8.5 IP2・0 なら出さない）
+//   3 行目（20 px・KPI の色）「Sボート 4 隻（第二波 2）: 航過 3 回 ・ 被弾 4 発 ・ フィッチの砲火で退いた 1 ・ 撃退 0 ・ 撃沈 0」（第二波は v0.8.5 IP2・出なければ出さない）
 //   4 行目（20 px・KPI の色）「この朝、史実ではSボートはユタ沖に来ていない（ゲームの想定）」
 // 見出し: 達成「救助成功」・未達で帰投「帰投（渡した N 名 ・ 40 名に届かず）」・S ボートに沈められた「Sボートの掃射で沈没」。触雷は今の REASON_LABEL の「触雷で沈没」
 // （「任務終了 — 触雷で沈没」＝spec の「触雷 — 沈没」。頭の「任務終了 — 」が線を持つので 2 本にしない）。後ろの秒は「（救助の後 N 秒）」。Phaser・DOM を読まない。
@@ -45,12 +45,12 @@ export function rescueSurvivorLineJa(r: RescueResult, returned = false): string 
 }
 
 /** 2 行目（機雷と砲台） */
-export const rescueHazardLineJa = (r: RescueResult): string => `機雷: 見えた ${r.minesSeen}/${r.minesPlaced} ・ 触雷 ${r.minesBlown} ・ 砲台: 砲撃 ${r.batteryShots} 発 ・ 命中 ${r.batteryHits}`;
+export const rescueHazardLineJa = (r: RescueResult): string => `機雷: 見えた ${r.minesSeen}/${r.minesPlaced} ・ 触雷 ${r.minesBlown} ・ 砲台: 砲撃 ${r.batteryShots} 発${r.batterySeaShots > 0 ? ` ・ 生存者の海へ ${r.batterySeaShots} 発` : ''} ・ 命中 ${r.batteryHits}`;
 
 /** 3 行目（S ボート。隊の記録が無ければ隻数と退いた数だけ） */
 export function rescueSboatLineJa(r: RescueResult, pt: PtResult | null): string {
   const fight = pt ? `航過 ${pt.passes} 回 ・ 被弾 ${pt.hits} 発 ・ ` : '';
-  return `${pt?.nameJa ?? PT_NAME_DEFAULT_JA} ${r.sboats} 隻: ${fight}${r.fitchJa}の砲火で退いた ${r.sboatRetreated} ・ 撃退 ${pt ? pt.retired : 0} ・ 撃沈 ${pt ? pt.sunk : 0}`;
+  return `${pt?.nameJa ?? PT_NAME_DEFAULT_JA} ${r.sboats} 隻${r.sboatWave2 > 0 ? `（第二波 ${r.sboatWave2}）` : ''}: ${fight}${r.fitchJa}の砲火で退いた ${r.sboatRetreated} ・ 撃退 ${pt ? pt.retired : 0} ・ 撃沈 ${pt ? pt.sunk : 0}`;
 }
 
 /** 本文の 4 行（1 行目は 24 px、ほかは 20 px・KPI の色＝ui/result-body） */

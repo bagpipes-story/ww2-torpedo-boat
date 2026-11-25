@@ -32,7 +32,7 @@ const R = S.rescue!;
 const RESULT_MAX_PX = 1232;
 const rr = (o: Partial<RescueResult> = {}): RescueResult => ({
   total: 60, objective: 40, delivered: 0, deliveredAtReturn: 0, lostShell: 0, byOthers: 0, lostSunk: 0, aboard: 0, onWater: 0, minesPlaced: 24, minesSeen: 0, minesBlown: 0, sboats: 2, sboatRetreated: 0,
-  batteryShots: 0, batteryHits: 0, fitchJa: 'フィッチ', ...o,
+  batteryShots: 0, batteryHits: 0, fitchJa: 'フィッチ', sboatWave2: 0, batterySeaShots: 0, ...o,
 });
 const pt = (o: Partial<PtResult> = {}): PtResult => ({ enemyId: 'de_sboat_enemy', nameJa: 'Sボート', passes: 3, hits: 4, retired: 0, sunk: 1, ...o }) as PtResult;
 
@@ -60,12 +60,15 @@ describe('本文の 4 行', () => {
     expect(rescueHazardLineJa(rr({ minesSeen: 6, minesBlown: 1, batteryShots: 24, batteryHits: 2 }))).toBe('機雷: 見えた 6/24 ・ 触雷 1 ・ 砲台: 砲撃 24 発 ・ 命中 2');
     expect(rescueSboatLineJa(rr({ sboatRetreated: 1 }), pt())).toBe('Sボート 2 隻: 航過 3 回 ・ 被弾 4 発 ・ フィッチの砲火で退いた 1 ・ 撃退 0 ・ 撃沈 1');
     expect(rescueSboatLineJa(rr(), null)).toBe('米PT 2 隻: フィッチの砲火で退いた 0 ・ 撃退 0 ・ 撃沈 0');
+    // v0.8.5 IP2: 生存者の海へ撃った弾の数（0 なら出さない）・第二波の隻数（出なければ出さない）
+    expect(rescueHazardLineJa(rr({ minesSeen: 6, minesBlown: 1, batteryShots: 24, batteryHits: 2, batterySeaShots: 13 }))).toBe('機雷: 見えた 6/24 ・ 触雷 1 ・ 砲台: 砲撃 24 発 ・ 生存者の海へ 13 発 ・ 命中 2');
+    expect(rescueSboatLineJa(rr({ sboats: 4, sboatWave2: 2, sboatRetreated: 3 }), pt())).toBe('Sボート 4 隻（第二波 2）: 航過 3 回 ・ 被弾 4 発 ・ フィッチの砲火で退いた 3 ・ 撃退 0 ・ 撃沈 1');
     expect(rescueResultLines(rr(), pt())[3]).toBe('この朝、史実ではSボートはユタ沖に来ていない（ゲームの想定）');
     expect(rescueHeadJa(rr({ delivered: 44 }))).toBe('救助: 渡した 44/40 名');
   });
   it('いちばん長い形でも行の幅の内（1 行目 24 px・ほか 20 px）。人名・階級・PT の番号なし', () => {
     // 終わり方ごとに同時に出る句（帰投で＝帰投と同じ終わりだけ・沈没で失った＝沈没だけ・乗せたまま＝漂流と座礁だけ。他艦が拾った＝救助の時間の後・海に残った＝前）
-    const base = { lostShell: 19, minesSeen: 48, minesPlaced: 48, minesBlown: 2, batteryShots: 999, batteryHits: 99, sboats: 3, sboatRetreated: 3 };
+    const base = { lostShell: 19, minesSeen: 64, minesPlaced: 64, minesBlown: 2, batteryShots: 999, batteryHits: 99, sboats: 6, sboatRetreated: 6, sboatWave2: 3, batterySeaShots: 99 }; // v0.8.5 IP2: 第二波と生存者の海の句込み
     const ends = [{ delivered: 59, deliveredAtReturn: 20 }, { delivered: 40, lostSunk: 20 }, { delivered: 40, aboard: 20 }].flatMap((e) => [{ ...e, byOthers: 59 }, { ...e, onWater: 59 }]);
     for (const e of ends) { const l = rescueSurvivorLineJa(rr({ ...base, ...e })); expect(textWidthPx(l, 24), l).toBeLessThanOrEqual(RESULT_MAX_PX); }
     const [a, b, c, d] = rescueResultLines(rr({ ...base, ...ends[0]! }), pt({ passes: 99, hits: 999, retired: 3, sunk: 3 }));
@@ -146,10 +149,10 @@ describe('Briefing（spec §8.1。systems/briefing-numbers の救助の鍵）', 
   it('S ボートと（ハードの）砲台が想定だと目的・史実メモに書いてある（data の文。S3b）。ほかの任務の数は鍵ごと無い', () => {
     const m = (gameData.missionsSeed.missions as Record<string, unknown>[]).find((x) => x['id'] === 'us_07')!;
     const hard = (m['v0_1_prototype'] as Record<string, Record<string, string>>)['hard']!;
-    expect(m['objective']).toContain('西からSボートが来る（ゲームの想定）');
+    expect(m['objective']).toContain('西からSボートが来て、退けても第二波が来る（ゲームの想定）') // v0.8.5 IP2 で第二波;
     expect(m['briefing_note_ja']).toContain('この朝、Sボートはユタ沖に来ていない。このゲームの襲撃は想定。');
     expect(hard['objective_ja']).toContain('3つの砲台');
-    expect(hard['objective_ja']).toContain('Sボート3隻が来る（ゲームの想定）');
+    expect(hard['objective_ja']).toContain('Sボート3隻が来て、退けても第二波が来る（ゲームの想定）');
     expect(hard['note_ja']).toContain('3隻目のSボート・2つ目・3つ目の砲台・多い機雷も想定');
     const n = briefingNumbers(setupOf('jp_05'));
     expect([n.dayRowJa, n.clockJa]).toEqual([undefined, undefined]);

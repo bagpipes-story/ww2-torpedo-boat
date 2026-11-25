@@ -29,7 +29,7 @@ const steps = (st: RescueState, r: RescueRules, n: number, x: number, y: number,
 
 describe('data（us_07。spec §4.1）', () => {
   it('12 群・60 名・20 名まで・40 m ＋ 艇の半長・5 kt・1 名 0.8 秒・移す 0.25 秒・20 m・40 名で達成・フィッチの輪 180 m。系列は seed+47', () => {
-    expect([R.groups.length, R.groups.reduce((s, g) => s + g.count, 0), R.capacity, R.pickupM, R.pickupMaxMps, R.perPersonS, R.transferPerPersonS, R.shellKill2, R.objectiveDelivered, R.fitch.ring2]).toEqual([12, 60, 20, 40, ktToMps(5), 0.8, 0.25, 400, 40, 180 * 180]);
+    expect([R.groups.length, R.groups.reduce((s, g) => s + g.count, 0), R.capacity, R.pickupM, R.pickupMaxMps, R.perPersonS, R.transferPerPersonS, R.shellKill2, R.objectiveDelivered, R.fitch.ring2]).toEqual([12, 60, 20, 40, ktToMps(5), 0.8, 0.25, 900, 40, 180 * 180]); // shell_kill_m は v0.8.5 IP2 で 20 → 30
     expect(RESCUE_FIELD_SEED_OFFSET).toBe(47);
     const st = createRescueState(R, HALF);
     expect([st.n, rescueOnWater(st), st.reach2]).toEqual([12, 60, (40 + HALF) * (40 + HALF)]);
@@ -135,8 +135,8 @@ describe('移す（フィッチの輪）', () => {
 });
 
 describe('砲撃・救助の時間の終わり・任務の終わり', () => {
-  it('着弾 1 発で 1 名（shell_kill_m 20 の内の一番近い群だけ。ちょうど 20 m は内・20.01 m は外）', () => {
-    const two = rules([{ x: 1000, y: 1000, count: 2 }, { x: 1015, y: 1000, count: 4 }]);
+  it('着弾 1 発で 1 名（shell_kill_m の内の一番近い群だけ。この試しは 20 m＝ちょうど 20 m は内・20.01 m は外。data は v0.8.5 IP2 から 30 m）', () => {
+    const two = rules([{ x: 1000, y: 1000, count: 2 }, { x: 1015, y: 1000, count: 4 }], { shellKill2: 20 * 20 });
     const st = createRescueState(two, HALF);
     expect(rescueShell(st, two, 1010, 1000)).toBe(1);
     expect([st.left[0], st.left[1], st.lostShell, st.shellSeq, st.shellGroup]).toEqual([2, 3, 1, 1, 1]);

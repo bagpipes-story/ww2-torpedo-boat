@@ -34,7 +34,6 @@ import { PtGun } from './pt-gun';
 import { PtTargets, type PtTargetConvoy } from './pt-target';
 import { SplashPool } from './splash-pool';
 import { PT_LOOK_DEFAULT, type PtLook } from '../config/pt-look-data';
-
 /** 固定ステップで世界から読む部分（MissionWorld がそのまま満たす）。detect は駆逐艦と同じ「見つかった回数」（Result の回避の点） */
 export interface PtSquadronView {
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
@@ -81,6 +80,7 @@ export class PtSquadron {
   private view: PtSquadronView | null = null;
   /** 卯月（v0.6.10 S5b。jp_04。world-ally の組み立てで 1 回 setAlly だけが書く。無い任務・&noally は null）: 照らされている PT の印と卯月の手柄（HUD の「命中 計 N」から引く・Result） */
   ally: { readonly lit: Uint8Array; readonly credit: AllyCredit } | null = null;
+  wave: import('../core/sboat-wave').SboatWaveState | null = null; // S ボートの第二波（v0.8.5 IP2。us_07 だけ world-enemies が組み立てで 1 回書き、systems/world-rescue が進める。無い任務は null）
 
   private readonly events: PtEvents = {
     onContact: (gained) => this.targets?.onContact(gained),

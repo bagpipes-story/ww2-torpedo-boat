@@ -42,6 +42,8 @@ export interface PtTelemetryWorld {
     readonly ally?: { readonly credit: AllyCredit } | null;
     /** 絵の鍵と HUD の名（v0.8.5 S2。config/pt-look-data。無い tests は米PT） */
     readonly look?: { readonly named: boolean; readonly nameJa: string };
+    /** S ボートの第二波（v0.8.5 IP2。us_07 だけ）: 出るまでは隻数・航過の上限・Result の隻数に入れない（無い任務は null か省略＝今のまま） */
+    readonly wave?: { readonly first: number; readonly n: number; readonly spawned: boolean } | null;
   } | null;
   readonly boat: { readonly state: BoatState };
   /** 艇の静音の上限（2 行目の「14 kt 以下に」） */
@@ -58,7 +60,7 @@ export function initPtTelemetry(w: PtTelemetryWorld): PtTelemetry {
   const s = w.pts;
   if (!s) return t;
   t.enabled = true;
-  t.total = s.p.count;
+  t.total = ptShownCount(s);
   t.damagePerHit = s.p.hit.damage;
   t.silentMaxKt = Math.round(mpsToKt(w.params.silentMaxMps));
   t.leaveDirJa = bearingJa(s.p.leaveHeadingDeg);
@@ -71,13 +73,19 @@ export function initPtTelemetry(w: PtTelemetryWorld): PtTelemetry {
   return t;
 }
 
+/** 出ている隻数（v0.8.5 IP2: 第二波は出るまで数えない。第二波の無い任務は隻数＝今のまま） */
+function ptShownCount(s: NonNullable<PtTelemetryWorld['pts']>): number {
+  const w = s.wave;
+  return w && !w.spawned ? w.first : s.p.count;
+}
+
 /**
  * 航過の上限（HUD の「航過 n/M」・Result）: 終わった航過 + 13mm の結末の無い PT の残りの回数。出撃時は隻数 × max_passes、撃退・撃沈でだけ減る
  * （撃退・撃沈が無ければ夜明けに去っても v0.6.3 と同じ 隻数 × max_passes。spec r1 §E.1 の式から「去っていない」を外した）。確保なし
  */
-export function ptMaxPasses(q: PtSection, p: PtParams): number {
+export function ptMaxPasses(q: PtSection, p: PtParams, upTo: number = q.boats.length): number {
   let n = q.passes;
-  for (let i = 0; i < q.boats.length; i++) {
+  for (let i = 0; i < upTo; i++) {
     const b = q.boats[i]!;
     if (b.fate === PT_FATE_NONE) n += p.maxPasses - b.passes;
   }
@@ -99,7 +107,8 @@ export function refreshPtTelemetry(t: PtTelemetry, w: PtTelemetryWorld): void {
   t.alive = alive;
   t.fighting = fighting;
   t.sunk = q.sunk;
-  t.maxPasses = ptMaxPasses(q, s.p);
+  t.total = ptShownCount(s); // 第二波（v0.8.5 IP2）が出れば増える（無い任務は出撃の時と同じ値）
+  t.maxPasses = ptMaxPasses(q, s.p, ptShownCount(s));
   t.bursts = q.firedBursts;
   t.burstFired = q.lastPassBurst;
   t.lastPassBoat = q.lastPassBoat;
@@ -175,12 +184,12 @@ export function ptResult(w: PtTelemetryWorld): PtResult | null {
   const openOnPlayer = ts && open === 1 && ts.attackKind === 0 ? 1 : 0;
   return {
     enemyId: s.enemyId,
-    total: s.p.count,
+    total: ptShownCount(s),
     out: q.out,
     alive,
     leftAtDawn: q.leftAtDawn,
     passes: q.passes + open - openBurst,
-    maxPasses: ptMaxPasses(q, s.p),
+    maxPasses: ptMaxPasses(q, s.p, ptShownCount(s)),
     firedPasses: ts ? ts.firedPassesOnPlayer + openOnPlayer : q.firedPasses + open,
     cleanPasses: ts ? ts.cleanPassesOnPlayer + (openOnPlayer === 1 && ts.attackHits === 0 ? 1 : 0) : q.cleanPasses + (open === 1 && q.passHits === 0 ? 1 : 0),
     shots: q.shots,

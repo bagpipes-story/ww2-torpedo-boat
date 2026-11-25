@@ -7,10 +7,13 @@ import { getBoatRecord, getShoreBatteryParamsList, type GameData, type Prototype
 import { getPrototypeMission, hasHardVariant } from './mission-data';
 import { segDistM } from '../core/ally-geometry';
 import { isPtDataRecord } from '../core/pt-data';
+import type { SurvivorShellRules } from '../core/survivor-shelling';
+import type { SboatWaveRules } from '../core/sboat-wave';
 import { ktToMps } from '../core/units';
+import { readRescueShelling, readSboatWave2 } from './rescue-wave-data';
 
 /** V-Q1: rescue・ships・daylight の鍵（ちょうどこれ）と群の数の上限（固定長の状態の大きさ） */
-export const RESCUE_KEYS = ['groups', 'group_jitter_m', 'capacity', 'pickup_m', 'pickup_max_kt', 'per_person_s', 'transfer_per_person_s', 'shell_kill_m', 'objective_delivered', 'ships', 'daylight', 'source'] as const;
+export const RESCUE_KEYS = ['groups', 'group_jitter_m', 'capacity', 'pickup_m', 'pickup_max_kt', 'per_person_s', 'transfer_per_person_s', 'shell_kill_m', 'objective_delivered', 'ships', 'daylight', 'shelling', 'sboat_wave2', 'source'] as const;
 export const RESCUE_FITCH_KEYS = ['x_m', 'y_m', 'ring_m', 'heading_deg', 'cover_m', 'cover_s', 'label_ja'] as const;
 export const RESCUE_CORRY_KEYS = ['x_m', 'y_m', 'heading_deg', 'label_ja'] as const;
 export const RESCUE_DAYLIGHT_KEYS = ['moon_factor', 'source'] as const;
@@ -37,6 +40,9 @@ export interface RescueSetup {
   corry: { x: number; y: number; headingDeg: number; labelJa: string };
   /** 昼の倍率（月の係数の代わり。config/game-data の getVisibilityParams の 4 つ目の引数） */
   moonFactor: number;
+  /** 砲台が生存者の海を撃つ（v0.8.5 IP2。V-H。間隔は難易度で選んだ値。砲台の無い任務は null）・S ボートの第二波（v0.8.5 IP2。V-W。線は第一波の隻数ぶん。S ボートの無い任務は null） */
+  shelling: SurvivorShellRules | null;
+  wave2: SboatWaveRules | null;
 }
 
 type Rec = Record<string, unknown>;
@@ -162,6 +168,9 @@ export function getRescueParams(data: GameData, mission: PrototypeMission): Resc
       if (!(dM > coverM)) bad('V-D2', `rescue.ships.fitch の輪の縁から pt_boats の線 ${i}（今夜の揺らぎ ±${Math.round(sj)} m 込み）まで ${Math.round(dM)} m は cover_m（${coverM} m）より遠い（出発で退かない）`);
     });
   } else if (!(coverM > 0)) bad('V-Q1', 'rescue.ships.fitch.cover_m は正');
+  // V-H・V-W（v0.8.5 IP2。config/rescue-wave-data）: 砲台が生存者の海を撃つ・S ボートの第二波（S ボートの無い任務は sboat_wave2 を null に）
+  const shelling = readRescueShelling(mission, raw['shelling'], groups, batteries, bad);
+  const wave2 = readSboatWave2(data, mission, raw['sboat_wave2'], { x: fx, y: fy, ringM: ring, coverM }, bad);
   const pk = raw['pickup_max_kt'] as number;
   const sk = raw['shell_kill_m'] as number;
   return {
@@ -180,6 +189,8 @@ export function getRescueParams(data: GameData, mission: PrototypeMission): Resc
     fitch: { x: fx, y: fy, ringM: ring, ring2: ring * ring, headingDeg: f['heading_deg'] as number, coverM, cover2: coverM * coverM, coverS, labelJa: f['label_ja'] as string },
     corry: { x: cx, y: cy, headingDeg: c['heading_deg'] as number, labelJa: c['label_ja'] as string },
     moonFactor: mf as number,
+    shelling,
+    wave2,
   };
 }
 

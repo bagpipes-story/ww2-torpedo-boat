@@ -216,7 +216,7 @@ export class MissionWorld {
     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
     this.rescue = buildRescue(scene, s, seed, this.splashes, hit); // 救助と機雷原（v0.8.5 S2。us_07 だけ。seed+47 の組み立て＝S3 の模擬と同じ関数）は敵の側の前（沿岸砲の着弾が群を奪う）
     // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18・v0.8.5 の大発の無い任務の沿岸砲 seed+8）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）。data は煙幕への乱射の値（v0.8.4）と PT の絵の鍵・名（v0.8.5）
-    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy, data, this.rescue ? (x, y) => this.rescue!.onShell(x, y) : null);
+    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy, data, this.rescue);
     this.gunRng = en.gunRng; this.destroyers = en.destroyers; this.escort = en.escort; this.hunt = en.hunt; this.pts = en.pts; // 敵の側の持ち物（v0.8.5 S2 で 1 行にまとめた。順は同じ）
     this.gunboat = en.gunboat; this.enemy = en.enemy; this.recon = en.recon; this.shoreGuns = en.shoreGuns;
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);

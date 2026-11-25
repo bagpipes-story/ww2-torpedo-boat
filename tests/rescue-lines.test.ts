@@ -19,7 +19,7 @@ import { PT_ALERT } from '../src/core/pt-boats';
 import { ptGunLine, ptGunKey } from '../src/ui/pt-gun-lines';
 import { RESCUE_EV_BLOW, RESCUE_EV_MINE, RESCUE_EV_NONE, RESCUE_EV_OBJECTIVE, RESCUE_EV_PICKED, RESCUE_EV_RETREAT, RESCUE_EV_SBOAT, RESCUE_EV_SHELL, RESCUE_EV_TRANSFER, RescueLineClock } from '../src/ui/rescue-lines';
 import {
-  rescueBannerLines, rescueBlowJa, rescueCallHeadJa, rescueCallOf, rescueLine, rescueMineJa, rescueObjectiveJa, rescuePickedJa, rescueRetreatJa, rescueSboatJa, rescueShellJa, rescueStandingJa, rescueStandingKey,
+  rescueBannerLines, rescueBlowJa, rescueCallHeadJa, rescueCallOf, rescueLine, rescueMineJa, rescueObjectiveJa, rescuePickedJa, rescueRetreatJa, rescueSboatJa, rescueSeaShellJa, rescueShellJa, rescueWave2Ja, rescueStandingJa, rescueStandingKey,
   rescueStandingShown, rescueTransferJa, statusFitScale,
 } from '../src/ui/rescue-texts';
 import { specialLine } from '../src/ui/special-line';
@@ -39,7 +39,8 @@ const res = (o: Partial<RescueTelemetry> = {}): RescueTelemetry => ({
   capacity: R.capacity, objective: R.objectiveDelivered, total: R.total, fitchJa: R.fitch.labelJa, corryJa: R.corry.labelJa, fitchRingM: R.fitch.ringM, pickupMaxKt: R.pickupMaxKt, coverM: R.fitch.coverM,
   aboard: 0, delivered: 0, deliveredAtReturn: 0, onWater: R.total, lostShell: 0, byOthers: 0, lostSunk: 0, objectiveReached: false, timeUp: false, picking: false, transferring: false,
   pickSeq: 0, pickRun: 0, transferSeq: 0, transferRun: 0, shellSeq: 0, nearDx: 900, nearDy: 600, nearCount: 7, fitchDx: -1200, fitchDy: 700,
-  minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0, ...o,
+  minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,
+  seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN, ...o,
 });
 const NAMES = { nameJa: 'Sボート', sunkJa: '炎上' };
 const T = (r: RescueTelemetry | undefined, over: Partial<BoatTelemetry> = {}, pt: Parameters<typeof tele>[0] = { enabled: false }): BoatTelemetry =>
@@ -53,7 +54,7 @@ function frame(c: RescueLineClock, t: BoatTelemetry, ms: number): number {
 const standing = (o: Partial<RescueTelemetry>, over: Partial<BoatTelemetry> = {}): string => rescueStandingJa(T(res(o), over));
 const ALL_TEXTS = (): string[] => [
   rescuePickedJa(20, 20, 20), rescuePickedJa(7, 13, 20), rescueTransferJa('フィッチ', 20, 60), rescueObjectiveJa(40), rescueShellJa(12), ...DIRS.map((d) => rescueMineJa(d, 150, 1)), ...DIRS.map((d) => rescueMineJa(d, 150, 12)),
-  rescueBlowJa(100), ...DIRS.map((d) => rescueSboatJa('Sボート', 3, d, 'フィッチ', 1200)), rescueRetreatJa('フィッチ', 'Sボート'),
+  rescueBlowJa(100), ...DIRS.map((d) => rescueSboatJa('Sボート', 3, d, 'フィッチ', 1200)), rescueRetreatJa('フィッチ', 'Sボート'), rescueSeaShellJa(12), ...DIRS.map((d) => rescueWave2Ja('Sボート', 3, d, 'フィッチ', 1550)),
   ...[false, true].flatMap((al) => [
     standing({ transferring: true, aboard: 20, delivered: 60 }, { batteryInArc: true, batteryAlerted: al }),
     standing({ picking: true, aboard: 19, nearCount: 7 }, { batteryInArc: true, batteryAlerted: al }),
@@ -248,6 +249,31 @@ describe('出来事の時計（ui/rescue-lines）', () => {
     expect([d.kind, d.text]).toEqual([RESCUE_EV_RETREAT, 'フィッチの砲火 ・ Sボートが退いた']);
     expect(rescueLine(T(res()), false, d)!.color).toBe(HOME_COLOR_TEXT);
     expect(rescueLine(T(res()), false, c)!.color).toBe(HUD_COLOR_WARN);
+  });
+  it('v0.8.5 IP2: 第二波が出た時に 1 回（方角は出た時の第二波の先頭・急ぎ・S ボートが来たと同じ種類）。第一波の「来た」がまだなら済ませる', () => {
+    const c = new RescueLineClock();
+    let ms = 0;
+    frame(c, T(res(), {}, { enabled: true, total: 2, alive: 0 }), ms);
+    expect(frame(c, T(res({ wave2Seq: 1, wave2Count: 2, wave2Dx: -2400, wave2Dy: -300 }), {}, { enabled: true, total: 4, alive: 2 }), (ms += 16))).toBe(MODE_FLAG_RESCUE_EVENT | MODE_FLAG_RESCUE_URGENT);
+    expect([c.kind, c.text]).toEqual([RESCUE_EV_SBOAT, 'Sボートの第二波 2 隻 西から ・ フィッチの 1550 m の内なら砲火で退く']);
+    for (let i = 0; i < 400; i++) frame(c, T(res({ wave2Seq: 1, wave2Count: 2, wave2Dx: -2400, wave2Dy: -300 }), {}, { enabled: true, total: 4, alive: 2, sighted: true, dx: -2400, dy: -300 }), (ms += 16));
+    expect(c.kind).toBe(RESCUE_EV_NONE); // 第一波の「Sボート 4 隻 西から」は後から出ない
+    const d = new RescueLineClock();
+    frame(d, T(res({ wave2Seq: 1, wave2Count: 3, wave2Dx: NaN, wave2Dy: NaN })), 0); // 初めのフレームの通し番号は写すだけ
+    expect(d.kind).toBe(RESCUE_EV_NONE);
+  });
+  it('v0.8.5 IP2: 生存者の海へ撃った弾で失えば「砲台が生存者の海を砲撃」（数は足す）。自艇の近くの弾だけなら今の文', () => {
+    const c = new RescueLineClock();
+    let ms = 0;
+    frame(c, T(res()), ms);
+    frame(c, T(res({ shellSeq: 1, seaShellSeq: 1 })), (ms += 16));
+    expect([c.kind, c.text]).toEqual([RESCUE_EV_SHELL, rescueSeaShellJa(1)]);
+    frame(c, T(res({ shellSeq: 2, seaShellSeq: 1 })), (ms += 16));
+    expect(c.text).toBe(rescueSeaShellJa(2));
+    for (let i = 0; i < 400; i++) frame(c, T(res({ shellSeq: 2, seaShellSeq: 1 })), (ms += 16));
+    frame(c, T(res({ shellSeq: 3, seaShellSeq: 1 })), (ms += 16));
+    expect([c.kind, c.text]).toEqual([RESCUE_EV_SHELL, rescueShellJa(1)]);
+    expect(rescueSeaShellJa(12)).toBe('砲台が生存者の海を砲撃 ・ 12 名を失った ・ 急いで拾え');
   });
   it('strait-line-clock が持つ（救助の無い任務は旗 0）。読む欄は t.rescue・t.pt・t.hp・t.ptNames だけ（AI・本当の位置は読まない）', () => {
     const s = new StraitLineClock();

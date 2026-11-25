@@ -33,7 +33,7 @@ describe('固定ステップの順（world-enemy-step）', () => {
     expect(order).toEqual([...order].sort((a, c) => a - c));
   });
   it('沿岸砲の着弾は群を奪う（ShoreBattery の onImpact の後に onLand）・us_03 の大発の狩りは onLand を渡さない', () => {
-    expect(code('src/systems/shore-battery.ts')).toContain('this.onLand?.(x, y);');
+    expect(code('src/systems/shore-battery.ts')).toContain('this.onLand?.(x, y, gunIndex === SURVIVOR_SHELL_GUN);'); // v0.8.5 IP2: 生存者の海へ撃った弾か
     expect(code('src/systems/barge-hunt.ts')).toContain("(spec, rng, x, y) => onBoatHit(spec, rng, x, y, 'shore_battery')));");
   });
 });

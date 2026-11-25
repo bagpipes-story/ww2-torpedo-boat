@@ -63,9 +63,9 @@ describe('us_07 の種の直し（spec-v0850 §2.2）と人名・PT の番号（
     const da = m['dawn_air'] as Rec;
     expect([da['control'], da['play_as'], da['enemy_ships_at_dawn'], da['label_ja']]).toEqual(['own', 'own', 'none', '昼の空は味方（連合軍）']);
     // S ボートは史実に無い想定（ユーザーの決め 2026-11-24「両方で出す」）と画面と記録に書く
-    expect(String(m['objective'])).toContain('西からSボートが来る（ゲームの想定）');
+    expect(String(m['objective'])).toContain('西からSボートが来て、退けても第二波が来る（ゲームの想定）') // v0.8.5 IP2 で第二波;
     expect(String(m['briefing_note_ja'])).toContain('この朝、Sボートはユタ沖に来ていない。このゲームの襲撃は想定。');
-    expect(String(((m['v0_1_prototype'] as Rec)['hard'] as Rec)['objective_ja'])).toContain('Sボート3隻が来る（ゲームの想定）');
+    expect(String(((m['v0_1_prototype'] as Rec)['hard'] as Rec)['objective_ja'])).toContain('Sボート3隻が来て、退けても第二波が来る（ゲームの想定）');
     expect(String(m['historical_note'])).toMatch(/両方で出す.*史実に無い想定/);
     // 記録は食い違いを残す（死因・61／約 60 名）
     expect(String(m['historical_note'])).toMatch(/触雷.*21 cm 弾.*食い違う.*約 60 名.*61 名/);

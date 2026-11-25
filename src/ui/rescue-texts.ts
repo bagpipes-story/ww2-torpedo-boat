@@ -1,6 +1,7 @@
 // 救助の任務（v0.8.5 S4。us_07「D-Day・生存者救助」の type rescue）の 2 行目の文・呼びかけの頭・中央の帯（spec-v0850 §8.2）。時計は ui/rescue-lines（ここを再 export する）。
 // - 出来事（モード 46。1 回・4 秒）: 収容した・フィッチへ移した・40 名を渡した・フィッチの砲火で S ボートが退いた（ここまで知らせ）／S ボートが来た・砲弾で生存者を失った・機雷が見えた・
-//   触雷（ここから急ぎ＝米PT の赤い線のすぐ下に出る。ui/mission-mode）。文は出来事の時に 1 回だけ組む。
+//   触雷（ここから急ぎ＝米PT の赤い線のすぐ下に出る。ui/mission-mode）。文は出来事の時に 1 回だけ組む。v0.8.5 IP2: S ボートの第二波（S ボートが来たと同じ種類）・
+//   砲台が生存者の海を撃った弾で失った（砲弾と同じ種類。文だけ替える）。
 // - 常の文（モード 47。値が変わった時だけ）: 移している・収容中・満員・フィッチの輪で速い・群のそばで速い・平常（乗せている・渡した・海に）。後ろに今の沿岸砲の句（hud-lines の withWarnings）。
 //   出すのは救助の任務で、燃料少でなく・浅瀬の外で、拾っている／移している間か、呼びかけ（救助の時間の終わり・40 名を渡した）が無い時（rescueStandingShown。見えている S ボートの平常の行より上）。
 // - 呼びかけの頭（rescueCallHeadJa）: 魚雷なし（狙う艦が無い任務）と救助の時間の終わりの前の「夜明け近し」は呼びかけにしない（rescueCallOf）。救助の時間の後は「救助の時間の終わり ・ 」、
@@ -23,10 +24,14 @@ export const rescuePickedJa = (n: number, aboard: number, cap: number): string =
 export const rescueTransferJa = (fitchJa: string, n: number, delivered: number): string => `${fitchJa}へ ${n} 名を移した ・ 計 ${delivered} 名`;
 export const rescueObjectiveJa = (n: number): string => `${n} 名を渡した ・ 帰投すれば達成`;
 export const rescueShellJa = (n: number): string => `砲弾が生存者のそばに落ちた ・ ${n} 名を失った ・ 煙幕で砲台の目を切れ`;
+/** 砲台が自艇でなく生存者の海を撃った弾で失った（v0.8.5 IP2。自艇がどこにいても出る） */
+export const rescueSeaShellJa = (n: number): string => `砲台が生存者の海を砲撃 ・ ${n} 名を失った ・ 急いで拾え`;
 export const rescueMineJa = (dirJa: string, m: number, n: number): string => `機雷！ ${n > 1 ? `${n} 個 ・ ` : ''}${dirJa} ${m} m ・ 水路の外`;
 export const rescueBlowJa = (hpLoss: number): string => `触雷！ HP −${hpLoss} ・ 水路を通れ`;
 export const rescueSboatJa = (nm: string, n: number, dirJa: string, fitchJa: string, coverM: number): string => `${nm} ${n} 隻 ${dirJa}から ・ ${fitchJa}の ${coverM} m の内なら砲火で退く`;
 export const rescueRetreatJa = (fitchJa: string, nm: string): string => `${fitchJa}の砲火 ・ ${nm}が退いた`;
+/** S ボートの第二波が出た（v0.8.5 IP2。1 回。方角は出た時の第二波の先頭） */
+export const rescueWave2Ja = (nm: string, n: number, dirJa: string, fitchJa: string, coverM: number): string => `${nm}の第二波 ${n} 隻 ${dirJa}から ・ ${fitchJa}の ${coverM} m の内なら砲火で退く`;
 
 /** 隊の名（記録の name_short_ja。無ければ「米PT」） */
 export const rescuePtNameJa = (t: BoatTelemetry): string => (t.ptNames ? t.ptNames.nameJa : PT_NAME_DEFAULT_JA);

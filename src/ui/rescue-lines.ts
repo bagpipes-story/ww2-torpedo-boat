@@ -2,7 +2,8 @@
 // 出来事と同じ作法: 2 行目に出ていた ms の和が RESCUE_EVENT_SHOW_MS に届くまで旗＝上の行に隠れている間は待つ）。文は ui/rescue-texts。
 // 出来事はテレメトリの数の変わり目で拾う（1 フレームに固定ステップが幾つあっても読み落とさない）:
 // - 収容した・移した: 拾った／移した 1 名ごとの通し番号を足しておき、拾う／移すのが止まった時に 1 回（群を替えながら続けて拾えば 1 つにまとめる）。
-// - 40 名を渡した（1 回）・フィッチの砲火で S ボートが退いた（退いた通し番号）・S ボートが来た（隊を初めて見たか、隊に初めて見つかった時。1 回）・砲弾で生存者を失った（通し番号）・
+// - 40 名を渡した（1 回）・フィッチの砲火で S ボートが退いた（退いた通し番号）・S ボートが来た（隊を初めて見たか、隊に初めて見つかった時。1 回）・第二波が出た（v0.8.5 IP2。1 回）・
+//   砲弾で生存者を失った（通し番号。IP2 から生存者の海へ撃った弾なら文を替える）・
 //   機雷が見えた（見えた通し番号。方角と距離は出来事の 1 回だけ atan2・平方根）・触雷（爆発の通し番号。HP の減りは前のフレームの HP から）。
 // 出ている間に来た出来事: 同じ種類は数を足して言い直す（砲弾・機雷）、重い物は出ている物に替わり（替わられた物は空いていれば後ろに待つ）、軽い物は後ろに 1 つ待つ。
 // 旗は出来事がある間 MODE_FLAG_RESCUE_EVENT、急ぎ（S ボート・砲弾・機雷・触雷）の間は MODE_FLAG_RESCUE_URGENT も（ui/mission-mode が米PT の赤い線のすぐ下に出す）。
@@ -13,7 +14,7 @@ import { bearingJa } from '../core/briefing';
 import { MISSION_RESCUE_EVENT, MODE_FLAG_RESCUE_EVENT, MODE_FLAG_RESCUE_URGENT } from './mission-mode';
 import {
   RESCUE_EV_BLOW, RESCUE_EV_MINE, RESCUE_EV_NONE, RESCUE_EV_OBJECTIVE, RESCUE_EV_PICKED, RESCUE_EV_RETREAT, RESCUE_EV_SBOAT, RESCUE_EV_SHELL, RESCUE_EV_TRANSFER, rescueBlowJa, rescueEventUrgent, rescueMineJa,
-  rescueObjectiveJa, rescuePickedJa, rescuePtNameJa, rescueRetreatJa, rescueSboatJa, rescueShellJa, rescueTransferJa, type RescueLineView,
+  rescueObjectiveJa, rescuePickedJa, rescuePtNameJa, rescueRetreatJa, rescueSboatJa, rescueSeaShellJa, rescueShellJa, rescueTransferJa, rescueWave2Ja, type RescueLineView,
 } from './rescue-texts';
 
 export { RESCUE_EV_BLOW, RESCUE_EV_MINE, RESCUE_EV_NONE, RESCUE_EV_OBJECTIVE, RESCUE_EV_PICKED, RESCUE_EV_RETREAT, RESCUE_EV_SBOAT, RESCUE_EV_SHELL, RESCUE_EV_TRANSFER } from './rescue-texts';
@@ -27,8 +28,8 @@ export class RescueLineClock implements RescueLineView {
   private nextKind = RESCUE_EV_NONE; private nextText = '';
   /** 見た通し番号（初めのフレームに写す）・まとめている収容と移した数・出ている（待っている）砲弾と機雷の数・済んだ 1 回の出来事・前のフレームの HP */
   private init = false;
-  private pickSeen = 0; private trSeen = 0; private shellSeen = 0; private mineSeen = 0; private blowSeen = 0; private retreatSeen = 0;
-  private pickRun = 0; private trRun = 0; private shellN = 0; private mineN = 0;
+  private pickSeen = 0; private trSeen = 0; private shellSeen = 0; private mineSeen = 0; private blowSeen = 0; private retreatSeen = 0; private seaSeen = 0; private wave2Seen = 0;
+  private pickRun = 0; private trRun = 0; private shellN = 0; private mineN = 0; private shellSea = false;
   private objDone = false; private sboatDone = false; private hp = 0;
   /** 2 行目のキー（ui/mission-line-keys の lKey）: 始めた通し番号 */
   get key(): number { return this.seq; }
@@ -39,7 +40,7 @@ export class RescueLineClock implements RescueLineView {
     if (!r) return 0;
     if (!this.init) {
       this.init = true;
-      this.pickSeen = r.pickSeq; this.trSeen = r.transferSeq; this.shellSeen = r.shellSeq; this.mineSeen = r.mineSeenSeq; this.blowSeen = r.mineBlowSeq; this.retreatSeen = r.sboatRetreatSeq;
+      this.pickSeen = r.pickSeq; this.trSeen = r.transferSeq; this.shellSeen = r.shellSeq; this.mineSeen = r.mineSeenSeq; this.blowSeen = r.mineBlowSeq; this.retreatSeen = r.sboatRetreatSeq; this.seaSeen = r.seaShellSeq; this.wave2Seen = r.wave2Seq;
       this.objDone = r.objectiveReached; this.hp = t.hp;
     }
     if (r.pickSeq > this.pickSeen) { this.pickRun += r.pickSeq - this.pickSeen; this.pickSeen = r.pickSeq; }
@@ -53,11 +54,21 @@ export class RescueLineClock implements RescueLineView {
       this.sboatDone = true;
       this.push(RESCUE_EV_SBOAT, rescueSboatJa(rescuePtNameJa(t), p.alive, bearingJa((Math.atan2(p.dx, -p.dy) * 180) / Math.PI), r.fitchJa, r.coverM));
     }
+    if (r.wave2Seq > this.wave2Seen && !Number.isNaN(r.wave2Dx)) {
+      // S ボートの第二波（v0.8.5 IP2。1 回）: 第一波の「来た」がまだなら済ませる（第二波の後に第一波の隻数で出さない）
+      this.wave2Seen = r.wave2Seq;
+      this.sboatDone = true;
+      this.push(RESCUE_EV_SBOAT, rescueWave2Ja(rescuePtNameJa(t), r.wave2Count, bearingJa((Math.atan2(r.wave2Dx, -r.wave2Dy) * 180) / Math.PI), r.fitchJa, r.coverM));
+    }
     if (r.shellSeq > this.shellSeen) {
       const n = r.shellSeq - this.shellSeen;
       this.shellSeen = r.shellSeq;
-      this.shellN = this.kind === RESCUE_EV_SHELL || this.nextKind === RESCUE_EV_SHELL ? this.shellN + n : n;
-      this.push(RESCUE_EV_SHELL, rescueShellJa(this.shellN));
+      const again = this.kind === RESCUE_EV_SHELL || this.nextKind === RESCUE_EV_SHELL;
+      this.shellN = again ? this.shellN + n : n;
+      // 生存者の海へ撃った弾（v0.8.5 IP2）が混じれば「砲台が生存者の海を砲撃」（自艇の近くの弾だけなら今の文）
+      this.shellSea = (again && this.shellSea) || r.seaShellSeq > this.seaSeen;
+      this.seaSeen = r.seaShellSeq;
+      this.push(RESCUE_EV_SHELL, this.shellSea ? rescueSeaShellJa(this.shellN) : rescueShellJa(this.shellN));
     }
     if (r.mineSeenSeq > this.mineSeen) {
       const n = r.mineSeenSeq - this.mineSeen;

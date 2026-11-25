@@ -28,7 +28,7 @@ describe('既定の data（us_07。spec §3・§4.1）', () => {
   it('コリーの 300 m の内に 12 群・60 名、乗せられるのは 20 名・40 名で達成、拾うのは 40 m の内で 5 kt 以下、フィッチの輪 180 m・砲火 1,550 m（IP1 で 1,200 から）に 4 秒、昼の倍率 1.8', () => {
     for (const hard of [false, true]) {
       const p = getRescueParams(gameData, getPrototypeMission(gameData, 'us_07', hard))!;
-      expect([p.groups.length, p.total, p.capacity, p.objectiveDelivered, p.pickupM, p.pickupMaxKt, p.perPersonS, p.transferPerPersonS, p.shellKillM, p.shellKill2, p.groupJitterM, p.moonFactor]).toEqual([12, 60, 20, 40, 40, 5, 0.8, 0.25, 20, 400, 40, 1.8]);
+      expect([p.groups.length, p.total, p.capacity, p.objectiveDelivered, p.pickupM, p.pickupMaxKt, p.perPersonS, p.transferPerPersonS, p.shellKillM, p.shellKill2, p.groupJitterM, p.moonFactor]).toEqual([12, 60, 20, 40, 40, 5, 0.8, 0.25, 30, 900, 40, 1.8]); // shell_kill_m は v0.8.5 IP2 で 20 → 30
       expect(p.fitch).toEqual({ x: 3750, y: 1450, ringM: 180, ring2: 32400, headingDeg: 45, coverM: 1550, cover2: 2_402_500, coverS: 4, labelJa: 'フィッチ' });
       // IP1 の目安: cover_m ≈ コリーまでの距離（1,699 m）− 約 150 m（S3 の 1,346 → 1,200 と同じ形）
       expect(Math.round(Math.hypot(p.fitch.x - p.corry.x, p.fitch.y - p.corry.y) - p.fitch.coverM)).toBe(149);
@@ -40,8 +40,8 @@ describe('既定の data（us_07。spec §3・§4.1）', () => {
     }
     expect(validateRescueMissions(gameData)?.total).toBe(60);
     expect([RESCUE_KEYS.length, RESCUE_FITCH_KEYS, RESCUE_CORRY_KEYS, RESCUE_DAYLIGHT_KEYS, RESCUE_GROUPS_MAX, RESCUE_MISSION_TYPE, RESCUE_DAYLIGHT_RANGE]).toEqual([
-      12, ['x_m', 'y_m', 'ring_m', 'heading_deg', 'cover_m', 'cover_s', 'label_ja'], ['x_m', 'y_m', 'heading_deg', 'label_ja'], ['moon_factor', 'source'], 16, 'rescue', [1, 3],
-    ]);
+      14, ['x_m', 'y_m', 'ring_m', 'heading_deg', 'cover_m', 'cover_s', 'label_ja'], ['x_m', 'y_m', 'heading_deg', 'label_ja'], ['moon_factor', 'source'], 16, 'rescue', [1, 3],
+    ]); // 鍵は v0.8.5 IP2 で shelling・sboat_wave2 を足して 12 → 14
   });
   it('setup の鍵: us_07 だけ rescue（ノーマル・ハード）。ほかの任務は鍵ごと出ない。昼から始まるのは jp_03（evac の day_start）と us_07（rescue）だけ', () => {
     for (const id of PROTO_IDS) {
@@ -126,7 +126,7 @@ describe('起動時の検査（V-Q1〜V-Q8・V-D1〜V-D2・V-U1・V-U2 の射界
     expect(build((d) => delete protoOf(d, 'us_07')['rescue'])).toThrow(/us_07\.v0_1_prototype\.rescue は type rescue の任務に要る（生存者の群と渡す先）（V-Q8/);
     const d = clone();
     missionOf(d, 'us_06')['type'] = 'rescue';
-    protoOf(d, 'us_06')['rescue'] = JSON.parse(JSON.stringify(rescueOf(d))) as Rec;
+    protoOf(d, 'us_06')['rescue'] = { ...(JSON.parse(JSON.stringify(rescueOf(d))) as Rec), shelling: null, sboat_wave2: null }; // 砲台・S ボートの無い任務は null（v0.8.5 IP2 の V-H2・V-W2）
     expect(() => getRescueParams(d, getPrototypeMission(d, 'us_06'))).not.toThrow();
     expect(() => validateRescueMissions(d)).toThrow(/missions_seed\.json の v0_1_prototype\.rescue は 1 任務だけ（us_06・us_07。V-Q8・spec-v0850 §4）/);
   });

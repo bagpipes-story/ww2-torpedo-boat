@@ -5,13 +5,14 @@ import { MINE_NONE } from '../core/minefield';
 import { nearestRescueGroup } from '../core/rescue';
 import type { PtNames, RescueTelemetry } from '../core/rescue-telemetry';
 import type { PtLook } from '../config/pt-look-data';
+import type { SboatWaveState } from '../core/sboat-wave';
 import type { WorldRescue } from './world-rescue';
 
 /** 読む世界の部分（MissionWorld がそのまま満たす） */
 export interface RescueTelemetryWorld {
   readonly rescue: WorldRescue | null;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
-  readonly pts: { readonly look: PtLook } | null;
+  readonly pts: { readonly look: PtLook; readonly wave?: SboatWaveState | null; readonly section?: { readonly boats: readonly { readonly x: number; readonly y: number }[] } } | null;
 }
 
 /** 出発時の rescue（救助の任務だけ鍵が出る） */
@@ -26,6 +27,7 @@ export function rescueTelemetryPart(w: RescueTelemetryWorld): { rescue?: RescueT
     aboard: 0, delivered: 0, deliveredAtReturn: 0, onWater: 0, lostShell: 0, byOthers: 0, lostSunk: 0, objectiveReached: false, timeUp: false, picking: false, transferring: false,
     pickSeq: 0, pickRun: 0, transferSeq: 0, transferRun: 0, shellSeq: 0, nearDx: NaN, nearDy: NaN, nearCount: 0, fitchDx: 0, fitchDy: 0,
     minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,
+    seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN,
   };
   refreshRescueTelemetry(t, w);
   return { rescue: t };
@@ -84,5 +86,14 @@ export function refreshRescueTelemetry(t: RescueTelemetry | undefined, w: Rescue
     let n = 0;
     for (let i = 0; i < c.inS.length; i++) if (c.inS[i]! > 0) n++;
     t.sboatCovered = n;
+  }
+  t.seaShellSeq = r.seaSeq;
+  const wv = w.pts ? w.pts.wave : null;
+  if (wv) {
+    t.wave2Seq = wv.seq;
+    t.wave2Count = wv.n;
+    const lead = wv.spawned && w.pts!.section ? w.pts!.section.boats[wv.first] : undefined;
+    t.wave2Dx = lead ? lead.x - b.x : NaN;
+    t.wave2Dy = lead ? lead.y - b.y : NaN;
   }
 }

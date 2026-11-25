@@ -15,6 +15,11 @@ export interface RescueTelemetry {
   minesSeen: number; minesBlown: number; mineSeenSeq: number; mineDx: number; mineDy: number; mineBlowSeq: number;
   /** フィッチの砲火: 退いた S ボートの数・その通し番号・今フィッチの砲火の距離の内に居る S ボートの数（S ボートの無い任務は 0） */
   sboatRetreated: number; sboatRetreatSeq: number; sboatCovered: number;
+  /**
+   * v0.8.5 IP2: 生存者の海へ撃った弾で失った通し番号（shellSeq の内）・S ボートの第二波が出た通し番号（0 か 1）とその隻数・出た時の第二波の先頭の相対位置 m（出ていなければ NaN）。
+   * 第二波・生存者の海への砲撃の無い任務は 0 と NaN
+   */
+  seaShellSeq: number; wave2Seq: number; wave2Count: number; wave2Dx: number; wave2Dy: number;
 }
 
 /** PT の隊の HUD の名（config/pt-look-data の PtLook のうち文に要る 2 つ） */
@@ -29,6 +34,8 @@ export interface RescueResult {
   total: number; objective: number; delivered: number; deliveredAtReturn: number; lostShell: number; byOthers: number; lostSunk: number; aboard: number; onWater: number;
   /** 機雷: 置いた・見えた・触雷（機雷原の無い任務は 0）。S ボート: 隻数・フィッチの砲火で退いた。砲台: 撃たれた・命中 */
   minesPlaced: number; minesSeen: number; minesBlown: number; sboats: number; sboatRetreated: number; batteryShots: number; batteryHits: number;
+  /** v0.8.5 IP2: S ボートの第二波の隻数（出なければ 0。sboats の内）・生存者の海へ撃った弾の数（batteryShots の外） */
+  sboatWave2: number; batterySeaShots: number;
   /** フィッチの名（v0.8.5 S4。Result の行「生存者: フィッチへ 44 名」） */
   fitchJa: string;
 }

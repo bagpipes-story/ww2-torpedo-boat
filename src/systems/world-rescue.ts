@@ -3,6 +3,7 @@
 // 固定ステップの順（spec §4.0。systems/world-enemy-step）: 米PT の隊の段 → S ボートの退き（stepCover。core/sboat-cover）→ 砲台（systems/shore-guns。着弾で onShell）→ step（救助の時間の終わり → 拾う・移す → 機雷）。
 // 救助の時間の終わりは世界の夜明けのラッチ（dawn.reached。言葉は S4）。任務の終わりに finish（帰投と同じに数える終わりは乗せている分も渡した・沈めば沈没で失った・漂流と座礁は乗せたまま＝lead の決め 3）。
 // 触雷の被害は世界の hitBoat（終了理由 'mine'。今の被弾の作法＝爆発・揺れ・HUD の被弾）。絵は systems/rescue-view（読むだけ。systems/rescue-build が作って渡す）。§7: 毎ステップ確保しない（状態は固定長）。
+// v0.8.5 IP2: フィッチの砲火の後に S ボートの第二波（core/sboat-wave。隊の PtSquadron.wave。world-enemies が組み立てで確保）を進める。砲台の着弾は生存者の海へ撃った弾か（aimed）を数える（HUD の文）。
 import type { HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
 import { MINE_END_REASON, mineHitSpec, stepMines, type MinefieldState } from '../core/minefield';
@@ -11,6 +12,7 @@ import { finishRescue, rescueShell, rescueTimeUp, stepRescue, type RescueState }
 import type { RescueField } from '../core/rescue-field';
 import type { SeededRng } from '../core/rng';
 import { createSboatCover, stepSboatCover, type SboatCoverSink, type SboatCoverState } from '../core/sboat-cover';
+import { stepSboatWave, type SboatWaveState } from '../core/sboat-wave';
 import type { BoatState } from '../core/boat-motion';
 import type { MinefieldSetup } from '../config/minefield-mission-data';
 import type { RescueSetup } from '../config/rescue-mission-data';
@@ -26,7 +28,7 @@ export interface RescueViewLike {
 export interface WorldRescueView {
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
   readonly dawn: { readonly reached: boolean };
-  readonly pts: { readonly section: PtSection } | null;
+  readonly pts: { readonly section: PtSection; readonly wave?: SboatWaveState | null } | null;
   readonly stepTimeS: number;
 }
 
@@ -44,6 +46,9 @@ export class WorldRescue {
   readonly view: RescueViewLike | null;
   /** 外から去らせた S ボートの知らせ（世界は凍結の隊の onLeave と同じ扱い＝us_07 は標的スロットが無いので何もしない。絵は砲火の印を読む） */
   private readonly coverSink: SboatCoverSink = { onLeave: () => {} };
+  /** 生存者の海へ撃った弾で失った人数とその通し番号（v0.8.5 IP2。HUD の「砲台が生存者の海を砲撃」） */
+  seaLost = 0;
+  seaSeq = 0;
 
   constructor(
     s: WorldSetup,
@@ -62,18 +67,24 @@ export class WorldRescue {
     this.rng = f.rng;
     this.halfLengthM = s.boatHalfLengthM;
     this.halfBeamM = s.boatHalfBeamM;
-    this.cover = s.ptBoats ? createSboatCover(s.ptBoats.count) : null;
+    this.cover = s.ptBoats ? createSboatCover(s.ptBoats.count + (s.rescue!.wave2 ? s.rescue!.wave2.legs.length : 0)) : null; // 第二波（v0.8.5 IP2）の分も
     this.view = makeView ? makeView(this) : null;
   }
 
-  /** S ボートの退き（凍結の stepPtSection の後。spec §4.0） */
+  /** S ボートの退き（凍結の stepPtSection の後。spec §4.0）→ 第二波（v0.8.5 IP2。第一波がみな去って delay_s の後・救助の時間の内に 1 回） */
   stepCover(w: WorldRescueView, feelDt: number): void {
-    if (this.cover && w.pts) stepSboatCover(this.cover, this.rules.fitch, w.pts.section, feelDt, this.coverSink);
+    if (!this.cover || !w.pts) return;
+    stepSboatCover(this.cover, this.rules.fitch, w.pts.section, feelDt, this.coverSink);
+    const wv = w.pts.wave;
+    if (wv && this.rules.wave2) stepSboatWave(wv, this.rules.wave2, w.pts.section, w.dawn.reached || this.state.timeUp, feelDt);
   }
 
-  /** 砲台の着弾 1 発（systems/shore-guns の onLand。艇への命中も）: 群の shell_kill_m の内なら一番近い群から 1 名 */
-  onShell(x: number, y: number): void {
-    rescueShell(this.state, this.rules, x, y);
+  /** 砲台の着弾 1 発（systems/shore-guns の onLand。艇への命中も）: 群の shell_kill_m の内なら一番近い群から 1 名。aimed は生存者の海へ撃った弾（v0.8.5 IP2） */
+  onShell(x: number, y: number, aimed = false): void {
+    if (rescueShell(this.state, this.rules, x, y) >= 0 && aimed) {
+      this.seaLost++;
+      this.seaSeq++;
+    }
   }
 
   /** 砲台の後（spec §4.0）: 救助の時間の終わり → 拾う・移す → 機雷（見える・触雷）。触雷は世界の hitBoat へ */

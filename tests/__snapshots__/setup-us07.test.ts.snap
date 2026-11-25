@@ -540,8 +540,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -560,7 +560,30 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 12,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -1181,8 +1204,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -1201,7 +1224,30 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 12,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -1822,8 +1868,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -1842,7 +1888,30 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 12,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -2463,8 +2532,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -2483,7 +2552,30 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 12,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -3169,8 +3261,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -3189,7 +3281,36 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 10,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ],
+    [
+     200,
+     2400,
+     2100,
+     3000
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -3875,8 +3996,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -3895,7 +4016,36 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 10,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ],
+    [
+     200,
+     2400,
+     2100,
+     3000
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -4581,8 +4731,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -4601,7 +4751,36 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 10,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ],
+    [
+     200,
+     2400,
+     2100,
+     3000
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [
@@ -5287,8 +5466,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "pickupMaxMps": 2.572,
   "perPersonS": 0.8,
   "transferPerPersonS": 0.25,
-  "shellKillM": 20,
-  "shellKill2": 400,
+  "shellKillM": 30,
+  "shellKill2": 900,
   "objectiveDelivered": 40,
   "fitch": {
    "x": 3750,
@@ -5307,7 +5486,36 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "headingDeg": 30,
    "labelJa": "コリー"
   },
-  "moonFactor": 1.8
+  "moonFactor": 1.8,
+  "shelling": {
+   "intervalS": 10,
+   "dispersionFactor": 0.6
+  },
+  "wave2": {
+   "delayS": 60,
+   "legs": [
+    [
+     200,
+     1200,
+     1800,
+     1950
+    ],
+    [
+     200,
+     1800,
+     2000,
+     2500
+    ],
+    [
+     200,
+     2400,
+     2100,
+     3000
+    ]
+   ],
+   "jitterXM": 200,
+   "jitterYM": 100
+  }
  },
  "minefield": {
   "fields": [

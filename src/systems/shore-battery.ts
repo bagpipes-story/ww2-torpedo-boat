@@ -28,6 +28,7 @@ import type { HitSpec } from '../core/gunnery';
 import type { SeededRng } from '../core/rng';
 import { createShoreBattery, stepShoreBattery, type ShoreBatteryCheck, type ShoreBatteryEvents, type ShoreBatteryParams, type ShoreBatteryState } from '../core/shore-battery';
 import type { SmokeParams, SmokeState } from '../core/smoke';
+import { SURVIVOR_SHELL_GUN } from '../core/survivor-shelling';
 import { radToDeg } from '../core/units';
 import type { SplashPool } from './splash-pool';
 
@@ -45,6 +46,9 @@ export class ShoreBattery {
   private gunDeg = 0;
   private recoilAge = Infinity;
   private t = 0;
+  /** 生存者の海へ最後に撃った点（v0.8.5 IP2。us_07 だけ書く。NaN は無し）: 自艇を追っていない間は砲をここへ向ける（見た目だけ） */
+  private seaX = NaN;
+  private seaY = NaN;
   private readonly events: ShoreBatteryEvents = {
     onFire: (x, y) => {
       const r = (this.gunDeg * Math.PI) / 180;
@@ -55,10 +59,10 @@ export class ShoreBattery {
       this.recoilAge = 0;
       this.splashes.muzzle(mx, my, true); // 砲口の火花と硝煙（見た目だけ）
     },
-    onImpact: (x, y, hit) => {
+    onImpact: (x, y, hit, gunIndex) => {
       if (hit) this.onBoatHit(this.p.hit, this.rng, x, y);
       else this.splashes.splash(x, y, false);
-      this.onLand?.(x, y); // 着弾の点（v0.8.5 S2。us_07 の systems/shore-guns だけ＝生存者の群を奪う。us_03 の大発の狩りは null）
+      this.onLand?.(x, y, gunIndex === SURVIVOR_SHELL_GUN); // 着弾の点（v0.8.5 S2。us_07 の systems/shore-guns だけ＝生存者の群を奪う。IP2 から生存者の海へ撃った弾か。us_03 の大発の狩りは null）
     },
   };
 
@@ -72,8 +76,8 @@ export class ShoreBattery {
     private readonly splashes: SplashPool,
     /** 砲弾が艇に当たった（世界が boat-damage で適用。終了理由は shore_battery） */
     private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number) => void,
-    /** 着弾ごと（艇への命中も。v0.8.5 S2。乱数なし）。無ければ何もしない */
-    private readonly onLand: ((x: number, y: number) => void) | null = null,
+    /** 着弾ごと（艇への命中も。v0.8.5 S2。乱数なし。aimed は生存者の海へ撃った弾＝v0.8.5 IP2）。無ければ何もしない */
+    private readonly onLand: ((x: number, y: number, aimed: boolean) => void) | null = null,
   ) {
     this.state = createShoreBattery(BATTERY_SHELL_POOL_SIZE);
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, boatAfloat: true, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, bargesAlerted: false, flashM: 0 };
@@ -111,6 +115,13 @@ export class ShoreBattery {
     stepShoreBattery(this.state, this.p, c, this.rng, feelDt, dt, this.events);
   }
 
+  /** 生存者の海へ 1 発（v0.8.5 IP2。systems/shore-guns が core/survivor-shelling の撃った時に呼ぶ。弾は core が砲弾のプールへ撃った）: 閃光・反動・火花と砲の向き（見た目だけ・乱数なし） */
+  fireAtSea(x: number, y: number): void {
+    this.seaX = x;
+    this.seaY = y;
+    this.events.onFire(this.p.x, this.p.y);
+  }
+
   updateVisuals(realDt: number): void {
     this.aimGun(realDt);
     const shells = this.state.shells;
@@ -137,7 +148,9 @@ export class ShoreBattery {
   private aimGun(realDt: number): void {
     this.t += realDt;
     const b = this.check.boat;
-    const target = batteryAimDeg(this.state.alerted && this.state.inArc, b.x - this.p.x, b.y - this.p.y, this.t);
+    const track = this.state.alerted && this.state.inArc;
+    const sea = !track && !Number.isNaN(this.seaX); // 生存者の海を撃っている（v0.8.5 IP2。us_07 だけ。ほかの任務は NaN のまま＝今の向き）
+    const target = sea ? batteryAimDeg(true, this.seaX - this.p.x, this.seaY - this.p.y, this.t) : batteryAimDeg(track, b.x - this.p.x, b.y - this.p.y, this.t);
     this.gunDeg = turnToward(this.gunDeg, target, BATTERY_TURN_DPS * realDt);
     let back = 0;
     if (this.recoilAge !== Infinity) {
