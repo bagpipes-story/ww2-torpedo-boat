@@ -3,7 +3,7 @@
 //   触雷（ここから急ぎ＝米PT の赤い線のすぐ下に出る。ui/mission-mode）。文は出来事の時に 1 回だけ組む。v0.8.5 IP2: S ボートの第二波（S ボートが来たと同じ種類）・
 //   砲台が生存者の海を撃った弾で失った（砲弾と同じ種類。文だけ替える）。v0.8.5 IP3: 40 名を渡した時に味方の艇が出れば「 ・ 味方の艇 2 隻が救助に来る」を足す（同じ種類）。
 // - 常の文（モード 47。値が変わった時だけ）: 移している・収容中・満員・フィッチの輪で速い・群のそばで速い・平常（次にすること）。後ろに今の沿岸砲の句（hud-lines の withWarnings）。
-//   v0.8.5 IP5: 乗せている・渡した・海に の数は 4 行目の任務の行（rescueMissionLineJa・ui/rescue-mission-line）がいつも出すので、常の文からは数を抜いた（同じ数を 2 段に出さない）。
+//   v0.8.5 IP5: 乗せている・渡した・海に の数は 4 行目の任務の行（rescueMissionLineJa・IP7 から ui/objective-line と ui/objective-specs）がいつも出すので、常の文からは数を抜いた（同じ数を 2 段に出さない）。
 //   出すのは救助の任務で、燃料少でなく・浅瀬の外で、拾っている／移している間か、呼びかけ（救助の時間の終わり・40 名を渡した）が無い時（rescueStandingShown。見えている S ボートの平常の行より上）。
 // - 呼びかけの頭（rescueCallHeadJa）: 魚雷なし（狙う艦が無い任務）と救助の時間の終わりの前の「夜明け近し」は呼びかけにしない（rescueCallOf）。救助の時間の後は「救助の時間の終わり ・ 」、
 //   40 名を渡したら「40 名を渡した ・ 」。文に「夜明け」「空襲」と言わない（昼の任務）。
@@ -11,7 +11,8 @@
 // 全速で逃げる台本は燃料が尽きた＝CHANGELOG v0.8.5 S3b）。読むのは t.rescue・t.pt の数と名・3 行目と同じ沿岸砲の旗だけ。Phaser・DOM を読まない。確保は文を組む時だけ。
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_NAME_DEFAULT_JA } from '../config/pt-config';
-import { RESCUE_HOME_JA, RESCUE_MISSION_DONE_JA, RESCUE_MISSION_TAG_JA, RESCUE_NEAR_HINT_M, RESCUE_OTHER_SHIPS_JA } from '../config/rescue-hud-config';
+import { OBJECTIVE_DONE_JA as RESCUE_MISSION_DONE_JA, OBJECTIVE_TAG_JA as RESCUE_MISSION_TAG_JA } from '../config/objective-hud-config';
+import { RESCUE_HOME_JA, RESCUE_NEAR_HINT_M, RESCUE_OTHER_SHIPS_JA } from '../config/rescue-hud-config';
 import type { BoatTelemetry } from '../core/boat-telemetry';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK, topCall } from '../core/mission-flow';
 import type { RescueTelemetry } from '../core/rescue-telemetry';
@@ -98,7 +99,7 @@ export function rescueStandingKey(t: BoatTelemetry): number {
 }
 
 /**
- * 4 行目の任務の行（v0.8.5 IP5。ui/rescue-mission-line がキーの変わった時だけ組む）: 「［任務］乗せている 3/20 ・ 渡した 12/40 ・ 海に 33」。
+ * 4 行目の任務の行（v0.8.5 IP5。IP7 から ui/objective-line が ui/objective-specs の RESCUE_OBJECTIVE でキーの変わった時だけ組む）: 「［任務］乗せている 3/20 ・ 渡した 12/40 ・ 海に 33」。
  * 達成の数に届けば「渡した 42/40 ・ 帰投で達成」、満員なら「乗せている」の代わりに「満員 20/20」（拾えない＝成否に効く）。出来事・呼びかけはこの行を替えない
  */
 export function rescueMissionLineJa(r: RescueTelemetry): string {

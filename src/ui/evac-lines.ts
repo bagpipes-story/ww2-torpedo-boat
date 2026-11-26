@@ -121,7 +121,7 @@ export function evacLineKey(e: EvacTelemetry): number {
       k = e.fireGroup;
       break;
     case EVL_WAIT:
-      k = e.coverHold > 0 ? -e.coverHold : (((e.control * 8 + e.shelter + 1) * 4 + e.latch) * 512) + Math.min(511, Math.ceil(e.leftS));
+      k = e.coverHold > 0 ? -e.coverHold : ((e.control * 8 + e.shelter + 1) * 4 + e.latch) * 512; // 空襲が去るまでの秒は v0.8.5 IP7 から任務の行（ui/objective-specs）
       break;
     default:
       k = 0;
@@ -206,7 +206,7 @@ export function evacLine(e: EvacTelemetry): HudLine {
       // 全艇が隠れたが陰の隊が予告で見つかりうる間（IP1 の案 B）は、早く終わらない訳と終わる時を言う
       if (e.coverHold > 0) return strong(`陰の隊は予告で見つかることがある ・ 第${e.coverHold}波の予告の後に退避完了`);
       const tail = e.latch === SW_WAIT_NEUTRAL ? '離してから倒すと出る' : '倒すと出る';
-      return strong(fit((p) => `${g} ${p}で待機 ・ 空襲が去るまで ${mssJa(e.leftS)} ・ ${tail}`, placeJa(e, e.shelter)));
+      return strong(fit((p) => `${g} ${p}で待機 ・ ${tail}`, placeJa(e, e.shelter))); // 空襲が去るまでの秒は 4 行目の任務の行（v0.8.5 IP7）
     }
     case EVL_NO_SHELTER:
       return warn('隠れる所が無い ・ 切り替えてほかの隊を見よ');
@@ -215,21 +215,22 @@ export function evacLine(e: EvacTelemetry): HudLine {
   }
 }
 
-/** 3 行目のキー（操作中の隊・3 隻の HP（切り上げ）・残存・隠れている艇・次の波の秒か「波なし」「確定」）。2^53 未満 */
+/** 3 行目のキー（操作中の隊・3 隻の HP（切り上げ）・次の波の秒か「波なし」「確定」。残存・隠れている艇は v0.8.5 IP7 から任務の行）。2^53 未満 */
 export function evacStatusKey(e: EvacTelemetry): number {
   let k = e.control;
   for (let i = 0; i < 3; i++) k = k * 128 + (e.hp[i]! < 0 ? 127 : Math.ceil(e.hp[i]!));
-  k = k * 32 + e.survivors;
-  k = k * 32 + e.hiddenBoats;
   return k * 1024 + (e.settled ? 1023 : Number.isNaN(e.nextWaveS) ? 1022 : Math.min(1021, Math.ceil(e.nextWaveS)));
 }
 
-/** 3 行目（20 px で ≤ 596 px）: 「第3隊 HP 60・60・60 ・ 残 18／18 ・ 隠 15 ・ 次 0:18」（沈んだ艇は「沈」、最後の波の後は「波なし」、決着の後は「確定」） */
+/**
+ * 3 行目（20 px で ≤ 596 px）: 「第3隊 HP 60・60・60 ・ 次 0:18」（沈んだ艇は「沈」、最後の波の後は「波なし」、決着の後は「確定」）。
+ * 残存・隠れた艇（v0.6.11 の「残 18／18 ・ 隠 15」）は v0.8.5 IP7 から 4 行目の任務の行（ui/objective-specs の EVAC_OBJECTIVE。同じ数を 2 段に出さない）
+ */
 export function evacStatusLine(e: EvacTelemetry): string {
   let hp = '';
   for (let i = 0; i < 3; i++) hp += `${i > 0 ? '・' : ''}${e.hp[i]! < 0 ? '沈' : Math.ceil(e.hp[i]!)}`;
   const next = e.settled ? '確定' : Number.isNaN(e.nextWaveS) ? '波なし' : `次 ${mssJa(e.nextWaveS)}`;
-  return `${groupJa(e, e.control)} HP ${hp} ・ 残 ${e.survivors}／${e.total} ・ 隠 ${e.hiddenBoats} ・ ${next}`;
+  return `${groupJa(e, e.control)} HP ${hp} ・ ${next}`;
 }
 
 /**

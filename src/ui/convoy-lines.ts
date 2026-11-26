@@ -58,10 +58,11 @@ export function convoyKey(c: ConvoyTelemetry, normal: boolean, event: number): n
   return 1 | (Math.min(3, c.afloat) << 1) | (Math.min(3, c.arrived) << 3) | ((normal ? convoyLeftStep(c) : 0) << 5) | (event << 11);
 }
 
-/** 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中 ・ 静音で抜けて帰投」の代わり）: 航行中の大発・上陸・浜まで・去っていない米PT と来る方角 */
+/** 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中 ・ 静音で抜けて帰投」の代わり）: 浜まで・去っていない米PT と来る方角（航行中・上陸の数は v0.8.5 IP7 から任務の行） */
 export function convoyNormalLine(t: BoatTelemetry): HudLine {
   const c = t.convoy;
-  return { text: `大発 ${c.afloat} 隻 ・ 上陸 ${c.arrived}/${c.total} ・ 浜まで ${convoyLeftStep(c) * CONVOY_LEFT_STEP_M} m ・ 米PT ${t.pt.alive} 隻 ${c.fromDirJa}で哨戒中`, color: HUD_COLOR_STRONG };
+  // v0.8.5 IP7: 航行中と上陸の数は 4 行目の任務の行（ui/objective-specs の convoyObjective）がいつも出すので抜いた
+  return { text: `大発 浜まで ${convoyLeftStep(c) * CONVOY_LEFT_STEP_M} m ・ 米PT ${t.pt.alive} 隻 ${c.fromDirJa}で哨戒中`, color: HUD_COLOR_STRONG };
 }
 
 /** 見えている PT に気づかれていない間（停止・静音）: jp_05 の「静音でやり過ごせ」の代わり（抜けるのではなく大発のそばで待つ） */

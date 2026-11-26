@@ -44,12 +44,12 @@ function rowAt(t: BoatTelemetry, call: number, flags: number, clk: PtLineClock):
 }
 
 describe('平常・見えている PT（spec §D.2）', () => {
-  it('平常: 「大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中」（浜までは 100 m 刻みの切り上げ）。米PT の数は ptKey が、浜までと上陸は convoyKey が組み直させる。jp_05 の文は変わらない', () => {
-    expect(row(t01())).toEqual([MISSION_PT, '大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中', HUD_COLOR_STRONG]);
-    expect(row(t01({ alive: 1 }))[1]).toBe('大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 1 隻 東で哨戒中');
+  it('平常: 「大発 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中」（浜までは 100 m 刻みの切り上げ）。米PT の数は ptKey が、浜までと上陸は convoyKey が組み直させる。jp_05 の文は変わらない', () => {
+    expect(row(t01())).toEqual([MISSION_PT, '大発 浜まで 3100 m ・ 米PT 2 隻 東で哨戒中', HUD_COLOR_STRONG]);
+    expect(row(t01({ alive: 1 }))[1]).toBe('大発 浜まで 3100 m ・ 米PT 1 隻 東で哨戒中');
     expect(keyOf(t01({ alive: 1 }))).not.toBe(keyOf(t01())); // 隻数は ptKey（N_UNSEEN の隻数 << 18）
-    expect(row(t01({}, { afloat: 2, arrived: 1, leftM: 2999 }))[1]).toBe('大発 2 隻 ・ 上陸 1/3 ・ 浜まで 3000 m ・ 米PT 2 隻 東で哨戒中');
-    expect(convoyNormalLine(t01({}, { fromDirJa: '北東' })).text).toBe('大発 3 隻 ・ 上陸 0/3 ・ 浜まで 3100 m ・ 米PT 2 隻 北東で哨戒中');
+    expect(row(t01({}, { afloat: 2, arrived: 1, leftM: 2999 }))[1]).toBe('大発 浜まで 3000 m ・ 米PT 2 隻 東で哨戒中');
+    expect(convoyNormalLine(t01({}, { fromDirJa: '北東' })).text).toBe('大発 浜まで 3100 m ・ 米PT 2 隻 北東で哨戒中');
     expect(row(tele())).toEqual([MISSION_PT, '米PT 2 隻が哨戒中 ・ 静音で抜けて帰投', HUD_COLOR_STRONG]);
     // convoyKey: 浜までの刻み（平常の行のときだけ）・航行中・上陸・出来事。文が変わらない値では同じ、輸送隊の無い任務は 0
     expect(convoyLeftStep(cv())).toBe(31);

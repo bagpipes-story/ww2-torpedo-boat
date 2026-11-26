@@ -21,18 +21,18 @@ export const RECON_RELAYED_JA = '報告を中継した！ ・ 生きて帰れ';
 export const reconCapHitLineJa = (nounJa: string, n: number): string => `${nounJa}に命中！ ${n} 本目 ・ まだ沈まない`;
 export const RECON_BOOM_JA = '弾薬庫が誘爆！ 戦艦が轟沈した';
 
-/** 常の文（段ごと）。追尾は「追った秒（切り捨て）・あと（切り上げ）」＝和は追う秒 */
+/** 常の文（段ごと）。追尾の秒は v0.8.5 IP7 から任務の行（ui/objective-specs の RECON_OBJECTIVE。「追った秒（切り捨て）・あと（切り上げ）」＝和は追う秒） */
 export function reconStandingJa(r: ReconTelemetry): string {
   const radio = r.radioBroken ? ' ・ 無線故障' : '';
-  if (r.stage === RECON_TRACKING) return `報告: 追尾 ${Math.floor(r.trackedS)} 秒 ・ あと ${Math.ceil(r.trackLeftS)} 秒${radio}`;
+  if (r.stage === RECON_TRACKING) return `報告: 追尾中 ・ レーダーで追い続けよ${radio}`; // 追った秒・あと何秒は 4 行目の任務の行（v0.8.5 IP7。ui/objective-specs）
   if (r.stage === RECON_PENDING) return `無線故障 ・ ${r.relayJa}（黄色い輪）で中継`;
   if (r.stage === RECON_SENT || r.stage === RECON_RELAYED) return '報告済み ・ 帰投せよ';
   return `報告: ${r.identifyJa}を目で確かめよ（レーダーでは艦種が分からない）${radio}`;
 }
 
-/** 常の文のキー（段・無線・追尾の秒の刻み。秒が変わった時だけ組み直す＝§9 の 7） */
+/** 常の文のキー（段・無線。追尾の秒は v0.8.5 IP7 から任務の行のキー） */
 export function reconStandingKey(r: ReconTelemetry): number {
-  return r.stage * 8192 + (r.radioBroken ? 4096 : 0) + (r.stage === RECON_TRACKING ? Math.floor(r.trackedS) * 64 + Math.ceil(r.trackLeftS) : 0);
+  return r.stage * 8192 + (r.radioBroken ? 4096 : 0);
 }
 
 /** 届いた（送ったか中継した） */

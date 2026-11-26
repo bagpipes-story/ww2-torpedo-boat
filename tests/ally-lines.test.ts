@@ -126,23 +126,23 @@ describe('t.ally（systems/ally-telemetry）', () => {
 
 describe('平常の行の末尾（LD4。ノーマルだけ・840 px の内）', () => {
   it('ノーマルの卯月のいる夜は撃てる米PT がいる間「 ・ 走らせれば卯月が照らす」', () => {
-    expect(frame(tla({ pct: 0.995, armed: 2 }, QUIET))).toMatchObject({ mode: MISSION_PT, text: '揚陸 99% ・ 米PT 2 隻が北と東から輸送船を狙う ・ 走らせれば卯月が照らす', color: HUD_COLOR_STRONG });
-    expect(frame(tla({ pct: 0.5, armed: 1 }, QUIET)).text).toBe('揚陸 50% ・ 米PT 残り 1 隻が輸送船を狙う ・ 走らせれば卯月が照らす');
-    expect(frame(tla({ pct: 0.5, armed: 0 }, { ...QUIET, alive: 1 })).text).toBe('揚陸 50% ・ 米PT はもう魚雷を撃てない');
+    expect(frame(tla({ pct: 0.995, armed: 2 }, QUIET))).toMatchObject({ mode: MISSION_PT, text: '米PT 2 隻が北と東から輸送船を狙う ・ 走らせれば卯月が照らす', color: HUD_COLOR_STRONG });
+    expect(frame(tla({ pct: 0.5, armed: 1 }, QUIET)).text).toBe('米PT 残り 1 隻が輸送船を狙う ・ 走らせれば卯月が照らす');
+    expect(frame(tla({ pct: 0.5, armed: 0 }, { ...QUIET, alive: 1 })).text).toBe('米PT はもう魚雷を撃てない');
     expect(allyRunTailJa(ally0(), 1)).toBe(' ・ 走らせれば卯月が照らす');
   });
   it('ハード・卯月の無い夜は末尾なし（前の文）', () => {
-    expect(frame(tla({ pct: 0.995, armed: 3 }, { ...QUIET, alive: 3 }, {}, true)).text).toBe('揚陸 99% ・ 米PT 3 隻が北・東・北東から輸送船を狙う');
-    expect(frame(tla({ pct: 0.5, armed: 1 }, QUIET, {}, true)).text).toBe('揚陸 50% ・ 米PT 残り 1 隻が輸送船を狙う');
-    expect(frame(tl({ pct: 0.995, armed: 2 }, QUIET)).text).toBe('揚陸 99% ・ 米PT 2 隻が北と東から輸送船を狙う');
+    expect(frame(tla({ pct: 0.995, armed: 3 }, { ...QUIET, alive: 3 }, {}, true)).text).toBe('米PT 3 隻が北・東・北東から輸送船を狙う');
+    expect(frame(tla({ pct: 0.5, armed: 1 }, QUIET, {}, true)).text).toBe('米PT 残り 1 隻が輸送船を狙う');
+    expect(frame(tl({ pct: 0.995, armed: 2 }, QUIET)).text).toBe('米PT 2 隻が北と東から輸送船を狙う');
     expect(allyRunTailJa(createAllyTelemetry(), 2)).toBe('');
     expect(allyRunTailJa({ ...ally0(), enabled: false }, 2)).toBe('');
   });
-  it('末尾を付けた行は 100% でも 840 px の内、ハードに付けると収まらない（だから付けない）', () => {
+  it('末尾を付けた行は 840 px の内。ハードに付けた形は「揚陸 N% ・ 」があった v0.8.5 IP5 までは 840 px を超えた（だから付けない。IP7 で % を任務の行へ移した後も付けない規則のまま）', () => {
     for (const armed of [1, 2]) expect(textWidthPx(landingNormalLine(tla({ pct: 1, armed })).text, 22)).toBeLessThanOrEqual(LINE2_MAX_PX);
     const hardWith = landingNormalLine(tla({ pct: 1, armed: 3 }, {}, { ally: { ...ally0(true), runHint: true } }, true)).text;
     expect(hardWith).toContain('走らせれば');
-    expect(textWidthPx(hardWith, 22)).toBeGreaterThan(LINE2_MAX_PX);
+    expect(textWidthPx(`揚陸 100% ・ ${hardWith}`, 22)).toBeGreaterThan(LINE2_MAX_PX);
   });
   it('キーは前のまま（撃てる隻数が文の末尾の有無も決める＝キーに入っている）', () => {
     for (const armed of [0, 1, 2]) expect(frame(tla({ pct: 0.5, armed }, QUIET)).keys.lKey).toBe(frame(tl({ pct: 0.5, armed }, QUIET)).keys.lKey);

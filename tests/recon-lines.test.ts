@@ -57,17 +57,18 @@ describe('文と幅（22 px・840 px の内。数と名は data と setup から
     expect(reconCapHitLineJa('戦艦', 3)).toBe('戦艦に命中！ 3 本目 ・ まだ沈まない');
     expect(RECON_BOOM_JA).toBe('弾薬庫が誘爆！ 戦艦が轟沈した');
   });
-  it('常の文の 4 つの段（spec D-H2）。追尾は追った秒（切り捨て）とあと（切り上げ）＝和は追う秒。無線が壊れていれば尾', () => {
+  it('常の文の 4 つの段（spec D-H2）。追尾の秒は v0.8.5 IP7 から 4 行目の任務の行（tests/objective-line）。無線が壊れていれば尾', () => {
     expect(reconStandingJa(rec())).toBe('報告: 戦艦を目で確かめよ（レーダーでは艦種が分からない）');
-    expect(reconStandingJa(rec({ stage: RECON_TRACKING, trackedS: 12.4, trackLeftS: 7.6 }))).toBe('報告: 追尾 12 秒 ・ あと 8 秒');
-    expect(reconStandingJa(rec({ stage: RECON_TRACKING, trackedS: 12.4, trackLeftS: 7.6, radioBroken: true }))).toBe('報告: 追尾 12 秒 ・ あと 8 秒 ・ 無線故障');
+    expect(reconStandingJa(rec({ stage: RECON_TRACKING, trackedS: 12.4, trackLeftS: 7.6 }))).toBe('報告: 追尾中 ・ レーダーで追い続けよ');
+    expect(reconStandingJa(rec({ stage: RECON_TRACKING, trackedS: 12.4, trackLeftS: 7.6, radioBroken: true }))).toBe('報告: 追尾中 ・ レーダーで追い続けよ ・ 無線故障');
     expect(reconStandingJa(rec({ stage: RECON_PENDING, radioBroken: true }))).toBe('無線故障 ・ 隣の分隊（黄色い輪）で中継');
     expect(reconStandingJa(rec({ stage: RECON_SENT }))).toBe('報告済み ・ 帰投せよ');
     expect(reconStandingJa(rec({ stage: RECON_RELAYED }))).toBe('報告済み ・ 帰投せよ');
-    // キーは段・無線・追尾の秒の刻みで変わる（秒の内は同じ）
+    // キーは段・無線で変わる（v0.8.5 IP7: 追尾の秒は文に無いのでキーにも無い＝秒ごとに組み直さない）
     const k = (o: Partial<ReconTelemetry>): number => reconStandingKey(rec(o));
-    expect(k({ stage: RECON_TRACKING, trackedS: 12.1, trackLeftS: 7.9 })).toBe(k({ stage: RECON_TRACKING, trackedS: 12.9, trackLeftS: 7.1 }));
-    expect(k({ stage: RECON_TRACKING, trackedS: 12.9, trackLeftS: 7.1 })).not.toBe(k({ stage: RECON_TRACKING, trackedS: 13.0, trackLeftS: 7.0 }));
+    expect(k({ stage: RECON_TRACKING, trackedS: 12.1, trackLeftS: 7.9 })).toBe(k({ stage: RECON_TRACKING, trackedS: 13.0, trackLeftS: 7.0 }));
+    expect(k({ stage: RECON_TRACKING })).not.toBe(k({ stage: RECON_TRACKING, radioBroken: true }));
+    expect(k({ stage: RECON_TRACKING })).not.toBe(k({ stage: RECON_PENDING }));
     expect(k({})).not.toBe(k({ radioBroken: true }));
   });
   it('どの文も 22 px で 840 px の内。いちばん広い常の文の px を固定。人名・階級・PT の番号なし', () => {
@@ -194,7 +195,7 @@ describe('2 行目のモードとキー（ui/mission-mode・special-line・missi
     expect(composeLineKeys(createLineKeys(), t, MISSION_RECON_EVENT, MODE_FLAG_RECON_EVENT, 0, 0, 0, t.landing, c).lKey).toBe(c.recon.key);
     expect(composeLineKeys(createLineKeys(), t, MISSION_RECON, 0, 0, 0, 0, t.landing, c).lKey).toBe(reconStandingKey(t.recon!));
     expect(specialLine(t, MISSION_RECON_EVENT, { landingEv: t.landing, strait: c })).toEqual({ text: '戦艦を確認！ ・ レーダーで追って報告せよ（20 秒）', color: HUD_COLOR_STRONG });
-    expect(specialLine(t, MISSION_RECON, { landingEv: t.landing, strait: c })).toEqual({ text: '報告: 追尾 0 秒 ・ あと 20 秒', color: HUD_COLOR_STRONG });
+    expect(specialLine(t, MISSION_RECON, { landingEv: t.landing, strait: c })).toEqual({ text: '報告: 追尾中 ・ レーダーで追い続けよ', color: HUD_COLOR_STRONG });
     const pend = T(rec({ stage: RECON_PENDING, radioBroken: true }), st);
     expect(specialLine(pend, MISSION_RECON, { landingEv: pend.landing, strait: c })!.color).toBe(HUD_COLOR_WARN);
     expect(new StraitLineClock().flags(T(undefined, st), 0)).toBe(0);

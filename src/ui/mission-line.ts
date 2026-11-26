@@ -279,10 +279,10 @@ export class MissionLine {
         // 平常: 帯が近づいていれば予報を付ける。大発の任務は、見えている大発が無く残りがあれば狩り場と来る方角（「大発は南の岸沿いを東から」）
         const forecast = t.stormState === STORM_AHEAD ? ` ・ ${t.stormNorth ? '北' : '南'}に暴風 ${stormStep * STORM_AHEAD_STEP_M} m` : '';
         const hint = t.gunMission && !t.enemySighted && t.bargesSunk + t.bargesBeached < t.bargesTotal ? ` ・ ${t.bargeHint}` : '';
-        // 僚艇の任務（v0.4.4）は僚艇の HP（命中は後ろ）
         // 駆逐艦が 2 隻以上（ハード。v0.4.5）なら「撃沈 N/M」を足す
         const ships = (t.shipsTotal > 1 ? ` ・ 撃沈 ${t.shipsSunk}/${t.shipsTotal}` : '') + (t.transportEnabled ? ` ・ 輸送船 ${t.transportSunk ? '撃沈' : '健在'}` : '');
-        const score = t.gunMission ? `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}${hint}` : t.escortEnabled ? `僚艇 HP ${Math.ceil(t.escortHp)} ・ 命中 ${t.hits}${ships}` : `命中 ${t.hits}${ships}`;
+        // v0.8.5 IP7: 大発の撃破と僚艇の HP は 4 行目の任務の行（ui/objective-specs）がいつも出すので平常からは抜いた（狩り場の手引きが無い時だけ撃破の数のまま）
+        const score = t.gunMission ? (hint ? t.bargeHint : `大発 撃破 ${t.bargesSunk}/${t.bargesQuota}`) : `命中 ${t.hits}${ships}`;
         this.missionText.setText(`${airRaidTagJa(t)}${score}${forecast}`).setColor(HUD_COLOR_STRONG);
       }
       // 左上の時計を避ける（Text.width は等倍の幅）
