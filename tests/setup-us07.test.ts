@@ -33,12 +33,12 @@ describe('us_07 の setup の snapshot（v0.8.5 S0 の木）', () => {
     expect(s.night.enemyOffsets.length).toBe(1);
     // S ボートの隊（米PT の記録の形。ノーマル 2・ハード 3）・Higgins・Mk 13（狙う艦なし）・昼・空は味方
     expect([s.mission.type, s.mission.enemyId, s.mission.playerBoatId, s.mission.torpedoId, s.mission.moon, s.mission.mainWeapon, s.ptBoats!.count, s.vis.moonFactor]).toEqual(['rescue', 'de_sboat_enemy', 'us_higgins78', 'us_mk13', 'day', 'guns', hard ? 3 : 2, 1.8]);
-    expect([s.ptBoats!.baseDetectM, s.ptBoats!.detectFromS, s.ptBoats!.hullHp, s.ptBoats!.retreatHp, s.ptBoats!.leaveHeadingDeg, s.ptBoats!.gun.effectiveM, s.guns !== null, s.guns!.magazine !== null]).toEqual([2000, 60, 150, 110, 270, 600, true, true]); // retreat_hp は v0.8.5 IP4 で 90 → 110
+    expect([s.ptBoats!.baseDetectM, s.ptBoats!.detectFromS, s.ptBoats!.hullHp, s.ptBoats!.retreatHp, s.ptBoats!.leaveHeadingDeg, s.ptBoats!.gun.effectiveM, s.guns !== null, s.guns!.magazine !== null]).toEqual([2000, 60, 150, 55, 270, 600, true, true]); // retreat_hp は v0.8.5 IP4 で 90 → 110、IP6 で 110 → 55（casualty_chance 0.03 → 0.01）
     expect([s.destroyer, s.barges, s.convoy, s.escort, s.raid, s.storm, s.friendly, s.seaplane, s.airStrike, s.transport]).toEqual([null, null, null, null, null, null, null, null, null, null]);
     expect([s.dawnAir.playAs, s.dawnAir.shipsAtDawn, s.dawnAir.retireEdge, s.durationS]).toEqual(['own', 'none', null, 390]); // 救助の時間は v0.8.5 IP3 で 300 → 390 秒
     // 砲台（任務の 210 mm）・岸・浅瀬・救助・機雷原
     expect([s.shoreBatteries.length, s.shoreBattery!.x, s.shoreBattery!.y, s.shoreBattery!.gun.id, s.mission.coast!.label, s.coastEdgeY]).toEqual([hard ? 3 : 1, 1600, 4600, 'skoda_21cm', 'コタンタン半島（サン＝マルクフ〜ユタ・ビーチ）', 3750]);
-    expect([s.rescue!.total, s.rescue!.capacity, s.rescue!.fitch.labelJa, s.minefield!.count]).toEqual([60, 20, 'フィッチ', hard ? 96 : 72]); // 機雷は v0.8.5 IP1 で 24・32 → 48・64、IP4 で 72・96
+    expect([s.rescue!.total, s.rescue!.capacity, s.rescue!.fitch.labelJa, s.minefield!.count]).toEqual([60, 20, 'フィッチ', hard ? 110 : 83]); // 機雷は v0.8.5 IP1 で 24・32 → 48・64、IP4 で 72・96、IP6 で 83・110
     expect(s.hazardsTonight).toEqual(['shore_battery', 'mine', 'enemy_ship_gunfire_or_ram', 'grounding']);
     for (const k of ['engine', 'gunboat', 'patrolAir', 'landing', 'allyDestroyer', 'evac', 'radar', 'transit', 'shores', 'anchors', 'backdrop', 'seaplaneNight', 'pickets', 'recon'] as const) expect(k in s, k).toBe(false);
     expect(JSON.stringify(build(hard, historical, seed).s)).toBe(JSON.stringify(s));

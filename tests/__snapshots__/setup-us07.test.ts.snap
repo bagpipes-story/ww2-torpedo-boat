@@ -282,8 +282,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -624,7 +624,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -632,28 +632,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 72,
-  "maxCount": 96,
+  "count": 83,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -986,8 +986,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -1328,7 +1328,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -1336,28 +1336,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 72,
-  "maxCount": 96,
+  "count": 83,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -1690,8 +1690,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -2032,7 +2032,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -2040,28 +2040,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 72,
-  "maxCount": 96,
+  "count": 83,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -2394,8 +2394,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -2736,7 +2736,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -2744,28 +2744,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード false �
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 72,
-  "maxCount": 96,
+  "count": 83,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -2876,7 +2876,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
+   1030,
    3100
   ],
   "escort": null,
@@ -3106,8 +3106,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -3227,7 +3227,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 1030,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -3511,7 +3511,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -3519,28 +3519,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 96,
-  "maxCount": 96,
+  "count": 110,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -3651,7 +3651,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
+   1030,
    3100
   ],
   "escort": null,
@@ -3881,8 +3881,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -4002,7 +4002,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 1030,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -4286,7 +4286,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -4294,28 +4294,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 96,
-  "maxCount": 96,
+  "count": 110,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -4426,7 +4426,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
+   1030,
    3100
   ],
   "escort": null,
@@ -4656,8 +4656,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -4777,7 +4777,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 1030,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -5061,7 +5061,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -5069,28 +5069,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 96,
-  "maxCount": 96,
+  "count": 110,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
@@ -5201,7 +5201,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   },
   "shoreBatteryXs": [
    1600,
-   1300,
+   1030,
    3100
   ],
   "escort": null,
@@ -5431,8 +5431,8 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
   "hullHp": 150,
   "hitHalfLengthM": 17.45,
   "hitHalfBeamM": 2.65,
-  "retreatHp": 110,
-  "casualtyChance": 0.03,
+  "retreatHp": 55,
+  "casualtyChance": 0.01,
   "fireChance": 0.001,
   "stationM": 750,
   "stationRelDeg": {
@@ -5552,7 +5552,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
    "detectHoldS": 8
   },
   {
-   "x": 1300,
+   "x": 1030,
    "y": 4600,
    "gun": {
     "id": "skoda_21cm",
@@ -5836,7 +5836,7 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1650,
     "w": 1000,
     "h": 800,
-    "normal": 4,
+    "normal": 5,
     "hardExtra": 3
    },
    {
@@ -5844,28 +5844,28 @@ exports[`us_07 の setup の snapshot（v0.8.5 S0 の木） > ハード true 史
     "y": 1750,
     "w": 800,
     "h": 900,
-    "normal": 40,
-    "hardExtra": 11
+    "normal": 46,
+    "hardExtra": 13
    },
    {
     "x": 3800,
     "y": 1750,
     "w": 1000,
     "h": 900,
-    "normal": 16,
-    "hardExtra": 5
+    "normal": 18,
+    "hardExtra": 6
    },
    {
     "x": 2850,
     "y": 1600,
     "w": 350,
     "h": 700,
-    "normal": 12,
+    "normal": 14,
     "hardExtra": 5
    }
   ],
-  "count": 96,
-  "maxCount": 96,
+  "count": 110,
+  "maxCount": 110,
   "lanes": [
    {
     "x0": 5150,
