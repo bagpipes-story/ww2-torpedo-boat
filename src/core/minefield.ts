@@ -5,7 +5,7 @@
 // - 見える: 昼なので、浮いている自艇の中心から sight_m の内に入った機雷は「見えた」に変わり、以後見えたまま（絵が出る）。
 // - 触雷: 浮いている自艇の船体（core/shells の pointNearBoat。半幅 ＋ contact_m）の内なら爆発（確率なし）。1 ステップに 1 個。爆発は 1 個 1 回。被害は mine の値をそのまま
 //   今の被弾の作法（core/gunnery の HitSpec）で。終わりの理由は MINE_END_REASON（'mine'）。S ボート・砲弾・魚雷は触れない（呼ばない）。
-// - 走査は機雷の数の線形（≤ 64＝config/minefield-mission-data の MINEFIELD_MAX。二乗距離）。V-X2（置ける面積がある・ノーマルの数の 80% 以上が置ける見込み）の面積は minefieldFreeShare（決まった格子。乱数なし）。
+// - 走査は機雷の数の線形（≤ 96＝config/minefield-mission-data の MINEFIELD_MAX。v0.8.5 IP4 で 64 → 96。二乗距離）。V-X2（置ける面積がある・ノーマルの数の 80% 以上が置ける見込み）の面積は minefieldFreeShare（決まった格子。乱数なし）。
 import type { HitSpec } from './gunnery';
 import type { MissionEndReason } from './mission-flow';
 import type { SeededRng } from './rng';

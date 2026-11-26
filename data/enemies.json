@@ -1149,7 +1149,7 @@
         "station_lead_s": 1
       },
       "under_fire": {
-        "retreat_hp": 90,
+        "retreat_hp": 110,
         "casualty_chance": 0.03,
         "fire_chance": 0.001
       },
@@ -1183,7 +1183,7 @@
         "attack": "design (v0.8.5 S0・spec-v0850 §4.4。us_pt_enemy の attack の写しで、変えたのは 5 つ: run_in_speed_kt 35 → 40（Higgins の 39 kt より速い＝振り切れない。S-100 の最大 41 kt の内）・有効射程 600 m（20 mm の昼）に合わせて hold_off_m 550 → 700・commit_max_m 900 → 1,050・break_off_m 650 → 800（effective_night_m < hold_off_m < commit_max_m・< break_off_m）・pass_offset_m 120 → 150。ほかは us_pt_enemy と同じ（航過 25 kt・1 回 10 発・1 隻 4 回・予告から 2.5 秒）。S3 の測りで直す)",
         "guns": "historical (S-100 級は艇首の 20 mm・中央の 20 mm 連装・艇尾の 37 mm／40 mm（boats.json の de_s100.guns）) / design (v0.8.5 S0。1 門にまとめた値。effective_night_m 600: 鍵の名は夜のままで、昼の 20 mm の有効射程（昼の視程 2,700 m の内＝見えない S ボートから撃たない）。damage 4 × rounds_per_pass 10 ＝ 40・burst 6 × 4 ＝ 24 は Higgins の HP 100 未満（1 回の航過・連射では砲だけで沈まない）。dispersion_m 42 は有効射程での半径（us_pt_enemy の 32 m／450 m と同じ角）。range_m 2,000・rof 240・shell_speed 500・fire 0.03・engine 0.15 は us_pt_enemy と同じ)",
         "tactics": "design (v0.8.5 S0。us_pt_enemy と同じ形で、station_m だけ 600 → 750（hold_off_m 700 < 750 < 2 × 700 − 600 ＝ 800）)",
-        "under_fire": "design (v0.8.5 S0・spec-v0850 §9 の 7。retreat_hp 90（HP 150 の 6 割＝us_pt_enemy の 60/100 と同じ割合）・casualty_chance 0.03 は us_pt_enemy と同じ。fire_chance 0.003 → 0.001: ディーゼルなので燃えにくい（boats.json の de_s100.fire_risk low）)",
+        "under_fire": "design (v0.8.5 S0・spec-v0850 §9 の 7。retreat_hp 90（HP 150 の 6 割＝us_pt_enemy の 60/100 と同じ割合）・casualty_chance 0.03 は us_pt_enemy と同じ。fire_chance 0.003 → 0.001: ディーゼルなので燃えにくい（boats.json の de_s100.fire_risk low）。v0.8.5 IP4: retreat_hp 90 → 110（HP 150 から 40 を受ければ退く＝自艇の機銃で撃ち返すと早く退く）。ユーザーの決めの第二波 60 秒（us_07 の rescue.sboat_wave2）で、水路を通る丁寧な台本のノーマルが 2 往復目に群で S ボートに沈む夜が増えた（75%〔32 夜〕）。比べた値（64 夜・線と砲火と散布の直しつき）: 90 で 83%・110 で 88%。de_sboat_enemy を使うのは us_07 だけ)",
         "chase": "design (v0.8.5 S0。us_pt_enemy の chase の写しで speed_kt 39 → 40 だけ（Higgins の 39 kt より速い＝振り切れない。S-100 の最大 41 kt の内）)",
         "torpedo_attack": "design (v0.8.5 S0・spec-v0850 §4.4。置かない: 米PT の斉射（core/pt-torpedo）は揚陸する輸送船に結びつく。フィッチへの雷撃は候補（spec §9）。旧 ai.torpedo_launch_range_m 1200・retreat_after_salvo は捨てた)",
         "history": "historical (S ボート（第5・第9戦隊）は 1944-06-06 の 05:00〜05:15 にシェルブールを出て最大射程で船団へ雷撃し、06:00 ごろには戻っていた。セーヌ湾への襲撃は 6 月 7〜9 日（medium。WebSearch の抜粋のみ・本文未読）。コリーの救助（06:33 以降の昼）の間にユタ沖へ来た記録は無い＝us_07 の襲撃はユーザーの決め（2026-11-24「両方で出す」）による史実に無い想定)"

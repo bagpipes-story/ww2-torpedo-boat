@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { gameData, type GameData } from '../src/config/game-data';
 import { getPrototypeMission } from '../src/config/mission-data';
 import { getRescueParams } from '../src/config/rescue-mission-data';
-import { RESCUE_FRIENDLY_KEYS, checkFriendlyRoute, segHitsRect } from '../src/config/rescue-friendly-data';
+import { FRIENDLY_SPEED_PLAYER_FULL, RESCUE_FRIENDLY_KEYS, checkFriendlyRoute, segHitsRect } from '../src/config/rescue-friendly-data';
 import { validateMinefieldMissions } from '../src/config/minefield-mission-data';
 import { FIXED_STEP_S } from '../src/config/step-config';
 import type { BoatState } from '../src/core/boat-motion';
@@ -44,12 +44,13 @@ const TS = S.timeScale;
 const FEEL = FIXED_STEP_S;
 
 describe('data（us_07。v0.8.5 IP3）', () => {
-  it('2 隻・20 kt・1 隻 10 名・2 隻目は 3 秒遅れ・群の中心から 20 m・道は帰投の輪 → フィッチ → 水路の角 2 つ → 水路の端（ノーマル・ハードとも）', () => {
-    expect([F.count, F.speedKt, F.capacity, F.staggerS, F.parkOffsetM, F.fitchIdx, F.labelJa]).toEqual([2, 20, 10, 3, 20, 1, '味方の艇']);
-    expect(F.route).toEqual([[3750, 750], [3750, 1450], [3100, 1250], [2550, 1750], [2550, 2300]]);
+  it('2 隻・自艇の全速（39 kt。v0.8.5 IP4 で 20 kt → speed_kt "player_full"）・1 隻 10 名・2 隻目は 3 秒遅れ・群の中心から 20 m・道は帰投の輪 → フィッチ → 水路の角 2 つ → 水路の端（ノーマル・ハードとも）', () => {
+    expect([F.count, F.speedKt, F.capacity, F.staggerS, F.parkOffsetM, F.fitchIdx, F.labelJa]).toEqual([2, 39, 10, 3, 20, 1, '味方の艇']);
+    expect([fb(gameData)['speed_kt'], FRIENDLY_SPEED_PLAYER_FULL, F.speedKt]).toEqual(['player_full', 'player_full', gameData.boats.boats.find((b) => b.id === getPrototypeMission(gameData, 'us_07').playerBoatId)!.speed_max_kt]); // 数を二重に持たない＝自艇の boats.json の speed_max_kt
+    expect(F.route).toEqual([[3750, 750], [3750, 1450], [3250, 1400], [2700, 1850], [2550, 2300]]); // v0.8.5 IP4 で水路の角を内へ
     expect(setupOf('us_07', true).rescue!.friendly).toEqual(F);
     expect(RESCUE_FRIENDLY_KEYS).toEqual(['count', 'speed_kt', 'capacity', 'stagger_s', 'park_offset_m', 'route_m', 'label_ja', 'source']);
-    expect(F.speedMps * TS).toBeCloseTo(51.44, 1); // 世界の m/s（帰投の輪から水路の端まで約 2.7 km ＝ 約 52 秒）
+    expect(F.speedMps * TS).toBeCloseTo(100.31, 1); // 世界の m/s（帰投の輪から水路の端まで約 2.4 km ＝ 約 24 秒。IP3 の 20 kt は約 52 秒）
   });
   it('出典: source は史実（救ったのはフィッチ・ホブソン・バトラーと PT 1 隻）と設計（ゲームの描き方・艦名を付けない）を書き分けた', () => {
     const src = String(fb(gameData)['source']);
@@ -63,7 +64,9 @@ describe('起動時の検査 V-F（config/rescue-friendly-data）', () => {
     expect(build((d) => (fb(d)['extra'] = 1))).toThrow(/rescue\.friendly_boats の鍵はちょうど count・speed_kt・capacity・stagger_s・park_offset_m・route_m・label_ja・source（.*extra）（V-F1・spec-v0850 §4）/);
     expect(build((d) => (fb(d)['count'] = 5))).toThrow(/count は 1〜4 の整数（5）（V-F1/);
     expect(build((d) => (fb(d)['count'] = 1.5))).toThrow(/V-F1/);
-    expect(build((d) => (fb(d)['speed_kt'] = 0))).toThrow(/speed_kt は正（V-F1/);
+    expect(build((d) => (fb(d)['speed_kt'] = 0))).toThrow(/speed_kt は正の数か "player_full"（自艇の全速）（V-F1/);
+    expect(build((d) => (fb(d)['speed_kt'] = 'full'))).toThrow(/speed_kt は正の数か "player_full"（自艇の全速）（V-F1/);
+    expect((build((d) => (fb(d)['speed_kt'] = 20))() as { friendly: { speedKt: number } }).friendly.speedKt).toBe(20); // 数も書ける（IP3 の形）
     expect(build((d) => (fb(d)['capacity'] = 0))).toThrow(/capacity は 1 以上の整数（V-F1/);
     expect(build((d) => (fb(d)['stagger_s'] = -1))).toThrow(/stagger_s は 0 以上（V-F1/);
     expect(build((d) => (fb(d)['label_ja'] = ''))).toThrow(/label_ja・source は空でない文字列（V-F1/);
@@ -134,8 +137,8 @@ describe('動き（core/friendly-boats）', () => {
       if (firstPickK < 0 && st.aboard[0]! > 0) firstPickK = k;
     }
     expect(seen).toEqual([1, 2, 3, 4]);
-    expect(firstPickK / 60).toBeGreaterThan(50);
-    expect(firstPickK / 60).toBeLessThan(65); // 約 2.97 km（水路 ＋ 群まで）を世界の 51.4 m/s ＋ 0.8 秒
+    expect(firstPickK / 60).toBeGreaterThan(22);
+    expect(firstPickK / 60).toBeLessThan(30); // 約 2.5 km（水路 ＋ 群まで。v0.8.5 IP4 で角を内へ）を世界の 100.3 m/s（自艇の全速）＋ 0.8 秒
     expect([st.aboard[0], st.aboard[1], rs.delivered, rs.aboard]).toEqual([10, 10, 0, 0]);
     expect(st.picked).toBe(20);
     expect(rescueOnWater(rs)).toBe(R.total - 20);

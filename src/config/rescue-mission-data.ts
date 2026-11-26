@@ -175,7 +175,7 @@ export function getRescueParams(data: GameData, mission: PrototypeMission): Resc
   const shelling = readRescueShelling(mission, raw['shelling'], groups, batteries, bad);
   const wave2 = readSboatWave2(data, mission, raw['sboat_wave2'], { x: fx, y: fy, ringM: ring, coverM }, bad);
   // V-F（v0.8.5 IP3。config/rescue-friendly-data）: 味方の艇（水路の帯の内か＝V-F4 は config/minefield-mission-data の Boot の検査）
-  const friendly = readFriendlyBoats(mission, raw['friendly_boats'], { pickupM: raw['pickup_m'] as number, fitch: { x: fx, y: fy, ringM: ring } }, bad);
+  const friendly = readFriendlyBoats(mission, raw['friendly_boats'], { pickupM: raw['pickup_m'] as number, playerFullKt: getBoatRecord(data, mission.playerBoatId).speed_max_kt, fitch: { x: fx, y: fy, ringM: ring } }, bad);
   const pk = raw['pickup_max_kt'] as number;
   const sk = raw['shell_kill_m'] as number;
   return {

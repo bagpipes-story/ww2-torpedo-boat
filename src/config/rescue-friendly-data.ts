@@ -1,6 +1,6 @@
 // 味方の艇が救助に来る（v0.8.5 IP3。us_07 の rescue.friendly_boats＝V-F）の検査と読み出し。config/rescue-mission-data の getRescueParams が呼ぶ（rescue の鍵の 1 つ。例外は鍵を
 // 名指す日本語・spec-v0850 §4 の作法）。道が掃海された水路の帯の内か（V-F4）は機雷原の値が要るので config/minefield-mission-data の Boot の検査（validateMinefieldMissions）から呼ぶ。
-// 規則は core/friendly-boats。速さは kt を m/s に（世界の秒で進む＝艇・艦と同じ）。Phaser 非依存。
+// 規則は core/friendly-boats。速さは kt を m/s に（世界の秒で進む＝艇・艦と同じ）。speed_kt は数か "player_full"（自艇の boats.json の speed_max_kt＝全速。v0.8.5 IP4）。Phaser 非依存。
 import { segDistM } from '../core/ally-geometry';
 import { FRIENDLY_MAX, type FriendlyRules } from '../core/friendly-boats';
 import { ktToMps } from '../core/units';
@@ -8,6 +8,9 @@ import type { PrototypeMission } from './game-data';
 
 /** V-F1: 鍵（ちょうどこれ） */
 export const RESCUE_FRIENDLY_KEYS = ['count', 'speed_kt', 'capacity', 'stagger_s', 'park_offset_m', 'route_m', 'label_ja', 'source'] as const;
+
+/** V-F1: speed_kt に書ける語＝自艇（任務の player_boat）の全速（boats.json の speed_max_kt。数を二重に持たない。v0.8.5 IP4） */
+export const FRIENDLY_SPEED_PLAYER_FULL = 'player_full';
 
 /** 味方の艇の世界の値（RescueSetup.friendly。core/friendly-boats の FriendlyRules ＋ HUD・絵の名と kt） */
 export interface FriendlySetup extends FriendlyRules {
@@ -45,19 +48,20 @@ export function segHitsRect(ax: number, ay: number, bx: number, by: number, s: {
 
 /**
  * V-F: rescue.friendly_boats（無い任務は null）。
- * V-F1 形（count は 1〜FRIENDLY_MAX の整数・speed_kt は正・capacity は 1 以上の整数・stagger_s と park_offset_m は 0 以上・route_m は [x, y] の 3 点以上・label_ja・source）。
+ * V-F1 形（count は 1〜FRIENDLY_MAX の整数・speed_kt は正の数か "player_full"〔自艇の全速＝ctx.playerFullKt〕・capacity は 1 以上の整数・stagger_s と park_offset_m は 0 以上・route_m は [x, y] の 3 点以上・label_ja・source）。
  * V-F2 止まる所のずれは拾える距離（pickup_m）の内。V-F3 道: 点は海域の中で浅瀬の外・最初の点は帰投の輪の内（帰投の輪から出る）・2 番目から後のどれかがフィッチの輪の内
  * （止まる所のずれ込み。最初のその点で降ろす）・その後に 1 点以上（水路の端へ）
  */
-export function readFriendlyBoats(mission: PrototypeMission, raw: unknown, ctx: { pickupM: number; fitch: { x: number; y: number; ringM: number } }, bad: Bad): FriendlySetup | null {
+export function readFriendlyBoats(mission: PrototypeMission, raw: unknown, ctx: { pickupM: number; playerFullKt: number; fitch: { x: number; y: number; ringM: number } }, bad: Bad): FriendlySetup | null {
   if (raw === null) return null;
   if (!isObj(raw)) return bad('V-F1', 'rescue.friendly_boats は object か null');
   const ks = Object.keys(raw);
   if (ks.length !== RESCUE_FRIENDLY_KEYS.length || !RESCUE_FRIENDLY_KEYS.every((k) => k in raw)) bad('V-F1', `rescue.friendly_boats の鍵はちょうど ${RESCUE_FRIENDLY_KEYS.join('・')}（${ks.join('・') || 'なし'}）`);
   const count = raw['count'];
   if (!(Number.isInteger(count) && (count as number) >= 1 && (count as number) <= FRIENDLY_MAX)) bad('V-F1', `rescue.friendly_boats.count は 1〜${FRIENDLY_MAX} の整数（${String(count)}）`);
-  const kt = raw['speed_kt'];
-  if (!(isNum(kt) && kt > 0)) bad('V-F1', 'rescue.friendly_boats.speed_kt は正');
+  const rawKt = raw['speed_kt'];
+  const kt = rawKt === FRIENDLY_SPEED_PLAYER_FULL ? ctx.playerFullKt : rawKt;
+  if (!(isNum(kt) && kt > 0)) bad('V-F1', `rescue.friendly_boats.speed_kt は正の数か "${FRIENDLY_SPEED_PLAYER_FULL}"（自艇の全速）`);
   const cap = raw['capacity'];
   if (!(Number.isInteger(cap) && (cap as number) >= 1)) bad('V-F1', 'rescue.friendly_boats.capacity は 1 以上の整数');
   for (const k of ['stagger_s', 'park_offset_m'] as const) if (!(isNum(raw[k]) && (raw[k] as number) >= 0)) bad('V-F1', `rescue.friendly_boats.${k} は 0 以上`);

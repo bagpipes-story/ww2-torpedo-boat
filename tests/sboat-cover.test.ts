@@ -33,8 +33,8 @@ const cover = (b: Bench, n: number, r: SboatCoverRules = F): void => {
 };
 
 describe('data（us_07）', () => {
-  it('フィッチ (3750, 1450。v0.8.5 S3 で寄せ、IP1 で北へ) から 1,550 m（IP1 で 1,200 から。コリーまでの距離 − 約 150 m）の内に 4 秒。S ボートはノーマル 2・ハード 3', () => {
-    expect([F.x, F.y, COVER_M, F.coverS, P.count, buildWorldSetup(gameData, 'us_07', { hard: true }).ptBoats!.count]).toEqual([3750, 1450, 1550, 4, 2, 3]);
+  it('フィッチ (3750, 1450。v0.8.5 S3 で寄せ、IP1 で北へ) から 1,700 m（IP1 で 1,200 → 1,550＝コリーまでの距離 − 約 150 m、IP4 で群の場をほぼ覆う 1,700）の内に 4 秒。S ボートはノーマル 2・ハード 3', () => {
+    expect([F.x, F.y, COVER_M, F.coverS, P.count, buildWorldSetup(gameData, 'us_07', { hard: true }).ptBoats!.count]).toEqual([3750, 1450, 1700, 4, 2, 3]);
   });
 });
 

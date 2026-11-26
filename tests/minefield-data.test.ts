@@ -29,17 +29,17 @@ const guns = (f: (d: GameData) => void): (() => unknown) => {
 const PROTO_IDS = (gameData.missionsSeed.missions as unknown as Rec[]).filter((m) => m['v0_1_prototype']).map((m) => m['id'] as string);
 
 describe('既定の data（us_07。spec §3・§4.2・§4.3）', () => {
-  it('3 区画に 48 個（ハード 64）・水路 5 本（幅 300 m。v0.8.5 S3 で出発 → フィッチを足し、S3b で帰投の輪を沖へ・フィッチ → コリーを北へ回し、IP1 でフィッチを北へ・水路を北を回る遠回りに・区画を近道を覆う広い帯に＝面積と数を約 2 倍）・置かない余白 80 m。1 個は被害 60・火災 0.5・機関 0.5・見える 150 m・触れる 6 m', () => {
+  it('4 区画に 72 個（ハード 96）・水路 5 本（幅 300 m。v0.8.5 S3 で出発 → フィッチを足し、S3b で帰投の輪を沖へ・フィッチ → コリーを北へ回し、IP1 でフィッチを北へ・水路を北を回る遠回りに・区画を近道を覆う広い帯に＝面積と数を約 2 倍、IP4 で水路の角を内へ〔フィッチ → 端は真っ直ぐの 1.15 倍〕・東の帯を近い帯と遠い帯に分けて近道の数を約 1.5 倍）・置かない余白 80 m。1 個は被害 60・火災 0.5・機関 0.5・見える 150 m・触れる 6 m', () => {
     const n = getMinefieldParams(gameData, getPrototypeMission(gameData, 'us_07'))!;
     const h = getMinefieldParams(gameData, getPrototypeMission(gameData, 'us_07', true))!;
-    expect([n.fields.length, n.count, n.maxCount, h.count, h.maxCount, n.lanes.length, n.clearM]).toEqual([3, 48, 64, 64, 64, 5, 80]);
-    expect(n.lanes).toEqual([{ x0: 5150, y0: 1850, x1: 3750, y1: 1450, widthM: 300 }, { x0: 3750, y0: 750, x1: 3750, y1: 1450, widthM: 300 }, { x0: 3750, y0: 1450, x1: 3100, y1: 1250, widthM: 300 }, { x0: 3100, y0: 1250, x1: 2550, y1: 1750, widthM: 300 }, { x0: 2550, y0: 1750, x1: 2550, y1: 2300, widthM: 300 }]);
-    expect(n.fields.map((f) => [f.x, f.y, f.w, f.h, f.normal, f.hardExtra])).toEqual([[1250, 1650, 1000, 800, 6, 3], [3000, 1750, 1800, 900, 36, 11], [2780, 1500, 420, 800, 6, 2]]);
-    // 面積の合計（IP1）: 1.385 km²（S3b の 4 区画）→ 2.756 km²（約 2 倍）
-    expect(n.fields.reduce((a, f) => a + f.w * f.h, 0)).toBe(2_756_000);
+    expect([n.fields.length, n.count, n.maxCount, h.count, h.maxCount, n.lanes.length, n.clearM]).toEqual([4, 72, 96, 96, 96, 5, 80]);
+    expect(n.lanes).toEqual([{ x0: 5150, y0: 1850, x1: 3750, y1: 1450, widthM: 300 }, { x0: 3750, y0: 750, x1: 3750, y1: 1450, widthM: 300 }, { x0: 3750, y0: 1450, x1: 3250, y1: 1400, widthM: 300 }, { x0: 3250, y0: 1400, x1: 2700, y1: 1850, widthM: 300 }, { x0: 2700, y0: 1850, x1: 2550, y1: 2300, widthM: 300 }]);
+    expect(n.fields.map((f) => [f.x, f.y, f.w, f.h, f.normal, f.hardExtra])).toEqual([[1250, 1650, 1000, 800, 4, 3], [3000, 1750, 800, 900, 40, 11], [3800, 1750, 1000, 900, 16, 5], [2850, 1600, 350, 700, 12, 5]]);
+    // 面積の合計（IP1）: 1.385 km²（S3b の 4 区画）→ 2.756 km²（約 2 倍）。IP4: 2.665 km²（弧の内と東の近い帯は重なる＝重なりも数える）
+    expect(n.fields.reduce((a, f) => a + f.w * f.h, 0)).toBe(2_665_000);
     expect(n.mine).toEqual({ damage: 60, fireChance: 0.5, engineDamageChance: 0.5, sightM: 150, sight2: 22500, contactM: 6 });
-    expect(validateMinefieldMissions(gameData)?.count).toBe(48);
-    expect([MINEFIELD_KEYS, MINE_PARAM_KEYS, MINEFIELD_MAX, MINEFIELD_LANE_CORRY_M]).toEqual([['fields', 'lanes', 'clear_m', 'source'], ['damage', 'fire_chance', 'engine_damage_chance', 'sight_m', 'contact_m', 'source'], 64, 400]);
+    expect(validateMinefieldMissions(gameData)?.count).toBe(72);
+    expect([MINEFIELD_KEYS, MINE_PARAM_KEYS, MINEFIELD_MAX, MINEFIELD_LANE_CORRY_M]).toEqual([['fields', 'lanes', 'clear_m', 'source'], ['damage', 'fire_chance', 'engine_damage_chance', 'sight_m', 'contact_m', 'source'], 96, 400]);
   });
   it('setup の鍵: us_07 だけ minefield。ほかの任務は鍵ごと出ない', () => {
     for (const id of PROTO_IDS) {
@@ -50,10 +50,10 @@ describe('既定の data（us_07。spec §3・§4.2・§4.3）', () => {
       }
     }
   });
-  it('沿岸砲: us_07 は任務の 210 mm（3 門・10 秒に 1 発・射界 2,600 m・陸へ 600 m。ハードは x 800・3,900 の 2 つ目・3 つ目も同じ値＝v0.8.5 S3・S3b・IP3〔[1300, 2400] → [800, 3900]〕。散布 110 m は S3b）、us_03 は risk_events の 75 mm のまま（ハードの 2 門目も）', () => {
+  it('沿岸砲: us_07 は任務の 210 mm（3 門・10 秒に 1 発・射界 2,600 m・陸へ 600 m。ハードは x 1,300・3,100 の 2 つ目・3 つ目も同じ値＝v0.8.5 S3・S3b・IP3〔[1300, 2400] → [800, 3900]〕・IP4〔→ [1300, 3100]＝3 つの射界が重なる海 1.36 → 3.22 km²〕。散布 110 m は S3b、IP4 で 130 m）、us_03 は risk_events の 75 mm のまま（ハードの 2 門目も）', () => {
     const [b] = getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07'));
-    expect([b!.x, b!.y, b!.gun.id, b!.gun.count, b!.gun.roundsPerMinPerGun, b!.gun.effectiveM, b!.gun.damage, b!.gun.dispersionM, b!.gun.splashRadiusM, b!.gun.shellSpeedMps, b!.baseDetectM, b!.arc2]).toEqual([1600, 4600, 'skoda_21cm', 3, 2, 2600, 34, 110, 10, 600, 6000, 6_760_000]);
-    expect(getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07', true)).map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM])).toEqual([[1600, 4600, 'skoda_21cm', 2600], [800, 4600, 'skoda_21cm', 2600], [3900, 4600, 'skoda_21cm', 2600]]);
+    expect([b!.x, b!.y, b!.gun.id, b!.gun.count, b!.gun.roundsPerMinPerGun, b!.gun.effectiveM, b!.gun.damage, b!.gun.dispersionM, b!.gun.splashRadiusM, b!.gun.shellSpeedMps, b!.baseDetectM, b!.arc2]).toEqual([1600, 4600, 'skoda_21cm', 3, 2, 2600, 34, 130, 10, 600, 6000, 6_760_000]);
+    expect(getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_07', true)).map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM])).toEqual([[1600, 4600, 'skoda_21cm', 2600], [1300, 4600, 'skoda_21cm', 2600], [3100, 4600, 'skoda_21cm', 2600]]);
     for (const hard of [false, true]) {
       const us03 = getShoreBatteryParamsList(gameData, getPrototypeMission(gameData, 'us_03', hard));
       expect(us03.map((x) => [x.x, x.y, x.gun.id, x.gun.effectiveM, x.baseDetectM])).toEqual([[4600, 2560, 'type41_75mm', 900, 1200], ...(hard ? [[2600, 2560, 'type41_75mm', 900, 1200]] : [])]);
@@ -64,14 +64,14 @@ describe('既定の data（us_07。spec §3・§4.2・§4.3）', () => {
 });
 
 describe('起動時の検査（V-X1・V-X3〜V-X5・V-U2）', () => {
-  it('V-X1: 鍵の閉じた集合・区画は海域の中の [x, y, 幅, 高さ, 数, 足す数]・ハードの合計 ≤ 64（IP1 で 48 から）・水路は海域の中で幅は正', () => {
+  it('V-X1: 鍵の閉じた集合・区画は海域の中の [x, y, 幅, 高さ, 数, 足す数]・ハードの合計 ≤ 96（IP1 で 48 → 64、IP4 で 96）・水路は海域の中で幅は正', () => {
     expect(build((d) => (fieldOf(d)['mines'] = 1))).toThrow(/us_07\.v0_1_prototype\.minefield の鍵はちょうど fields・lanes・clear_m・source（.*mines）（V-X1・spec-v0850 §4\.2）/);
     expect(build((d) => (fieldOf(d)['fields'] = []))).toThrow(/minefield\.fields は空でない配列（V-X1/);
     expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[1] = [3100, 2400, 1300, 900, 6]))).toThrow(/minefield\.fields\[1\] は \[x, y, 幅, 高さ, ノーマルの数, ハードで足す数\]/);
     expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[1] = [3100, 2400, 1300, 900, -1, 2]))).toThrow(/minefield\.fields\[1\] は/);
     expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[2] = [4700, 1700, 1400, 1200, 6, 2]))).toThrow(/minefield\.fields\[2\]（4700, 1700・1400 × 1200）は海域の中の正の大きさの矩形（V-X1/);
-    expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[0] = [1250, 1650, 1000, 800, 6, 4]))).toThrow(/minefield の数はノーマル 1 以上・ハードの合計 64 以下（48・65）（V-X1/);
-    expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[0] = [1250, 1650, 1000, 800, 6, 3]))).not.toThrow();
+    expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[0] = [1250, 1650, 1000, 800, 4, 4]))).toThrow(/minefield の数はノーマル 1 以上・ハードの合計 96 以下（72・97）（V-X1/);
+    expect(build((d) => ((fieldOf(d)['fields'] as unknown[])[0] = [1250, 1650, 1000, 800, 4, 3]))).not.toThrow();
     expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[0] = [5400, 500, 4300, 1500, 0]))).toThrow(/minefield\.lanes\[0\] の端は海域の中・幅は正（V-X1/);
     expect(build((d) => ((fieldOf(d)['lanes'] as unknown[])[0] = [6400, 500, 4300, 1500, 300]))).toThrow(/minefield\.lanes\[0\] の端は海域の中/);
     expect(build((d) => (fieldOf(d)['clear_m'] = -1))).toThrow(/minefield\.clear_m は 0 以上/);

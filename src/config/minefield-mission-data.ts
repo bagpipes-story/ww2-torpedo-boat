@@ -12,10 +12,10 @@ import { createRescueState } from '../core/rescue';
 import { mineKeepOut, type RescueFieldSite } from '../core/rescue-field';
 import { checkFriendlyRoute } from './rescue-friendly-data';
 
-/** V-X1: minefield の鍵（ちょうどこれ）・機雷の数の上限（固定長の配列の大きさ。v0.8.5 IP1 で 48 → 64＝実機 1 回目のユーザー「機雷の敷設エリアを現在の2倍ほど」で面積と数を約 2 倍＝ノーマル 48・ハード 64）。V-X3: mine.params の鍵。V-X4: 水路がつなぐコリーの周りの円の半径 m。V-X5: 危険の id */
+/** V-X1: minefield の鍵（ちょうどこれ）・機雷の数の上限（固定長の配列の大きさ。v0.8.5 IP1 で 48 → 64＝実機 1 回目のユーザー「機雷の敷設エリアを現在の2倍ほど」で面積と数を約 2 倍＝ノーマル 48・ハード 64。IP4 で 64 → 96＝実機 2 回目のユーザー「遠回りを軽減するか、機雷を増やすか」で近道の数を約 1.5 倍＝ノーマル 72・ハード 96。走査は線形の二乗距離のまま）。V-X3: mine.params の鍵。V-X4: 水路がつなぐコリーの周りの円の半径 m。V-X5: 危険の id */
 export const MINEFIELD_KEYS = ['fields', 'lanes', 'clear_m', 'source'] as const;
 export const MINE_PARAM_KEYS = ['damage', 'fire_chance', 'engine_damage_chance', 'sight_m', 'contact_m', 'source'] as const;
-export const MINEFIELD_MAX = 64;
+export const MINEFIELD_MAX = 96;
 export const MINEFIELD_LANE_CORRY_M = 400;
 export const MINE_EVENT_ID = 'mine';
 /** V-X2: 置ける見込みの下限（ノーマルの数に対する割合）と、置ける面積を数える格子の間隔 m */
