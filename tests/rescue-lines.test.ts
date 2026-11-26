@@ -40,7 +40,8 @@ const res = (o: Partial<RescueTelemetry> = {}): RescueTelemetry => ({
   aboard: 0, delivered: 0, deliveredAtReturn: 0, onWater: R.total, lostShell: 0, byOthers: 0, lostSunk: 0, objectiveReached: false, timeUp: false, picking: false, transferring: false,
   pickSeq: 0, pickRun: 0, transferSeq: 0, transferRun: 0, shellSeq: 0, nearDx: 900, nearDy: 600, nearCount: 7, fitchDx: -1200, fitchDy: 700,
   minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,
-  seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN, friendlySeq: 0, friendlyCount: 0, friendlyPicked: 0, friendlyJa: '味方の艇', ...o,
+  seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN, friendlySeq: 0, friendlyCount: 0, friendlyPicked: 0, friendlyJa: '味方の艇',
+  batteryDx: new Float64Array(0), batteryDy: new Float64Array(0), batteryInArc: new Uint8Array(0), batteryFired: new Uint32Array(0), ...o,
 });
 const NAMES = { nameJa: 'Sボート', sunkJa: '炎上' };
 const T = (r: RescueTelemetry | undefined, over: Partial<BoatTelemetry> = {}, pt: Parameters<typeof tele>[0] = { enabled: false }): BoatTelemetry =>
@@ -62,6 +63,8 @@ const ALL_TEXTS = (): string[] => [
     standing({ aboard: 19, fitchDx: 10, fitchDy: 10 }, { batteryInArc: true, batteryAlerted: al }),
     standing({ nearDx: 50, nearDy: 50, nearCount: 7 }, { batteryInArc: true, batteryAlerted: al }),
     standing({ aboard: 19, delivered: 39, onWater: 60 }, { batteryInArc: true, batteryAlerted: al }),
+    standing({ aboard: 0 }, { batteryInArc: true, batteryAlerted: al }), // v0.8.5 IP5 の平常の 3 つの分かれ
+    standing({ aboard: 5, delivered: 44, objectiveReached: true }, { batteryInArc: true, batteryAlerted: al }),
   ]),
   callLineText(T(res(), { callFlags: CALL_FUEL }), CALL_FUEL, 63), callLineText(T(res(), { callFlags: CALL_SUNK | CALL_DAWN, dawn: { reached: true } as BoatTelemetry['dawn'] }), CALL_DAWN, 63),
   callLineText(T(res({ objectiveReached: true }), { callFlags: CALL_SUNK }), CALL_SUNK, 63),
@@ -78,20 +81,22 @@ describe('文と幅（22 px・840 px の内。数と名は data と setup から
     expect(rescueMineJa('北西', 140, 2)).toBe('機雷！ 2 個 ・ 北西 140 m ・ 水路の外');
     expect(rescueSboatJa('Sボート', 2, '西', 'フィッチ', R.fitch.coverM)).toBe('Sボート 2 隻 西から ・ フィッチの 1700 m の内なら砲火で退く');
     expect(rescueRetreatJa('フィッチ', 'Sボート')).toBe('フィッチの砲火 ・ Sボートが退いた');
-    expect(standing({ aboard: 12, delivered: 18, onWater: 30 })).toBe('乗せている 12/20 名 ・ 渡した 18/40 名 ・ 海に 30 名');
-    expect(standing({ aboard: 0, delivered: 44, onWater: 3 }, { batteryInArc: true, batteryAlerted: true })).toBe('乗せている 0/20 名 ・ 渡した 44 名 ・ 海に 3 名 ・ 沿岸砲！');
-    expect(standing({ aboard: 20 })).toBe('満員 20/20 名 ・ フィッチの輪へ（水路を通れ）');
+    // v0.8.5 IP5: 数は 4 行目の任務の行がいつも出す＝常の文は次にすることだけ（同じ数を 2 段に出さない）
+    expect(standing({ aboard: 12, delivered: 18, onWater: 30 })).toBe('フィッチの輪へ移すか、拾い続ける（帰投でも渡せる）');
+    expect(standing({ aboard: 0, delivered: 18, onWater: 30 })).toBe('生存者の群へ ・ 水路を通れ');
+    expect(standing({ aboard: 0, delivered: 44, onWater: 3, objectiveReached: true }, { batteryInArc: true, batteryAlerted: true })).toBe('帰投で達成 ・ 拾い続けてもよい ・ 沿岸砲！');
+    expect(standing({ aboard: 20 })).toBe('満員 ・ フィッチの輪へ（水路を通れ）');
     expect(standing({ nearDx: 60, nearDy: 80, nearCount: 5 }, { batteryInArc: true })).toBe('生存者 5 名 ・ 5 kt 以下で寄せて拾う（静音が効く） ・ 沿岸砲の射界');
     expect(standing({ aboard: 7, fitchDx: 100, fitchDy: 100 })).toBe('フィッチの輪 ・ 5 kt 以下で移す（静音が効く）');
-    expect(standing({ picking: true, aboard: 15, nearCount: 2 })).toBe('収容中 ・ 乗せている 15/20 ・ この群に 2 名');
-    expect(standing({ transferring: true, aboard: 8, delivered: 32 })).toBe('フィッチへ移している ・ 乗せている 8/20 ・ 渡した 32 名');
+    expect(standing({ picking: true, aboard: 15, nearCount: 2 })).toBe('収容中 ・ この群に 2 名 ・ 5 kt 以下を保て');
+    expect(standing({ transferring: true, aboard: 8, delivered: 32 })).toBe('フィッチへ移している ・ 輪の中で 5 kt 以下を保て');
   });
   it('どの文も 22 px で 840 px の内（沿岸砲の句・2 桁の数・8 方位込み）。人名・階級・PT の番号なし', () => {
     for (const s of ALL_TEXTS()) {
       expect(textWidthPx(s, 22), s).toBeLessThanOrEqual(LINE2_MAX_PX);
       expect(PT_NUMBER_RE.test(s) || RANK_RE.test(s) || PERSON_DENYLIST.some((n) => s.includes(n)), s).toBe(false);
     }
-    expect(Math.round(Math.max(...ALL_TEXTS().map((s) => textWidthPx(s, 22))))).toBe(828); // いちばん広い文の px（固定）
+    expect(Math.round(Math.max(...ALL_TEXTS().map((s) => textWidthPx(s, 22))))).toBe(793); // いちばん広い文の px（固定。v0.8.5 IP5 で常の文から数を抜いて 828 → 793）
   });
   it('3 行目は今の文のまま（新しい尾なし）: us_07 で出る状態・見つかる距離（昼の倍率込み 4 桁）で 20 px で 596 px の内（煙幕の行は boat-hud が組み直した時に縮める）', () => {
     // us_07 で出る状態（敵影・発見・煙幕。昼で駆逐艦も照明弾も無いので探照灯・照明弾の文は出ない）
@@ -163,10 +168,12 @@ describe('2 行目のモード（ui/mission-mode）', () => {
   it('文とキー: special-line・mission-line-keys（47 は値が変わった時だけ・46 は通し番号）', () => {
     const clock = new StraitLineClock();
     const t = T(res({ aboard: 3 }), { batteryInArc: true });
-    expect(specialLine(t, MISSION_RESCUE, { landingEv: t.landing, strait: clock })).toEqual({ text: '乗せている 3/20 名 ・ 渡した 0/40 名 ・ 海に 60 名 ・ 沿岸砲の射界', color: HUD_COLOR_STRONG });
+    expect(specialLine(t, MISSION_RESCUE, { landingEv: t.landing, strait: clock })).toEqual({ text: 'フィッチの輪へ移すか、拾い続ける（帰投でも渡せる） ・ 沿岸砲の射界', color: HUD_COLOR_STRONG });
     const k = composeLineKeys(createLineKeys(), t, MISSION_RESCUE, 0, 0, 0, 0, t.landing, clock).lKey;
     expect(k).toBe(rescueStandingKey(t));
-    expect(rescueStandingKey(T(res({ aboard: 4 }), { batteryInArc: true }))).not.toBe(k);
+    expect(rescueStandingKey(T(res({ aboard: 4 }), { batteryInArc: true }))).toBe(k); // v0.8.5 IP5: 数は文に出ない（任務の行が出す）
+    expect(rescueStandingKey(T(res({ aboard: 0 }), { batteryInArc: true }))).not.toBe(k);
+    expect(rescueStandingKey(T(res({ aboard: 3, objectiveReached: true }), { batteryInArc: true }))).not.toBe(k);
     expect(rescueStandingKey(T(res({ aboard: 3 }), { batteryInArc: true, batteryAlerted: true }))).not.toBe(k);
     expect(rescueStandingKey(T(res({ aboard: 3, nearDx: 899 }), { batteryInArc: true }))).toBe(k); // 一番近い群の位置は文に出ない（遠い間）
     expect(rescueLine(T(undefined), true, undefined)).toBeNull();

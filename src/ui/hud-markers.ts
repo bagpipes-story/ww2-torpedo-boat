@@ -126,7 +126,7 @@ export class HudMarkers {
     if (telemetry.recon) this.relayMarker = new EdgeMarker(scene, { textureKey: TEXTURE_KEYS.coastMarker, labelPrefix: RELAY_MARKER_LABEL_JA, stepM: RELAY_MARKER_STEP_M, labelAbove: true, roundUp: true, topMargin: HOME_MARKER_TOP_MARGIN, color: RELAY_RING_TEXT });
     if (telemetry.rescue) {
       this.pauseKeep = pauseCluster(); // 救助（v0.8.5 S5。us_07 だけ）
-      this.rescueMarkers = new RescueEdgeMarkers(scene, telemetry.rescue.fitchJa, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, this.pauseKeep); // 救助（v0.8.5 S4。us_07 だけ）
+      this.rescueMarkers = new RescueEdgeMarkers(scene, telemetry.rescue.fitchJa, SPEED_HUD_KEEP_LEFT, SPEED_HUD_KEEP_TOP, this.pauseKeep, telemetry.rescue.batteryDx.length); // 救助（v0.8.5 S4。us_07 だけ。IP5 から砲台の印も）
     }
     if (telemetry.radar.enabled) {
       this.radarMarker = new RadarEdgeMarker(scene);

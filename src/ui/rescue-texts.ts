@@ -2,7 +2,8 @@
 // - 出来事（モード 46。1 回・4 秒）: 収容した・フィッチへ移した・40 名を渡した・フィッチの砲火で S ボートが退いた（ここまで知らせ）／S ボートが来た・砲弾で生存者を失った・機雷が見えた・
 //   触雷（ここから急ぎ＝米PT の赤い線のすぐ下に出る。ui/mission-mode）。文は出来事の時に 1 回だけ組む。v0.8.5 IP2: S ボートの第二波（S ボートが来たと同じ種類）・
 //   砲台が生存者の海を撃った弾で失った（砲弾と同じ種類。文だけ替える）。v0.8.5 IP3: 40 名を渡した時に味方の艇が出れば「 ・ 味方の艇 2 隻が救助に来る」を足す（同じ種類）。
-// - 常の文（モード 47。値が変わった時だけ）: 移している・収容中・満員・フィッチの輪で速い・群のそばで速い・平常（乗せている・渡した・海に）。後ろに今の沿岸砲の句（hud-lines の withWarnings）。
+// - 常の文（モード 47。値が変わった時だけ）: 移している・収容中・満員・フィッチの輪で速い・群のそばで速い・平常（次にすること）。後ろに今の沿岸砲の句（hud-lines の withWarnings）。
+//   v0.8.5 IP5: 乗せている・渡した・海に の数は 4 行目の任務の行（rescueMissionLineJa・ui/rescue-mission-line）がいつも出すので、常の文からは数を抜いた（同じ数を 2 段に出さない）。
 //   出すのは救助の任務で、燃料少でなく・浅瀬の外で、拾っている／移している間か、呼びかけ（救助の時間の終わり・40 名を渡した）が無い時（rescueStandingShown。見えている S ボートの平常の行より上）。
 // - 呼びかけの頭（rescueCallHeadJa）: 魚雷なし（狙う艦が無い任務）と救助の時間の終わりの前の「夜明け近し」は呼びかけにしない（rescueCallOf）。救助の時間の後は「救助の時間の終わり ・ 」、
 //   40 名を渡したら「40 名を渡した ・ 」。文に「夜明け」「空襲」と言わない（昼の任務）。
@@ -10,7 +11,7 @@
 // 全速で逃げる台本は燃料が尽きた＝CHANGELOG v0.8.5 S3b）。読むのは t.rescue・t.pt の数と名・3 行目と同じ沿岸砲の旗だけ。Phaser・DOM を読まない。確保は文を組む時だけ。
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
 import { PT_NAME_DEFAULT_JA } from '../config/pt-config';
-import { RESCUE_HOME_JA, RESCUE_NEAR_HINT_M, RESCUE_OTHER_SHIPS_JA } from '../config/rescue-hud-config';
+import { RESCUE_HOME_JA, RESCUE_MISSION_DONE_JA, RESCUE_MISSION_TAG_JA, RESCUE_NEAR_HINT_M, RESCUE_OTHER_SHIPS_JA } from '../config/rescue-hud-config';
 import type { BoatTelemetry } from '../core/boat-telemetry';
 import { CALL_DAWN, CALL_EXPENDED, CALL_FUEL, CALL_SUNK, topCall } from '../core/mission-flow';
 import type { RescueTelemetry } from '../core/rescue-telemetry';
@@ -68,16 +69,17 @@ function standingSub(r: RescueTelemetry): number {
   return S_PLAIN;
 }
 
-/** 常の文の本文（沿岸砲の句の前） */
+/** 常の文の本文（沿岸砲の句の前。v0.8.5 IP5 から数は任務の行が出す＝ここは次にすることだけ） */
 export function rescueStandingBodyJa(r: RescueTelemetry): string {
-  const cap = r.capacity;
   const sub = standingSub(r);
-  if (sub === S_TRANSFER) return `${r.fitchJa}へ移している ・ 乗せている ${r.aboard}/${cap} ・ 渡した ${r.delivered} 名`;
-  if (sub === S_PICK) return `収容中 ・ 乗せている ${r.aboard}/${cap} ・ この群に ${r.nearCount} 名`;
-  if (sub === S_FULL) return `満員 ${r.aboard}/${cap} 名 ・ ${r.fitchJa}の輪へ（水路を通れ）`;
-  if (sub === S_RING) return `${r.fitchJa}の輪 ・ ${r.pickupMaxKt} kt 以下で移す（静音が効く）`;
-  if (sub === S_NEAR) return `生存者 ${r.nearCount} 名 ・ ${r.pickupMaxKt} kt 以下で寄せて拾う（静音が効く）`;
-  return `乗せている ${r.aboard}/${cap} 名 ・ 渡した ${r.delivered}${r.delivered < r.objective ? `/${r.objective}` : ''} 名 ・ 海に ${r.onWater} 名`;
+  const kt = r.pickupMaxKt;
+  if (sub === S_TRANSFER) return `${r.fitchJa}へ移している ・ 輪の中で ${kt} kt 以下を保て`;
+  if (sub === S_PICK) return `収容中 ・ この群に ${r.nearCount} 名 ・ ${kt} kt 以下を保て`;
+  if (sub === S_FULL) return `満員 ・ ${r.fitchJa}の輪へ（水路を通れ）`;
+  if (sub === S_RING) return `${r.fitchJa}の輪 ・ ${kt} kt 以下で移す（静音が効く）`;
+  if (sub === S_NEAR) return `生存者 ${r.nearCount} 名 ・ ${kt} kt 以下で寄せて拾う（静音が効く）`;
+  if (r.objectiveReached) return `${RESCUE_MISSION_DONE_JA} ・ 拾い続けてもよい`;
+  return r.aboard > 0 ? `${r.fitchJa}の輪へ移すか、拾い続ける（帰投でも渡せる）` : '生存者の群へ ・ 水路を通れ';
 }
 
 /** 常の文（後ろに今の沿岸砲の句「 ・ 沿岸砲！」「 ・ 沿岸砲の射界」。浅瀬の間は出さないので浅瀬の句は付かない） */
@@ -85,13 +87,28 @@ export function rescueStandingJa(t: BoatTelemetry): string {
   return withWarnings(rescueStandingBodyJa(t.rescue!), t, 0, false, true);
 }
 
-/** 常の文のキー（種類・乗せている・渡した・海に／この群の人数・沿岸砲の 2 つの旗。値が変わった時だけ組み直す） */
+/** 常の文のキー（種類・平常の 2 つの分かれ〔乗せているか・達成の数に届いたか〕・この群の人数・沿岸砲の 2 つの旗。値が変わった時だけ組み直す。v0.8.5 IP5 から数は入れない） */
 export function rescueStandingKey(t: BoatTelemetry): number {
   const r = t.rescue;
   if (!r) return 0;
   const sub = standingSub(r);
-  const n = sub === S_PICK || sub === S_NEAR ? r.nearCount : sub === S_PLAIN ? r.onWater : 0;
-  return sub | (Math.min(63, r.aboard) << 3) | (Math.min(127, r.delivered) << 9) | (Math.min(127, n) << 16) | (t.batteryInArc ? 1 << 23 : 0) | (t.batteryAlerted ? 1 << 24 : 0);
+  const n = sub === S_PICK || sub === S_NEAR ? r.nearCount : 0;
+  const plain = sub === S_PLAIN ? (r.aboard > 0 ? 1 : 0) | (r.objectiveReached ? 2 : 0) : 0;
+  return sub | (plain << 3) | (Math.min(127, n) << 5) | (t.batteryInArc ? 1 << 12 : 0) | (t.batteryAlerted ? 1 << 13 : 0);
+}
+
+/**
+ * 4 行目の任務の行（v0.8.5 IP5。ui/rescue-mission-line がキーの変わった時だけ組む）: 「［任務］乗せている 3/20 ・ 渡した 12/40 ・ 海に 33」。
+ * 達成の数に届けば「渡した 42/40 ・ 帰投で達成」、満員なら「乗せている」の代わりに「満員 20/20」（拾えない＝成否に効く）。出来事・呼びかけはこの行を替えない
+ */
+export function rescueMissionLineJa(r: RescueTelemetry): string {
+  const done = r.delivered >= r.objective ? ` ・ ${RESCUE_MISSION_DONE_JA}` : '';
+  return `${RESCUE_MISSION_TAG_JA}${r.aboard >= r.capacity ? '満員' : '乗せている'} ${r.aboard}/${r.capacity} ・ 渡した ${r.delivered}/${r.objective}${done} ・ 海に ${r.onWater}`;
+}
+
+/** 任務の行のキー（乗せている・渡した・海に。満員と達成は数から決まる） */
+export function rescueMissionLineKey(r: RescueTelemetry): number {
+  return Math.min(255, r.aboard) | (Math.min(1023, r.delivered) << 8) | (Math.min(1023, r.onWater) << 18);
 }
 
 /** 2 行目の文が読む時計の部分（RescueLineClock がそのまま満たす） */

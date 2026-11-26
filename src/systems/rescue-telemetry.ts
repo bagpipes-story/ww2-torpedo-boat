@@ -13,6 +13,8 @@ export interface RescueTelemetryWorld {
   readonly rescue: WorldRescue | null;
   readonly boat: { readonly state: { readonly x: number; readonly y: number } };
   readonly pts: { readonly look: PtLook; readonly wave?: SboatWaveState | null; readonly section?: { readonly boats: readonly { readonly x: number; readonly y: number }[] } } | null;
+  /** 大発の無い任務の沿岸砲（v0.8.5 IP5。端の印の材料を読むだけ。無い任務は null・省略） */
+  readonly shoreGuns?: { readonly shores: readonly { readonly p: { readonly x: number; readonly y: number }; readonly state: { readonly inArc: boolean }; readonly fireCount: number }[] } | null;
 }
 
 /** 出発時の rescue（救助の任務だけ鍵が出る） */
@@ -22,6 +24,7 @@ export function rescueTelemetryPart(w: RescueTelemetryWorld): { rescue?: RescueT
   const p = r.rules;
   let total = 0;
   for (const g of p.groups) total += g.count;
+  const nb = w.shoreGuns ? w.shoreGuns.shores.length : 0; // 砲台の数（v0.8.5 IP5。作る時に 1 回確保）
   const t: RescueTelemetry = {
     capacity: p.capacity, objective: p.objectiveDelivered, total, fitchJa: p.fitch.labelJa, corryJa: p.corry.labelJa, fitchRingM: p.fitch.ringM, pickupMaxKt: p.pickupMaxKt, coverM: p.fitch.coverM,
     aboard: 0, delivered: 0, deliveredAtReturn: 0, onWater: 0, lostShell: 0, byOthers: 0, lostSunk: 0, objectiveReached: false, timeUp: false, picking: false, transferring: false,
@@ -29,6 +32,7 @@ export function rescueTelemetryPart(w: RescueTelemetryWorld): { rescue?: RescueT
     minesSeen: 0, minesBlown: 0, mineSeenSeq: 0, mineDx: NaN, mineDy: NaN, mineBlowSeq: 0, sboatRetreated: 0, sboatRetreatSeq: 0, sboatCovered: 0,
     seaShellSeq: 0, wave2Seq: 0, wave2Count: 0, wave2Dx: NaN, wave2Dy: NaN,
     friendlySeq: 0, friendlyCount: 0, friendlyPicked: 0, friendlyJa: p.friendly ? p.friendly.labelJa : '',
+    batteryDx: new Float64Array(nb), batteryDy: new Float64Array(nb), batteryInArc: new Uint8Array(nb), batteryFired: new Uint32Array(nb),
   };
   refreshRescueTelemetry(t, w);
   return { rescue: t };
@@ -89,6 +93,17 @@ export function refreshRescueTelemetry(t: RescueTelemetry | undefined, w: Rescue
     t.sboatCovered = n;
   }
   t.seaShellSeq = r.seaSeq;
+  const sg = w.shoreGuns;
+  if (sg) {
+    // 砲台の端の印（v0.8.5 IP5）: 相対位置・射界・撃った数を写すだけ（長さは作る時の数）
+    for (let i = 0; i < t.batteryDx.length && i < sg.shores.length; i++) {
+      const sb = sg.shores[i]!;
+      t.batteryDx[i] = sb.p.x - b.x;
+      t.batteryDy[i] = sb.p.y - b.y;
+      t.batteryInArc[i] = sb.state.inArc ? 1 : 0;
+      t.batteryFired[i] = sb.fireCount;
+    }
+  }
   const fr = r.friendly;
   if (fr) {
     t.friendlySeq = fr.seq;

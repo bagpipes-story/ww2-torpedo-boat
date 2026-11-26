@@ -4,8 +4,13 @@
 // 着弾ごとに onLand（世界の救助が群から 1 名を奪う。乱数なし）。被害は世界の hitBoat（終了理由 shore_battery）。テレメトリと Result の読み口は大発の狩りの shore* と同じ名。
 // v0.8.5 IP2（実機 1 回目「沿岸砲の砲撃が生存者に至近弾となったら1名ずつ死亡発生するように」）: 自艇を撃てない砲台（気づいていない・射界の外・煙幕で線が切れた・沈み始めた）があり
 // 救助の時間の内なら、隊で 1 本の時計（rescue.shelling.interval_s）ごとに生存者の海へ 1 発（core/survivor-shelling。乱数 seed+48。弾・水柱・音は自艇へ撃つ弾と同じ道）。
-// §7: 砲台の絵・弾・閃光は ShoreBattery が起動時に作る。毎ステップは確保しない。
+// v0.8.5 IP5（実機 2 回目「沿岸砲もきちんと描画してください」）: 絵だけ 210 mm の大きさ（config/rescue-art-config の SHORE_GUNS_ART_SCALE）にし、砲台の後ろ（南）へ陸の塗りを伸ばす
+//   （data の陸の幅 600 m の端に砲台が載っていた）。砲台の位置・射界・弾は data のまま。画面の外の砲台は HUD の端の印「砲台 N m」（ui/rescue-markers）が指す。
+// §7: 砲台の絵・弾・閃光は ShoreBattery が起動時に作る。陸の塗りも起動時 1 回の Graphics。毎ステップは確保しない。
 import type Phaser from 'phaser';
+import { DEPTH } from '../config/game-config';
+import { COAST_LAND_COLOR } from '../config/hunt-config';
+import { SHORE_GUNS_ART_SCALE, SHORE_GUNS_LAND_PAD_M } from '../config/rescue-art-config';
 import type { BoatState } from '../core/boat-motion';
 import type { HitSpec } from '../core/gunnery';
 import type { MissionEndReason } from '../core/mission-flow';
@@ -43,6 +48,8 @@ export class ShoreGuns {
   private readonly shellRng: SeededRng | null;
   private readonly free: Uint8Array;
   private readonly boat: BoatState;
+  /** 砲台の後ろへ伸ばした陸の塗り（v0.8.5 IP5。岸の無い任務は null） */
+  private readonly landFill: Phaser.GameObjects.Graphics | null;
 
   constructor(
     scene: Phaser.Scene,
@@ -54,16 +61,29 @@ export class ShoreGuns {
     splashes: SplashPool,
     hitBoat: (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason) => void,
     private readonly survivors: ShoreGunsSurvivors | null,
+    /** 岸（v0.8.5 IP5。海域の幅・岸の線の y・data の陸の幅。陸の塗りを砲台の後ろへ伸ばす。岸の無い任務は null） */
+    land: { readonly width: number; readonly coastY: number; readonly landM: number } | null = null,
   ) {
     const onLand = survivors ? (x: number, y: number, aimed: boolean): void => survivors.onShell(x, y, aimed) : null;
     for (let i = 0; i < batteries.length; i++) {
-      this.shores.push(new ShoreBattery(scene, batteries[i]!, new SeededRng((seed + SHORE_GUNS_SEED_OFFSET + i) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, splashes, (spec, rng, x, y) => hitBoat(spec, rng, x, y, 'shore_battery'), onLand));
+      this.shores.push(new ShoreBattery(scene, batteries[i]!, new SeededRng((seed + SHORE_GUNS_SEED_OFFSET + i) >>> 0), boat, boatHalfLengthM, boatHalfBeamM, splashes, (spec, rng, x, y) => hitBoat(spec, rng, x, y, 'shore_battery'), onLand, SHORE_GUNS_ART_SCALE));
     }
     this.boat = boat;
+    this.landFill = land ? this.drawLand(scene, batteries, land) : null;
     this.free = new Uint8Array(batteries.length);
     const sr = survivors ? survivors.rules.shelling : null;
     this.shelling = sr ? createSurvivorShelling(sr) : null;
     this.shellRng = sr ? new SeededRng((seed + SURVIVOR_SHELL_SEED_OFFSET) >>> 0) : null;
+  }
+
+  /** 陸の塗りを data の陸の端から一番南の砲台の y ＋ SHORE_GUNS_LAND_PAD_M まで（足りていれば何も描かない。起動時 1 回） */
+  private drawLand(scene: Phaser.Scene, batteries: readonly ShoreBatteryParams[], land: { readonly width: number; readonly coastY: number; readonly landM: number }): Phaser.GameObjects.Graphics | null {
+    let yMax = -Infinity;
+    for (const b of batteries) yMax = Math.max(yMax, b.y);
+    const y0 = land.coastY + land.landM;
+    const y1 = yMax + SHORE_GUNS_LAND_PAD_M;
+    if (!(y1 > y0)) return null;
+    return scene.add.graphics().setDepth(DEPTH.shallows).fillStyle(COAST_LAND_COLOR, 1).fillRect(-land.landM, y0, land.width + 2 * land.landM, y1 - y0);
   }
 
   private readonly onSeaFire = (k: number, x: number, y: number): void => this.shores[k]!.fireAtSea(x, y);
@@ -131,5 +151,6 @@ export class ShoreGuns {
 
   destroy(): void {
     for (const sb of this.shores) sb.destroy();
+    this.landFill?.destroy();
   }
 }

@@ -25,6 +25,11 @@ export interface RescueTelemetry {
    * 味方の艇の無い任務は 0 と ''
    */
   friendlySeq: number; friendlyCount: number; friendlyPicked: number; friendlyJa: string;
+  /**
+   * v0.8.5 IP5: 砲台の端の印（ui/rescue-markers の「砲台 N m」）の材料。砲台ごと（data の順・長さは作る時に決まる）の自艇からの相対位置 m・自艇が射界の中か（1/0）・撃った数
+   * （自艇へも生存者の海へも。絵の撃った合図＝systems/shore-battery の fireCount）。砲台の無い任務は長さ 0
+   */
+  batteryDx: Float64Array; batteryDy: Float64Array; batteryInArc: Uint8Array; batteryFired: Uint32Array;
 }
 
 /** PT の隊の HUD の名（config/pt-look-data の PtLook のうち文に要る 2 つ） */

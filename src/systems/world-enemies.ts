@@ -121,6 +121,6 @@ export function buildEnemies(
   const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat, data ? ptLookOf(data, mission.enemyId) : PT_LOOK_DEFAULT) : null;
   if (pts && wave2 && s.ptBoats) pts.wave = createSboatWave(pts.section, s.ptBoats.count);
   const enemy = new EnemySide(destroyers, hunt, pts);
-  const shoreGuns = !s.barges && s.shoreBatteries.length > 0 ? new ShoreGuns(scene, s.shoreBatteries, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, splashes, hitBoat, survivors) : null;
+  const shoreGuns = !s.barges && s.shoreBatteries.length > 0 ? new ShoreGuns(scene, s.shoreBatteries, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, splashes, hitBoat, survivors, mission.coast ? { width: mission.bounds.width, coastY: mission.bounds.height, landM: mission.coast.landM } : null) : null; // 岸（v0.8.5 IP5。砲台の後ろへ陸の塗りを伸ばす＝絵だけ）
   return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon, shoreGuns };
 }

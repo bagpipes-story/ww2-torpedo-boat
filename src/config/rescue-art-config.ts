@@ -78,3 +78,11 @@ export const FITCH_SPLASH_OFFSETS: readonly (readonly [number, number])[] = [[60
 
 /** 味方の艇（v0.8.5 IP3。systems/friendly-boats-view）: 前の艇からこの距離 m の内の艇は名の札を出さない（隣の群で拾う 2 隻の札が重ならない＝札は 1 つで足りる） */
 export const FRIENDLY_LABEL_MERGE_M = 120;
+
+/**
+ * 210 mm の砲台の見せ方（v0.8.5 IP5。実機 2 回目「沿岸砲もきちんと描画してください」。systems/shore-guns → systems/shore-battery の artScale）: 絵・砲・砲身・反動・閃光の倍率
+ * （us_03 の 75 mm の絵 120 m → 約 190 m。位置は data のまま＝岸の線から陸へ inland_m 600 m）と、砲台の後ろ（南）へ足す陸の幅 m（data の coast.land_m 600 m の陸の端に砲台が載り、
+ * 絵の南の半分が陸の外＝背景の色に出ていた。陸の塗りを砲台の y ＋ この幅まで伸ばす。見た目だけ）
+ */
+export const SHORE_GUNS_ART_SCALE = 1.6;
+export const SHORE_GUNS_LAND_PAD_M = 500;
