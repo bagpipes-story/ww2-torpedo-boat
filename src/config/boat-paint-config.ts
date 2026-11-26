@@ -74,12 +74,15 @@ export interface BoatPaintDetail {
   readonly vents: readonly (readonly [number, number])[];
   readonly cleats: readonly number[];
 }
-export const BOAT_PAINT_DETAILS: Readonly<Record<'elco80' | 'elco77' | 't38' | 't14' | 'h38', BoatPaintDetail>> = {
+export const BOAT_PAINT_DETAILS: Readonly<Record<'elco80' | 'elco77' | 't38' | 't14' | 'h38' | 'higgins78' | 'sboat', BoatPaintDetail>> = {
   elco80: { guns: ['bow20', 'twin50', 'twin50', 'bofors'], torpedo: 'tube', hatches: [[0.22, 3.2, 2.6], [0.6, 3.4, 3], [0.71, 3.4, 3]], vents: [[0.79, 0.14], [0.79, -0.14]], cleats: [0.05, 0.95] },
   elco77: { guns: ['twin50', 'twin50'], torpedo: 'tube', hatches: [[0.18, 3.2, 2.6], [0.6, 3.4, 3], [0.71, 3.4, 3]], vents: [[0.84, 0.14], [0.84, -0.14]], cleats: [0.05, 0.95] },
   t38: { guns: ['mg13', 'dc', 'dc'], torpedo: 'rack', hatches: [[0.22, 2.4, 2.2], [0.68, 2, 2.4]], vents: [[0.33, 0.2], [0.33, -0.2]], cleats: [0.06] },
   t14: { guns: ['mg13'], torpedo: 'rack', hatches: [[0.24, 2.2, 2], [0.38, 2, 2]], vents: [[0.44, 0.2], [0.44, -0.2]], cleats: [0.06] },
   h38: { guns: ['mg25', 'mg25', 'mg13'], torpedo: 'rack', hatches: [[0.34, 2.2, 2], [0.66, 2.2, 2.2]], vents: [[0.88, 0.18], [0.88, -0.18]], cleats: [0.06, 0.95] },
+  // v0.8.5 S2（us_07）: 初期の Higgins 78（米の銃座と艇尾の 40 mm・魚雷は架台）・S ボート（艇首楼の発射管・中央と艇尾の砲）
+  higgins78: { guns: ['bow20', 'twin50', 'twin50', 'bofors'], torpedo: 'rack', hatches: [[0.2, 3.2, 2.6], [0.53, 3.2, 2.6], [0.86, 2.6, 2.2]], vents: [[0.76, 0.14], [0.76, -0.14]], cleats: [0.05, 0.95] },
+  sboat: { guns: ['mg13', 'mg25', 'bofors'], torpedo: 'tube', hatches: [[0.3, 2.4, 2.2], [0.64, 2.6, 2.6], [0.74, 2.6, 2.6]], vents: [[0.48, 0.2], [0.48, -0.2]], cleats: [0.03, 0.97] },
 };
 
 /** 大発の明るさ（地の色に対する倍）。道板・舷の縁・荷台の床（窪み）・荷（箱・兵）・機関の覆い・艇長の台・防舷の縄 */

@@ -32,10 +32,7 @@ import {
   TITLE_MARKER_ON_JA,
   TITLE_MARKER_SUB_JA,
   TITLE_MARKER_X,
-  TITLE_ROW_H,
   TITLE_ROW_STATUS_PX,
-  TITLE_ROW_SUB_PX,
-  TITLE_ROW_TITLE_PX,
   TITLE_MUSIC_OFF_JA,
   TITLE_MUSIC_ON_JA,
   TITLE_MUSIC_X,
@@ -68,7 +65,7 @@ import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLega
 import { sfxMusic } from '../systems/sfx-bus';
 import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
-import { titleGridOn, titleGridSubJa, titleRowRect } from '../ui/title-grid';
+import { titleGridOn, titleGridSubJa, titleRowLook, titleRowRect } from '../ui/title-grid';
 
 export class TitleScene extends Phaser.Scene {
   private rows: MenuButton[] = [];
@@ -118,6 +115,7 @@ export class TitleScene extends Phaser.Scene {
     // 任務の行（v0.6.7）: 4 行以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子で、副題は最初の「（」か「→」の前まで（titleGridSubJa。列 597 px に状態「出撃準備 →」と並べて収める）
     const n = menu.entries.length;
     const grid = titleGridOn(n);
+    const look = titleRowLook(n); // 7 任務からは詰めた行（v0.8.5 S4。spec-v0850 §8.4 の案 A）。6 任務以下は今の行
     menu.entries.forEach((e, i) => {
       const r = titleRowRect(i, n, GAME_WIDTH);
       const row = new MenuButton(
@@ -126,11 +124,12 @@ export class TitleScene extends Phaser.Scene {
           x: r.x,
           y: r.y,
           w: r.w,
-          h: TITLE_ROW_H,
+          h: look.h,
           title: e.title,
-          titlePx: TITLE_ROW_TITLE_PX,
+          titlePx: look.titlePx,
           sub: grid ? titleGridSubJa(e.sub) : e.sub,
-          subPx: TITLE_ROW_SUB_PX,
+          subPx: look.subPx,
+          ...(look.padY !== undefined ? { padY: look.padY } : {}),
           right: e.status,
           rightPx: TITLE_ROW_STATUS_PX,
           rightColor: e.playable ? HOME_COLOR_TEXT : HUD_COLOR,

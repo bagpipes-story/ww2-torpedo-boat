@@ -48,6 +48,9 @@ import { WorldDawn } from './world-dawn';
 import { refreshShallowStatus, stepPlayerBoat } from './world-boat';
 import { buildEnemies } from './world-enemies';
 import type { WorldRecon } from './world-recon';
+import type { WorldRescue } from './world-rescue';
+import { buildRescue } from './rescue-build';
+import type { ShoreGuns } from './shore-guns';
 import { stepEnemySide } from './world-enemy-step';
 import { buildHazards } from './world-hazards';
 import { buildArms, type WorldArms } from './world-arms';
@@ -87,6 +90,8 @@ export class MissionWorld {
   readonly evac: WorldEvac | null; // 空襲下の退避（v0.6.11 S4。jp_03。world-evac.ts・evac-flights.ts）: 18 隻の隊・座席・空襲の波。setup.evac の無い任務は null
   readonly radar: WorldRadar | null; // 自艇のレーダー（v0.8.0 S2。us_04。world-radar.ts・radar-view.ts）: 掃引と輝点。読むだけ（目・発見・AI は変えない）。setup.radar の無い任務・?debug&noradar は null
   readonly recon: WorldRecon | null; // 報告・無線・中継（v0.8.2 S2。us_05。world-recon.ts。world-enemies が作り、world-enemy-step がレーダーの後に進める）。setup.recon の無い任務は null
+  readonly rescue: WorldRescue | null; // 生存者の救助・機雷原・フィッチの砲火（v0.8.5 S2。us_07。world-rescue.ts。seed+47。world-enemy-step が米PT の隊の段の後に進める）。setup.rescue の無い任務は null
+  readonly shoreGuns: ShoreGuns | null; // 大発の無い任務の沿岸砲（v0.8.5 S2。us_07 の 210 mm。shore-guns.ts。world-enemies が作る。seed+8〜）。無い任務は null
   readonly art: WorldArt; // 世界の絵＝演出の持ち主（v0.7.0 S3a。world-art.ts: 海の模様・夜明けの光・きらめき）。全任務。乱数は絵だけ・論理には書かない
   flareLit = false; // 艇が水上機の照明弾の光の中（駆逐艦が遠くから見つけ、射程内なら撃つ）
   readonly params: BoatParams;
@@ -209,16 +214,11 @@ export class MissionWorld {
     const hit = (spec: HitSpec, rng: SeededRng, x: number, y: number, reason: MissionEndReason): void => this.hitBoat(spec, rng, x, y, reason);
     const onSunk = (x: number, y: number, look: ExplosionLook = 'blast'): void => { if (!s.evac) this.slowMoLeftS = s.slowMoSeconds; this.events.onTargetDestroyed(x, y, look); }; // 撃破（大発・僚艇の沈没）は命中スロー＋Scene の爆発。jp_03（撃墜だけが届く）は爆発だけ（r2 M1）。look は見た目だけ（IP4: 魚雷で沈んだ輸送船は 'torpedo'）
     this.convoy = s.convoy && s.ptBoats ? new Convoy(scene, s.convoy, s.ptBoats.baseDetectM, s.vis, onSunk) : null; // 味方の大発の輸送隊（v0.6.4。乱数なし）は敵の側の前に（米PT の標的スロットの的。沈没は撃破と同じ演出）
-    // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）
-    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy, data); // data は煙幕への乱射の値（v0.8.4。史実モードで煙幕のある艇だけ seed+46）
-    this.gunRng = en.gunRng;
-    this.destroyers = en.destroyers;
-    this.escort = en.escort;
-    this.hunt = en.hunt;
-    this.pts = en.pts;
-    this.gunboat = en.gunboat;
-    this.enemy = en.enemy;
-    this.recon = en.recon;
+    this.rescue = buildRescue(scene, s, seed, this.splashes, hit); // 救助と機雷原（v0.8.5 S2。us_07 だけ。seed+47 の組み立て＝S3 の模擬と同じ関数）は敵の側の前（沿岸砲の着弾が群を奪う）
+    // 敵の側（駆逐艦の隊 seed+1・見張り seed+17・僚艇・大発の隊・米PT の隊 seed+18・v0.8.5 の大発の無い任務の沿岸砲 seed+8）は world-enemies.ts（v0.6.3 で切り出し。生成の順は同じ）。data は煙幕への乱射の値（v0.8.4）と PT の絵の鍵・名（v0.8.5）
+    const en = buildEnemies(scene, s, seed, this.boat.state, this.splashes, events, hit, onSunk, this, this.convoy, data, this.rescue);
+    this.gunRng = en.gunRng; this.destroyers = en.destroyers; this.escort = en.escort; this.hunt = en.hunt; this.pts = en.pts; // 敵の側の持ち物（v0.8.5 S2 で 1 行にまとめた。順は同じ）
+    this.gunboat = en.gunboat; this.enemy = en.enemy; this.recon = en.recon; this.shoreGuns = en.shoreGuns;
     this.launcher = new TorpedoLauncher(this.torpedoes, new SeededRng(seed), s.torpedoReliability, s.torpedoJitterDeg, s.launchOffsetM, s.salvoIntervalS, s.torpedoParams.speedMps);
     this.torpedoEvents = torpedoEventsFor(this, events);
     this.smokeParams = s.smokeParams;
@@ -228,8 +228,7 @@ export class MissionWorld {
     const hz = buildHazards(scene, s, seed, this.boat.state, this.splashes, hit, (x, y) => this.events.onSlam(x, y), en.escortHit);
     this.friendly = hz.friendly;
     this.storm = hz.storm;
-    this.seaplane = hz.seaplane;
-    this.patrol = hz.patrol;
+    this.seaplane = hz.seaplane; this.patrol = hz.patrol;
     this.dawn = new WorldDawn(scene, s, hz.strike); // 夜明けのラッチ・海の明るさ・夜明けの空襲（空襲の無い任務は null）
     this.engine = s.engine ? new EngineTrouble(s.engine) : null; // 機関の不調（v0.6.5。乱数なし＝生成の順と乱数の系列に触らない）
     this.arms = buildArms(scene, this, data, seed, onSunk); // 兵装（v0.6.8）は最後（S2 は乱数の系列を作らない）
@@ -272,9 +271,9 @@ export class MissionWorld {
 
   /**
    * 「撃沈！帰投せよ」の呼びかけの元（生の真偽。Result の達成は mission-telemetry が終了理由から決める）: 揚陸の任務（v0.6.9。jp_04）は決着（揚陸完了か沈没）、
-   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標（報告の任務＝v0.8.2 の us_05 は報告が届いても）
+   * 輸送隊の任務（v0.6.4）は決着（みな上陸か沈没）、ほかは敵の側の目標（報告の任務＝v0.8.2 の us_05 は報告が届いても）。救助の任務（v0.8.5。us_07）は渡した数が達成の数に届いた
    */
-  get returnCallDone(): boolean { return this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone || (this.recon !== null && this.recon.delivered); }
+  get returnCallDone(): boolean { return this.rescue ? this.rescue.objectiveReached : this.landing ? this.landing.resolved : this.convoy ? this.convoy.resolved : this.enemy.objectiveDone || (this.recon !== null && this.recon.delivered); }
 
   /** 撃ち尽くし（砲の任務の「大発なし 帰投せよ」）。揚陸の任務（v0.6.9）と輸送隊の任務（v0.6.4）では立てない（PT・大発は狩る相手ではない。決着は returnCallDone） */
   get noTargetsLeft(): boolean { return this.landing ? false : this.convoy ? false : this.enemy.noTargetsLeft; }

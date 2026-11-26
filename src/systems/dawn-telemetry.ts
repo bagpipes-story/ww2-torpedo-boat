@@ -20,7 +20,7 @@ import {
   strikeThreat,
 } from '../core/air-strike';
 import { bearingJa } from '../core/briefing';
-import { createDawnTelemetry, daylightS, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
+import { createDawnTelemetry, daylightS, setupDayStart, type DawnResult, type DawnTelemetry } from '../core/dawn-air';
 import type { WorldDawn } from './world-dawn';
 import type { WorldSetup } from './world-setup';
 
@@ -51,7 +51,7 @@ export function initDawnTelemetry(w: DawnTelemetryWorld): DawnTelemetry {
   d.ships = w.dawn.ships;
   d.retireJa = w.dawn.retireJa;
   d.forceJa = w.dawn.retireJa ? w.setup.dawnAir.retireForceJa : '';
-  d.dayStart = w.setup.evac ? w.setup.evac.dayStart : false; // 昼から始まる任務（v0.6.11 S5。jp_03）
+  d.dayStart = setupDayStart(w.setup); // 昼から始まる任務（v0.6.11 S5。jp_03。v0.8.5 S0 から救助の us_07 も＝言葉の rescue の枝は S4）
   fillDawn(d, w);
   return d;
 }

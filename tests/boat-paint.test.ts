@@ -114,7 +114,7 @@ describe('密度の通り道（v0.7.0 IP2b・IP3。tests/art-inventory から移
       'systems/gunboat.ts': 'scene.add.image(b.x, b.y, boatTextureKey(p.boatId)).setTint(ESCORT_TINT).setScale(artImageScale(boatTextureKey(p.boatId)))',
       'systems/evac-boats-view.ts': 'scene.add.image(0, 0, textureKey).setScale(this.scale)',
       'systems/barge-hunt.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.barge).setScale(artImageScale(TEXTURE_KEYS.barge))',
-      'systems/pt-squadron.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat))',
+      'systems/pt-squadron.ts': 'scene.add.image(b.x, b.y, look.texKey).setScale(artImageScale(look.texKey))', // v0.8.5 S2: 鍵は記録から（米PT は tex-pt-boat・S ボートは tex-sboat。config/pt-look-data）
       'systems/convoy.ts': 'scene.add.image(b.x, b.y, TEXTURE_KEYS.bargeFriendly).setScale(artImageScale(TEXTURE_KEYS.bargeFriendly))',
     };
     for (const [f, line] of Object.entries(sites)) expect(readFileSync(join('src', f), 'utf8'), f).toContain(line);
@@ -135,7 +135,7 @@ describe('密度の通り道（v0.7.0 IP2b・IP3。tests/art-inventory から移
     for (const dir of ['entities', 'systems', 'ui', 'scenes']) {
       for (const f of readdirSync(join('src', dir))) {
         const src = readFileSync(join('src', dir, f), 'utf8');
-        if (/add\.(?:image|sprite)\([^;]*(?:TEXTURE_KEYS\.(?:barge|bargeFriendly|ptBoat)\b|boatTextureKey\()/.test(src)) boatUsers.push(`${dir}/${f}`);
+        if (/add\.(?:image|sprite)\([^;]*(?:TEXTURE_KEYS\.(?:barge|bargeFriendly|ptBoat)\b|boatTextureKey\(|look\.texKey)/.test(src)) boatUsers.push(`${dir}/${f}`); // v0.8.5 S2: PT の隊の鍵は記録から（look.texKey）
       }
     }
     expect(boatUsers.sort()).toEqual(['systems/barge-hunt.ts', 'systems/convoy.ts', 'systems/gunboat.ts', 'systems/pt-squadron.ts']);

@@ -26,14 +26,15 @@ function bootLoop(id: string): void {
   getPrototypeMission(gameData, id);
   getEngineParams(gameData, id);
   getPatrolAirParams(gameData, id);
+  getPtParams(gameData, getPrototypeMission(gameData, id), gameData.hitRateModel.world.time_scale); // v0.8.5 S0: ノーマルの米PT の隊も（us_07 の S ボートの V-U1）
   const hm = hasHardVariant(gameData, id) ? getPrototypeMission(gameData, id, true) : null;
   if (hm) { getPtParams(gameData, hm, gameData.hitRateModel.world.time_scale); getConvoyParams(gameData, hm); }
   if (hm) getGunboatParams(gameData, hm);
 }
 
 describe('Boot の輪（v0_1_prototype を持つ全任務。spec-v067 §C.7）', () => {
-  it('遊べる世界のある任務は 12（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5。v0.8.1 の S0 で us_06。playable_from は S4。v0.8.2 の S0 で us_05。playable_from は S4）', () => {
-    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']);
+  it('遊べる世界のある任務は 12（v0.6.7 の S2 で jp_02。playable_from は S6。v0.6.9 の S1 で jp_04。playable_from は S7。v0.6.11 の S0 で jp_03。playable_from は S6。v0.8.0 の S0 で us_04。playable_from は S5。v0.8.1 の S0 で us_06。playable_from は S4。v0.8.2 の S0 で us_05。playable_from は S4。v0.8.5 の S0 で us_07＝13。playable_from は S5）', () => {
+    expect([...PROTO_IDS].sort()).toEqual(['jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06', 'us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07']);
   });
   it.each(PROTO_IDS)('%s: 組み立てと検査が投げない（ノーマル・ハード）', (id) => {
     expect(() => bootLoop(id)).not.toThrow();

@@ -8,10 +8,12 @@ import { bearingDeg } from '../core/ship-ai';
 import { enemyDetectRangeM, playerVisRangeM } from '../core/visibility';
 import { ANCHOR_BRIEF_HINT_JA } from '../ui/anchor-texts';
 import { armsBriefingJa } from '../ui/arms-lines';
+import { rescueClockBriefingJa, rescueDayRowJa, rescueWeaponBriefingJa } from '../ui/rescue-texts';
+import { PT_NAME_DEFAULT_JA } from '../config/pt-config';
 import type { WorldSetup } from './world-setup';
 
 /** Briefing の数値（?debug の上書き込みで Mission と同じ値）: 視程、巡航・静音で見つかる距離（雨なし）、夜明け、割当、魚雷、帰投地点と海域 */
-export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): BriefingNumbers {
+export function briefingNumbers(s: WorldSetup, aimAssistJa: string = '', ptNameJa: string = PT_NAME_DEFAULT_JA): BriefingNumbers {
   const f = s.vis.speedFactor;
   return {
     // 見越し点マーカーの解放の状態（v0.5.2）。無ければ鍵ごと省く（Briefing を作るときの 1 回だけ）。米PT の任務（v0.6.3。魚雷を撃たない）はマーカーが無いので出さない
@@ -36,6 +38,8 @@ export function briefingNumbers(s: WorldSetup, aimAssistJa: string = ''): Briefi
     ...(s.backdrop && s.anchors ? { hazardTailJa: ANCHOR_BRIEF_HINT_JA } : {}),
     // レーダー（v0.8.0 S4。us_04。spec-v0800 §4.9）: 月の行の尾（射程と、陸の反射のある海域なら「陸のそばは映らない」）。無い任務・?debug&noradar は鍵ごと省く
     ...(s.radar ? { radarJa: radarBriefingJa(s.radar.shipRangeM, s.radar.landClutterM > 0 && (s.shores !== undefined || s.mission.coast !== null)) } : {}),
+    // 救助の任務（v0.8.5 S4。us_07。spec-v0850 §8.1）: 時の行（昼）・条件の「救助の時間 300 秒」・機銃の句（砲が 3 種なので「1挺」と言わない。魚雷は S ボートの下を抜ける）。他の任務は鍵ごと省く
+    ...rescuePart(s, ptNameJa),
     visM: playerVisRangeM(s.vis),
     detectCruiseM: enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false),
     detectSilentM: enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false),
@@ -66,6 +70,17 @@ function evacPart(s: WorldSetup): Partial<BriefingNumbers> {
     weaponJa: EVAC_WEAPON_JA,
     ...(ev.raid.passesMax > 1 ? { repassJa: EVAC_REPASS_JA } : {}),
     hazardLabelsJa: { [EVAC_EVENT_ID]: EVAC_RAID_HAZARD_JA, [DAWN_STRIKE_EVENT_ID]: evacAfterRaidHazardJa(planes) },
+  };
+}
+
+/** 救助の任務の差し替えの鍵（v0.8.5 S4。setup.rescue の任務だけ。Briefing を作るときの 1 回だけ）。ptNameJa は PT の隊の名（記録の name_short_ja） */
+function rescuePart(s: WorldSetup, ptNameJa: string): Partial<BriefingNumbers> {
+  if (!s.rescue) return {};
+  const f = s.vis.speedFactor;
+  return {
+    dayRowJa: rescueDayRowJa(playerVisRangeM(s.vis), enemyDetectRangeM(s.baseDetectM, f.cruise, s.vis, false), enemyDetectRangeM(s.baseDetectM, f.silent, s.vis, false)),
+    clockJa: rescueClockBriefingJa(s.durationS, dawnConditionJa(s.dawnAir, s.night.mirrored)),
+    ...(s.guns ? { weaponJa: rescueWeaponBriefingJa(s.guns.label, ptNameJa) } : {}),
   };
 }
 

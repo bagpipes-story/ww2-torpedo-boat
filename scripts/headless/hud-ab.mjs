@@ -9,14 +9,15 @@
 // v0.8.1 S2: SET=us06 で us_06（ab-replay の us06 の組。秒は 200＝夜明けまで。S2 は A＝B＝今の木・S3 から A は S2 の commit のビルド）。
 // v0.8.1 S4（brief L69）: ANCHORUI=1 は us_06 の S4 の新しい文だけを比べから外す濾し（scripts/headless/anchor-filter。A は S3 の commit のビルド・B は今の木。tests/anchor-ab-filter が固定）。
 // v0.8.2 S2: SET=us05 で us_05（ab-replay の us05 の組。秒は 270＝夜明けまで。S2 は A＝B＝今の木・S2b から A は S2 の commit のビルド）。
+// v0.8.5 S2: SET=us07 で us_07（ab-replay の us07 の組。秒は 320＝救助の時間の後まで。S2 は A＝B＝今の木・S2 の後は A を S2 の commit のビルド）。
 // v0.8.2 S4（lead の L48）: RECONUI=1 は us_05 の S4 の新しい文と中継の端の印だけを比べから外す濾し（scripts/headless/recon-filter。A は S3 の commit のビルド）。
 // v0.8.3: CTRLUI（既定 1）は ab-replay と同じ（「静音」「倍速」の丸と字を両方の側で除く。行に除いた数 ctrl A n B m）。
-// 実行: A=<site A> B=<site B> [CTRLUI=0] [SET=base|jp04|jp04base|jp03|us04|us06|us05] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
+// 実行: A=<site A> B=<site B> [CTRLUI=0] [SET=base|jp04|jp04base|jp03|us04|us06|us05|us07] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [INPUT=primary|both|none] [SECS=62] [W=1560] [JOBS=3] node scripts/headless/hud-ab.mjs
 import { abCases, oneCase } from './ab-replay.mjs';
 import { chromium, envNum, pool, serve } from './lib.mjs';
 
 if (!process.env.A || !process.env.B) throw new Error('A=<基準の site> B=<今の site> が要る');
-const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us05' ? 270 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
+const cases = abCases(process.env.SET ?? 'base', process.env.INPUT ?? 'primary').map((c) => ({ ...c, secs: envNum('SECS', c.set === 'jp03' || c.set === 'us04' ? 260 : c.set === 'us05' ? 270 : c.set === 'us07' ? 320 : c.set === 'us06' ? 200 : c.set === 'jp04base' ? 170 : 62), hudEvery: 60, set: 'hud' }));
 const sa = await serve(process.env.A);
 const sb = await serve(process.env.B);
 const browser = await chromium.launch();

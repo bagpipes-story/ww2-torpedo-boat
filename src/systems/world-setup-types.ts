@@ -15,6 +15,8 @@ import type { AnchorSetup } from '../config/anchor-mission-data';
 import type { BackdropSetup, BackdropSetupOptions } from '../config/backdrop-mission-data';
 import type { SeaplaneNightSetup } from '../config/seaplane-mission-data';
 import type { ReconSetup, ReconSetupOptions } from '../config/recon-mission-data';
+import type { RescueSetup } from '../config/rescue-mission-data';
+import type { MinefieldSetup } from '../config/minefield-mission-data';
 import type { MagazineSetupOptions } from '../config/magazine-data';
 import type { BargeParams } from '../core/barge-data';
 import type { BoatParams } from '../core/boat-motion';
@@ -132,6 +134,8 @@ export interface WorldSetup {
   seaplaneNight?: SeaplaneNightSetup; // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。config/seaplane-mission-data。無い任務と ?debug&noplane では鍵ごと出ない＝凍結の 1 任務 1 回のまま）
   pickets?: PicketSetup; // ハードの駆潜艇（v0.8.1。us_06 のハードの hard.extra_pickets。隊の最後・今夜の揺らぎ込み。無い任務・ノーマルでは鍵ごと出ない。S0 では世界は読まない）
   recon?: ReconSetup; // 報告・無線・中継（v0.8.2。v0_1_prototype.recon のある任務＝us_05 だけ。config/recon-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
+  rescue?: RescueSetup; // 生存者の救助（v0.8.5。v0_1_prototype.rescue のある任務＝us_07 だけ。config/rescue-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない＝海を最初から昼にするだけ（core/dawn-air の setupDayStart））
+  minefield?: MinefieldSetup; // 機雷原（v0.8.5。v0_1_prototype.minefield のある任務＝us_07 だけ。config/minefield-mission-data。無い任務では鍵ごと出ない。S0 では世界は読まない）
 }
 
 /** 組み立ての上書き（v0.4.6 で位置引数からまとめた。既定はすべて「上書きなし」）。fuelGal / dawnS は NaN で data の値 */

@@ -63,9 +63,9 @@ describe('us_06 の setup の snapshot（v0.8.1 S0 の木）', () => {
 });
 
 describe('us_06 の種の直し（spec-v0810 §2）と人名・PT の番号（CLAUDE.md §11・spec-v0810 §3.8）', () => {
-  it('場所はパロンポン沖・月は沈んでいた・目的に特攻艇なし・成功は卯月の撃沈・夜明けは L1・題と日付と順はそのまま・S4 から遊べる（playable_from v0.8.1）', () => {
+  it('場所はパロンポン沖・月は沈んでいた・目的に特攻艇なし・成功は卯月の撃沈・夜明けは L1・題と日付はそのまま（順は v0.8.5 S0 で年代順に 6 → 7）・S4 から遊べる（playable_from v0.8.1）', () => {
     const m = missionOf('us_06');
-    expect([m['title_ja'], m['date'], m['order'], m['place'], m['moon'], m['moon_label_ja'], m['success'], m['torpedo_type'], m['player_boat']]).toEqual(['オルモック湾の決着', '1944-12-11', 6, 'パロンポン沖（レイテ島西岸）', 'dark', '月没後', '帰投。卯月を撃沈すれば達成', 'us_mk13', 'us_elco80']);
+    expect([m['title_ja'], m['date'], m['order'], m['place'], m['moon'], m['moon_label_ja'], m['success'], m['torpedo_type'], m['player_boat']]).toEqual(['オルモック湾の決着', '1944-12-11', 7, 'パロンポン沖（レイテ島西岸）', 'dark', '月没後', '帰投。卯月を撃沈すれば達成', 'us_mk13', 'us_elco80']);
     expect(String(m['objective'])).not.toContain('特攻');
     expect(m['enemies']).toEqual(['ijn_destroyer_mutsuki_enemy', 'ijn_transport']);
     expect(m['playable_from']).toBe('v0.8.1'); // v0.8.1 S4（lead の L65）: Title の米PT のタブの 5 枚目。S0〜S3 は無かった

@@ -11,7 +11,7 @@ import type Phaser from 'phaser';
 import { SEA_LIGHT_POST_S, SEA_LIGHT_PRE_S, SEA_LIGHT_STEPS } from '../config/dawn-config';
 import type { AirStrikeParams, AirStrikeState } from '../core/air-strike';
 import type { BoatState } from '../core/boat-motion';
-import { dawnAirCode, dawnReached, seaLightStep, type ShipsAtDawn } from '../core/dawn-air';
+import { dawnAirCode, dawnReached, seaLightStep, setupDayStart, type ShipsAtDawn } from '../core/dawn-air';
 import { retireDirJa, retireHeadingDeg } from '../core/dawn-withdraw';
 import { SeaLight } from '../ui/sea-light';
 import type { WorldSetup } from './world-setup';
@@ -86,7 +86,7 @@ export class WorldDawn {
     this.retireHeadingDeg = edge ? retireHeadingDeg(edge, setup.night.mirrored) : NaN;
     this.retireJa = edge ? retireDirJa(edge, setup.night.mirrored) : '';
     this.seaLight = new SeaLight(scene.cameras.main);
-    this.dayStart = setup.evac ? setup.evac.dayStart : false;
+    this.dayStart = setupDayStart(setup); // v0.8.5 S0: 救助（rescue。us_07）も昼から
   }
 
   /**

@@ -88,14 +88,14 @@ export function landingCallWaits(l: LandingTelemetry, call: number): boolean {
 }
 
 /**
- * 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中」の代わり）: 揚陸の %・まだ撃てる米PT（みな撃てれば来る方角、減れば残り、0 ならもう撃てない）。
+ * 平常の行（米PT が見えていない間。jp_05 の「米PT 2 隻が哨戒中」の代わり）: まだ撃てる米PT（みな撃てれば来る方角、減れば残り、0 ならもう撃てない）。揚陸の % は v0.8.5 IP7 から任務の行。
  * v0.6.10 S6（LD4）: 卯月のいるノーマルの夜は撃てる米PT がいる間「 ・ 走らせれば卯月が照らす」（ui/ally-lines。ハードは 840 px に収まらないので付けない）
  */
 export function landingNormalLine(t: BoatTelemetry): HudLine {
   const l = t.landing;
   const armed = Math.min(3, l.armed);
   const who = armed === 0 ? '米PT はもう魚雷を撃てない' : armed >= l.total ? `米PT ${armed} 隻が${l.fromDirsJa}から輸送船を狙う` : `米PT 残り ${armed} 隻が輸送船を狙う`;
-  return { text: `揚陸 ${landingPct(l.pct)}% ・ ${who}${allyRunTailJa(t.ally, armed)}`, color: HUD_COLOR_STRONG };
+  return { text: `${who}${allyRunTailJa(t.ally, armed)}`, color: HUD_COLOR_STRONG }; // 揚陸の % は 4 行目の任務の行（v0.8.5 IP7。ui/objective-specs）
 }
 
 /**
@@ -142,7 +142,7 @@ export const LK_ARMED = 28;
 
 /**
  * 揚陸の 2 行目のキー（ui/mission-line が ptKey と並べて持つ。jp_01 の convoyKey と同じ作法）: 揚陸の無い任務は 0。
- * モード 36 は報告（副・輸送船からの方角・100 m 刻み）か雷跡（副・秒・本数）、呼びかけは決着の前の待ち（残りの秒）、米PT の平常（見えていない）は % と撃てる隻数、
+ * モード 36 は報告（副・輸送船からの方角・100 m 刻み）か雷跡（副・秒・本数）、呼びかけは決着の前の待ち（残りの秒）、米PT の平常（見えていない）は撃てる隻数（% は v0.8.5 IP7 から任務の行）、
  * みな去った後は決着の前の待ち（残りの秒。ptKey の K_WAIT と並ぶ）。見えている PT の行（距離と方角は ptKey）とほかのモードは 1（1 は揚陸の任務の印）
  */
 export function landingKey(t: BoatTelemetry, mode: number): number {
@@ -160,7 +160,7 @@ export function landingKey(t: BoatTelemetry, mode: number): number {
   if (mode !== MISSION_PT) return 1;
   if (t.pt.alive === 0) return landingWaiting(l) ? wait : 1;
   if (t.pt.sighted) return 1;
-  return 1 | (landingPct(l.pct) << LK_PCT) | (Math.min(3, l.armed) << LK_ARMED);
+  return 1 | (Math.min(3, l.armed) << LK_ARMED); // 平常の % は v0.8.5 IP7 から任務の行（文に無いのでキーにも入れない）
 }
 
 /**

@@ -28,6 +28,7 @@ import { isTorpedoDataRecord, type TorpedoDataRecord, type TorpedoReliability } 
 import { type MoonPhase, type VisibilityParams } from '../core/visibility';
 import { ktToMps } from '../core/units';
 import { isNum, type PrototypeMission } from './mission-data';
+import { missionShoreBatteryRecord } from './shore-guns-mission-data';
 
 export const gameData = {
   boats,
@@ -178,7 +179,7 @@ export function getShoreBatteryParams(data: GameData, mission: PrototypeMission)
 export function getShoreBatteryParamsList(data: GameData, mission: PrototypeMission): ShoreBatteryParams[] {
   if (!mission.shoreBattery) return [];
   const rec = data.riskEvents.events.find((e) => e.id === 'shore_battery') as Record<string, unknown> | undefined;
-  const p = rec?.['params'];
+  const p = missionShoreBatteryRecord(data, mission) ?? rec?.['params']; // 任務の shore_battery.params（v0.8.5 S0。us_07 の 210 mm。無い任務＝us_03 は risk_events の 75 mm のまま）
   if (!isShoreBatteryDataRecord(p)) throw new Error('risk_events.json の shore_battery に params（gun / base_detect_m / inland_m）が無い（docs/02 §6.8）');
   return mission.shoreBatteryXs.map((x) => shoreBatteryParamsFromData(p, x, mission.bounds.height, mission.bounds.width, data.hitRateModel.visibility.detect_hold_s));
 }
@@ -257,14 +258,14 @@ export function getBoatDamageParams(data: GameData, boatId: string): DamageParam
 
 /**
  * 視界パラメータ（docs/02 §6.5）: hit_rate_model.visibility に月齢を当て、史実モード（v0.5.2 で Title の切り替え。省けば data の enabled_default）なら発見距離の倍率を掛ける。
- * 起動時に 1 回作り、以後は数値だけ読む（§7）。
+ * 起動時に 1 回作り、以後は数値だけ読む（§7）。moonFactor（v0.8.5 S0・spec-v0850 §4.5）は月の係数の代わり（us_07 の昼の倍率＝config/rescue-mission-data の rescueMoonFactor。省けば今のまま）
  */
-export function getVisibilityParams(data: GameData, moon: MoonPhase, historical: boolean = data.hitRateModel.historical_mode.enabled_default): VisibilityParams {
+export function getVisibilityParams(data: GameData, moon: MoonPhase, historical: boolean = data.hitRateModel.historical_mode.enabled_default, moonFactor?: number): VisibilityParams {
   const v = data.hitRateModel.visibility;
   const hm = data.hitRateModel.historical_mode;
   return {
     visPlayerBaseM: v.vis_player_base_m,
-    moonFactor: v.moon_factor[moon],
+    moonFactor: moonFactor ?? v.moon_factor[moon],
     speedFactor: v.speed_factor,
     smokeFactor: v.smoke_factor,
     detectHoldS: v.detect_hold_s,

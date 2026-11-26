@@ -19,6 +19,7 @@ import { initLandingTelemetry } from './landing-telemetry';
 import { initPatrolTelemetry } from './patrol-telemetry';
 import { initPtTelemetry } from './pt-telemetry';
 import { magazineTelemetryPart, reconTelemetryPart } from './recon-telemetry';
+import { ptNamesPart, rescueTelemetryPart } from './rescue-telemetry';
 import { initRadarTelemetry } from './radar-telemetry';
 import { initStraitTelemetry } from './strait-telemetry';
 import { initTransitTelemetry } from './transit-telemetry';
@@ -141,5 +142,7 @@ export function createTelemetry(w: MissionWorld, zoom: number, timeLeftS: number
     ...anchorTelemetryPart(w), // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06。systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
     ...reconTelemetryPart(w), // 報告・無線・中継（v0.8.2 S2。us_05。systems/recon-telemetry。setup.recon の無い任務は鍵ごと無い）
     ...magazineTelemetryPart(w), // 戦艦の弾薬庫（v0.8.2 S2。us_05。規則のある艦のいない隊は鍵ごと無い）
+    ...rescueTelemetryPart(w), // 生存者の救助・機雷・フィッチの砲火（v0.8.5 S2。us_07。systems/rescue-telemetry。setup.rescue の無い任務は鍵ごと無い）
+    ...ptNamesPart(w), // PT の隊の HUD の名（v0.8.5 S2。us_07 の「Sボート」だけ。米PT の任務は鍵ごと無い）
   };
 }

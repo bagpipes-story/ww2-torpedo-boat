@@ -223,7 +223,7 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
       }
     }
     const rs = readFileSync(join(__dirname, '..', 'src', 'scenes', 'result-scene.ts'), 'utf8');
-    expect(rs).toContain("`（${r.evac ? '空襲後' : '夜明け後'} ×${scoringParams.afterDawnFactor}）`");
+    expect(rs).toContain("`（${r.evac ? '空襲後' : r.rescue ? RESCUE_AFTER_JA : '夜明け後'} ×${scoringParams.afterDawnFactor}）`"); // v0.8.5 S4: 救助の任務（us_07）は「救助の後」
     for (const t of texts) expect(t, t).not.toContain('夜明け');
   });
   it('本文の下端 ≤ 592（作るときの y の足し方＝result-scene の line(): 行ごとに字の大きさ ＋ 12、節の間 10。下端は最後の行の y ＋ 行の高さ（字の大きさ × 1.25 で多めに））', () => {
@@ -244,7 +244,7 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
     expect(bottom).toBe(515);
     // 配線: 時の行は夜明けの行の代わり・帰投地点までの行は出さない・見出しは evac の印
     const rs = readFileSync(join(__dirname, '..', 'src', 'scenes', 'result-scene.ts'), 'utf8');
-    expect(rs).toContain('...(r.evac ? evacTimeLinesJa(r.evac, r.dawn, r.reason, r.returned) : [dawnResultLine(r.dawn, r.returned, r.reason === \'cleared\')])');
+    expect(rs).toContain('...(r.evac ? evacTimeLinesJa(r.evac, r.dawn, r.reason, r.returned) : [r.rescue ? rescueTimeLineJa(r.dawn, r.returned) : dawnResultLine(r.dawn, r.returned, r.reason === \'cleared\')])'); // v0.8.5 S4: 救助の任務（us_07）は救助の時間の行
     expect(rs).toContain('if (!r.returned && !r.evac) {');
     expect(rs).toContain('resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)'); // v0.8.1 S4: 止まった艦の任務の旗（体当たり →「敵艦と衝突した」＝ui/anchor-result）。v0.8.2 S4: 報告の任務（us_05）も
     expect(rs).toContain(": r.patrol || r.evac ? '' : ships;");

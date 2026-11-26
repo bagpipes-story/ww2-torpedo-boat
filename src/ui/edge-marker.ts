@@ -5,12 +5,15 @@
 // v0.6.6 レビュー ux:ux-1: 任意の hideMargin（「画面の内なら隠す」の余白。ui/edge-marker-screen）と refresh の drawn（目標の絵が出ていなければ画面の内でも縁へ）。省けば今のまま。
 // v0.6.11 S5: setPrefix（ラベルの名を替える。空襲下の退避の「第4隊 N m」「西の壕 N m」＝ui/evac-markers。替えたときだけ次の refresh で組み直す）。呼ばなければ今のまま。
 // v0.6.11 S8b: 任意の labelInset（ラベルを画面の枠の左右の内側この px に収める。左の縁の矢印の下の「西の壕 1200 m」が W 1280 で画面の外へ 4 px 出た）。省けば今のまま。
+// v0.8.5 S5: writeBoxes（矢印とラベルの今の箱。ui/pause-cluster が一時停止の塊を避けるのに読む）。呼ばなければ今のまま。
+// v0.8.5 IP5: setArrowScale（矢印の大きさの倍率。砲台の印が撃った時に膨らむ＝ui/rescue-markers。変わった時だけ setScale）。呼ばなければ今のまま。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, RENDER_SCALE } from '../config/game-config';
 import { CAMERA_LOOK_AHEAD_M, HUD_FONT_MARKER_PX, TARGET_MARKER_MARGIN, TARGET_MARKER_RIGHT_MARGIN, hudTextStyle } from '../config/ui-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import { degToRad, radToDeg } from '../core/units';
 import { markerOnScreen } from './edge-marker-screen';
+import { edgeLabelBox, type MutableRect } from './pause-cluster';
 
 export interface EdgeMarkerOptions {
   textureKey: string;
@@ -41,6 +44,8 @@ export class EdgeMarker {
   /** 最後の refresh で矢印を置いた論理画面の点（nudge 込み） */
   private mx = 0;
   private my = 0;
+  /** 矢印の大きさの倍率（v0.8.5 IP5） */
+  private arrowK = 1;
 
   constructor(
     scene: Phaser.Scene,
@@ -113,6 +118,23 @@ export class EdgeMarker {
   get shownY(): number { return this.my; }
   /** ラベルの幅 px（v0.6.11 S8b。ui/evac-markers が上下の縁で隣のラベルと重ならない間隔を決める。読むだけ） */
   get labelWidth(): number { return this.label.width; }
+
+  /** 矢印（回した絵の外接の正方形）とラベルの今の箱を書く（v0.8.5 S5。読むだけ・確保なし） */
+  writeBoxes(arrow: MutableRect, label: MutableRect): void {
+    const a = Math.max(this.arrow.displayWidth, this.arrow.displayHeight) * Math.SQRT1_2;
+    arrow.x0 = this.mx - a;
+    arrow.x1 = this.mx + a;
+    arrow.y0 = this.my - a;
+    arrow.y1 = this.my + a;
+    edgeLabelBox(this.label.x, this.label.y, this.opts.labelAbove, this.label.width, this.label.height, label);
+  }
+
+  /** 矢印の大きさの倍率（v0.8.5 IP5。1 が絵のまま。同じなら何もしない） */
+  setArrowScale(k: number): void {
+    if (k === this.arrowK) return;
+    this.arrowK = k;
+    this.arrow.setScale(k / RENDER_SCALE);
+  }
 
   /** refresh の後に矢印とラベルを (dx, dy) px だけ動かす（v0.6.6。隼艇の矢印を輸送隊の矢印から縁に沿ってずらす） */
   nudge(dx: number, dy: number): void {

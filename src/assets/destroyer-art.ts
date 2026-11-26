@@ -104,3 +104,8 @@ export function generateColumnTextures(scene: Phaser.Scene, data: GameData, spri
 export function paintAllyDestroyerTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
   paintDestroyerTexture(scene, TEXTURE_KEYS.destroyerFriendly, spec, 'mutsuki', PALETTE_ALLY.deck);
 }
+
+/** 味方のフレッチャー級の駆逐艦（v0.8.5 S2。tex-destroyer-ally-us。us_07 のフィッチと沈むコリー＝Gleaves 型の代わり。Boot が救助の任務のある時に 1 回。寸法は us_destroyer の記録 × sprite_scale） */
+export function paintAllyFletcherTexture(scene: Phaser.Scene, spec: BoatTextureSpec, key: string): void {
+  paintDestroyerTexture(scene, key, spec, 'fletcher', PALETTE_ALLY.deck);
+}

@@ -16,10 +16,21 @@ export const TITLE_HINT_Y = 560;
 export const TITLE_TOGGLE_GAP = 24;
 /**
  * v0.6.7: タブの行がこの数以上なら 2 列の格子（日本ハードモードの 4〜6 任務・v0.8.0 から米PT の 4 任務）。未満（v0.7.2 までの米PT の 3 行）は 1 列。
- * 格子は 3 段（6 任務）まで（4 段目は操作の一言にかかる。米PT の 7 任務が並ぶ版で見直す）
+ * 今の高さ（96）の格子は 3 段（6 任務）まで（4 段目は操作の一言にかかる）。7 任務からは下の詰めた行（v0.8.5 S4）
  */
 export const TITLE_GRID_FROM = 4;
 export const TITLE_GRID_ROWS_MAX = 3;
+/**
+ * v0.8.5 S4（spec-v0850 §8.4 の案 A。米PT の 7 任務）: タブの行がこの数以上なら 2 列 × 4 段の詰めた行（高さ 76・間は今の 12＝216〜556。操作の一言 y 560 の上）。
+ * 題 26 px・副題 18 px・上下の余白 10（MenuButton の padY。無い行は今の MENU_PAD_Y 16）。状態「出撃準備 →」は今の 24 px。6 行以下のタブ（日本）は今の行のまま 1 px も変わらない。
+ * 597 × 76 px ≈ 326 × 41 pt（iPhone 15 横。44 pt の目安に少し足りない＝幅は 326 pt あるので押し違いは少ない）
+ */
+export const TITLE_GRID_COMPACT_FROM = 7;
+export const TITLE_GRID_COMPACT_ROWS_MAX = 4;
+export const TITLE_ROW_COMPACT_H = 76;
+export const TITLE_ROW_COMPACT_TITLE_PX = 26;
+export const TITLE_ROW_COMPACT_SUB_PX = 18;
+export const TITLE_ROW_COMPACT_PAD_Y = 10;
 /** 格子の列の幅: 2 × 597 + 24 = 1,218（下の 3 つの切り替え 3 × 390 + 2 × 24 と同じ幅・同じ中心。論理幅 1280 でも左右に 31 px 余る）。597 × 96 px ≈ 326 × 52 pt（iPhone 15 横） */
 export const TITLE_GRID_COL_W = 597;
 /**

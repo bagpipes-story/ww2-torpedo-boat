@@ -14,6 +14,13 @@ export const PT_PASS_LINE_LEN_M = 700;
 export const PT_MUZZLE_FLASH_SCALE = 0.3;
 export const PT_MUZZLE_FLASH_S = 0.08;
 export const PT_MUZZLE_FLASH_TINT = 0xff8a7a;
+/** 米PT の絵（tex-pt-boat）の寸法を取る PT の記録の boat_ref（v0.8.5 S0・spec-v0850 §4.4。Boot は「この boat_ref の PT の隊を持つ最初の任務」から描く。種の配列で jp_* より前の us_07 の S ボート＝de_s100 の寸法に変わらない） */
+export const US_PT_BOAT_REF = 'us_elco80';
+/** HUD の文の PT の隊の名と 13mm・機銃で沈めた時の言葉の既定（v0.8.5 S2。記録に name_short_ja が無い＝米PT。S ボートの名と言葉は config/pt-look-data がテレメトリの ptNames へ） */
+export const PT_NAME_DEFAULT_JA = '米PT';
+/** 米PT の絵の鍵（game-config の TEXTURE_KEYS.ptBoat と同じ字＝tests/rescue-world。config/pt-look-data が DOM の game-config を引かないための写し） */
+export const PT_BOAT_TEXTURE_KEY = 'tex-pt-boat';
+export const PT_SUNK_DEFAULT_JA = 'ガソリンに引火';
 /** 画面外の矢印のラベル（米PT の任務。駆逐艦は「敵」、大発は「大発」） */
 export const PT_MARKER_LABEL = 'PT';
 /** 2 行目の米PT までの距離の刻み m（切り上げ。表示が実際より遠くならない。画面外の矢印も米PT の任務は切り上げ）。T-14 の 13mm の行（ui/pt-gun-lines）も同じ刻み */

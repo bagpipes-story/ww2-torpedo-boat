@@ -42,6 +42,8 @@ import { shoresSetupPart } from '../config/shores-mission-data';
 import { anchorSetupPart, getAnchorParams } from '../config/anchor-mission-data';
 import { backdropSetupPart } from '../config/backdrop-mission-data';
 import { reconSetupPart } from '../config/recon-mission-data';
+import { rescueMoonFactor, rescueSetupPart } from '../config/rescue-mission-data';
+import { minefieldSetupPart } from '../config/minefield-mission-data';
 import { fixedNight, rollNight } from '../core/night';
 import { applyConvoyNight, applyNight, applyPtNight } from './world-night';
 import { destroyerSetup, picketSetup, type TransportSetup } from './destroyer-setup';
@@ -113,7 +115,7 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
   const fuelCurve = getBoatFuelCurve(data, mission.playerBoatId);
   const fuelAllotmentGal = effectiveFuelAllotmentGal(data, mission, debugFuelAllotmentGal);
   if (fuelAllotmentGal > fuelCurve.capacityGal) throw new Error(`${mission.id}: fuel_allotment_gal が艇の fuel_capacity_gal を超えている`);
-  const vis = getVisibilityParams(data, mission.moon, historical);
+  const vis = getVisibilityParams(data, mission.moon, historical, rescueMoonFactor(data, mission)); // 昼の倍率（v0.8.5 S0。us_07 の rescue.daylight だけ。無い任務は今の月の係数）
   const visRange = playerVisRangeM(vis);
   const baseDetectM = destroyer ? destroyer.baseDetectM : barges ? barges.baseDetectM : ptBoats ? ptBoats.baseDetectM : visRange; // 艦艇のいない夜の哨戒機の任務（v0.6.7。jp_02）は自艇の視程
   const lead = barges ? { x: barges.leadX + DEBUG_BARGES_NEAR_OFFSET.dxM, y: barges.leadY + DEBUG_BARGES_NEAR_OFFSET.dyM, headingDeg: DEBUG_BARGES_NEAR_OFFSET.headingDeg } : null;
@@ -191,6 +193,8 @@ export function buildWorldSetup(data: GameData, missionId: string, o: SetupOptio
     ...seaplaneNightSetupPart(data, mission, seaplane), // 夜の水上機の 1 夜の攻撃の回数（v0.8.1 IP2。enemy_aircraft.attacks_per_night のある任務＝us_06 だけ。無い任務と水上機の無い夜は鍵ごと出ない）
     ...(pickets ? { pickets } : {}), // ハードの駆潜艇（v0.8.1。us_06 のハードだけ。隊の最後・今夜の揺らぎ込み）
     ...reconSetupPart(data, mission, o), // 報告・無線・中継（v0.8.2。us_05 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
+    ...rescueSetupPart(data, mission), // 生存者の救助（v0.8.5。us_07 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない＝海の色の昼だけ core/dawn-air の setupDayStart）
+    ...minefieldSetupPart(data, mission), // 機雷原（v0.8.5。us_07 だけ。無い任務では鍵ごと出ない。S0 では世界は読まない）
   };
 }
 

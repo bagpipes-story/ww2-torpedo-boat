@@ -258,7 +258,7 @@ describe('3 行目の箱と空襲下の退避の隊の行（v0.6.11 S5。spec-v0
         const s = evacStatusLine(e);
         if (textW(s, 20) > textW(longest, 20)) longest = s;
       }
-    expect(longest).toBe('第6隊 HP 60・60・60 ・ 残 18／18 ・ 隠 18 ・ 次 4:00');
+    expect(longest).toBe('第6隊 HP 60・60・60 ・ 次 4:00'); // v0.8.5 IP7: 残存・隠れた艇は 4 行目の任務の行（ui/objective-specs）へ
     for (const W of WIDTHS) {
       const fb = fixedBoxes(W, false);
       const w = textW(longest, 20);

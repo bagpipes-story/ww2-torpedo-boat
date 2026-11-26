@@ -34,12 +34,16 @@ import { HpBar } from '../ui/hp-bar';
 import { HudMarkers } from '../ui/hud-markers';
 import { DawnBanner } from '../ui/dawn-banner';
 import { FuelGauge } from '../ui/fuel-gauge';
+import { ObjectiveLine } from '../ui/objective-line';
+import { objectiveSpecOf } from '../ui/objective-specs';
 import { WeaponPanel } from '../ui/weapon-panel';
 import type { BoatTelemetry } from '../core/boat-motion';
 
 export class HudScene extends Phaser.Scene {
   private debugHud?: DebugHud;
   private boatHud?: BoatHud;
+  /** 上中央 4 行目の任務の行（v0.8.5 IP5 は us_07 だけ → IP7 で成否の数のある任務すべて。2 行目の出来事に替えられない。ui/objective-line・文は ui/objective-specs。数の無い任務は作らない） */
+  private objectiveLine?: ObjectiveLine;
   private hpBar?: HpBar;
   /** 画面端のマーカー 4 本（敵・帰投・敵機・岸。v0.6.4 で ui/hud-markers へ） */
   private markers?: HudMarkers;
@@ -93,6 +97,8 @@ export class HudScene extends Phaser.Scene {
       dataSummary: `data v${data.hitRateModel.version} ・ x${data.hitRateModel.world.time_scale} ・ ${fuelGal} gal ・ ${dawnS} s${Number.isFinite(DEBUG_SHIP_HIT_SCALE) ? ` ・ 当たり x${DEBUG_SHIP_HIT_SCALE}` : ''}`,
     });
     this.boatHud = new BoatHud(this, this.telemetry.landing.enabled); // 揚陸の任務（v0.6.9）は右上に揚陸の時計
+    const objective = objectiveSpecOf(this.telemetry, mission.convoy?.arrive_quota ?? 0); // 成否の数のある任務だけ（v0.8.5 IP7。沈めて帰る・生きて帰る任務は null）
+    if (objective) this.objectiveLine = new ObjectiveLine(this, objective);
     // 史実モードの印（v0.5.2 実機 1・2 回目）: 左上の FPS の右に黄色で［史実］とだけ。固定文字列なので 1 回だけ描く（§7）
     if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud);
     this.hpBar = new HpBar(this);
@@ -125,6 +131,8 @@ export class HudScene extends Phaser.Scene {
       this.engineHud?.destroy();
       this.engineHud = undefined;
       this.boatHud?.destroy();
+      this.objectiveLine?.destroy();
+      this.objectiveLine = undefined;
       this.hpBar?.destroy();
       this.debugHud?.destroy();
       this.stick = undefined;
@@ -149,6 +157,7 @@ export class HudScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     this.keyboard?.update();
     this.boatHud?.refresh(this.telemetry, this.time.now);
+    this.objectiveLine?.refresh(this.telemetry);
     this.hpBar?.refresh(this.telemetry, this.time.now);
     this.fuelGauge?.refresh(this.telemetry);
     this.engineHud?.refresh(this.telemetry, this.time.now);

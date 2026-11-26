@@ -2,6 +2,8 @@
 // 着弾の水柱は世界の SplashPool（駆逐艦の砲と同じ大きさ）。被害は世界の hitBoat（終了理由 shore_battery）。§7: 砲弾 6 枚と閃光 1 枚を起動時に作り、毎フレームは transform/alpha/visible だけ。
 // v0.7.0 IP1b（U4「沿岸砲もリメイク」）: 平らな赤い四角と線の砲身をやめ、真上から見た砲台の絵（assets/battery-art: 擬装・土嚢・床・敵の赤の輪と印）と回る砲の絵に。砲は気づいて射界の中なら艇へ向き、
 //   ふだんは海へゆっくり首を振る（assets/battery-shape。論理の状態は読むだけ）。撃つと砲身が反動で下がり、閃光は砲口に、火花と硝煙（SplashPool の muzzle）。射界の半円・ラベルはそのまま。
+// v0.8.5 IP5（実機 2 回目「沿岸砲もきちんと描画してください」）: 任意の artScale（絵・砲・砲身の長さ・反動・閃光の大きさの倍率。us_07 の 210 mm＝systems/shore-guns。省けば 1＝今のまま）と
+//   fireCount（撃った数＝自艇へも生存者の海へも。HUD の端の印の「撃った」の合図。見た目だけ＝論理は読まない）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS } from '../config/game-config';
 import { gunOriginY, ensureShoreBatteryTextures } from '../assets/battery-art';
@@ -28,6 +30,7 @@ import type { HitSpec } from '../core/gunnery';
 import type { SeededRng } from '../core/rng';
 import { createShoreBattery, stepShoreBattery, type ShoreBatteryCheck, type ShoreBatteryEvents, type ShoreBatteryParams, type ShoreBatteryState } from '../core/shore-battery';
 import type { SmokeParams, SmokeState } from '../core/smoke';
+import { SURVIVOR_SHELL_GUN } from '../core/survivor-shelling';
 import { radToDeg } from '../core/units';
 import type { SplashPool } from './splash-pool';
 
@@ -45,19 +48,26 @@ export class ShoreBattery {
   private gunDeg = 0;
   private recoilAge = Infinity;
   private t = 0;
+  /** 生存者の海へ最後に撃った点（v0.8.5 IP2。us_07 だけ書く。NaN は無し）: 自艇を追っていない間は砲をここへ向ける（見た目だけ） */
+  private seaX = NaN;
+  private seaY = NaN;
+  /** 撃った数（v0.8.5 IP5。onFire ごと。見た目の合図だけ） */
+  fireCount = 0;
   private readonly events: ShoreBatteryEvents = {
     onFire: (x, y) => {
       const r = (this.gunDeg * Math.PI) / 180;
-      const mx = x + Math.sin(r) * BATTERY_GUN_LEN_M;
-      const my = y - Math.cos(r) * BATTERY_GUN_LEN_M;
+      const mx = x + Math.sin(r) * BATTERY_GUN_LEN_M * this.artScale;
+      const my = y - Math.cos(r) * BATTERY_GUN_LEN_M * this.artScale;
+      this.fireCount++;
       this.flash.setPosition(mx, my).setAlpha(1).setVisible(true);
       this.flashAge = 0;
       this.recoilAge = 0;
       this.splashes.muzzle(mx, my, true); // 砲口の火花と硝煙（見た目だけ）
     },
-    onImpact: (x, y, hit) => {
+    onImpact: (x, y, hit, gunIndex) => {
       if (hit) this.onBoatHit(this.p.hit, this.rng, x, y);
       else this.splashes.splash(x, y, false);
+      this.onLand?.(x, y, gunIndex === SURVIVOR_SHELL_GUN); // 着弾の点（v0.8.5 S2。us_07 の systems/shore-guns だけ＝生存者の群を奪う。IP2 から生存者の海へ撃った弾か。us_03 の大発の狩りは null）
     },
   };
 
@@ -71,6 +81,10 @@ export class ShoreBattery {
     private readonly splashes: SplashPool,
     /** 砲弾が艇に当たった（世界が boat-damage で適用。終了理由は shore_battery） */
     private readonly onBoatHit: (spec: HitSpec, rng: SeededRng, x: number, y: number) => void,
+    /** 着弾ごと（艇への命中も。v0.8.5 S2。乱数なし。aimed は生存者の海へ撃った弾＝v0.8.5 IP2）。無ければ何もしない */
+    private readonly onLand: ((x: number, y: number, aimed: boolean) => void) | null = null,
+    /** 絵の倍率（v0.8.5 IP5。us_07 の 210 mm。省けば 1） */
+    private readonly artScale: number = 1,
   ) {
     this.state = createShoreBattery(BATTERY_SHELL_POOL_SIZE);
     this.check = { boat, boatHalfLengthM, boatHalfBeamM, boatAfloat: true, detectOpenM: 0, smokeFactor: 1, smoke: null, smokeParams: null, bargesAlerted: false, flashM: 0 };
@@ -85,14 +99,14 @@ export class ShoreBattery {
     g.arc(p.x, p.y, r, Math.PI, 2 * Math.PI, false);
     g.strokePath();
     // 砲台（IP1b: 描いた砲台と回る砲。v0.6.11 までは赤い四角＋明るい縁＋線の砲身）。下にラベル（実機 1 回目「見えづらい」。位置は BATTERY_SIZE_M のまま）
-    const half = BATTERY_SIZE_M / 2;
+    const half = (BATTERY_SIZE_M / 2) * artScale;
     const perPx = ensureShoreBatteryTextures(scene);
-    this.base = scene.add.image(p.x, p.y, TEXTURE_KEYS.shoreBattery).setDisplaySize(BATTERY_ART_SIZE_M, BATTERY_ART_SIZE_M).setDepth(DEPTH.destroyer);
-    this.gun = scene.add.image(p.x, p.y, TEXTURE_KEYS.shoreGun).setOrigin(0.5, gunOriginY).setScale(perPx).setDepth(DEPTH.destroyer + ADD_DEPTH_STEP);
+    this.base = scene.add.image(p.x, p.y, TEXTURE_KEYS.shoreBattery).setDisplaySize(BATTERY_ART_SIZE_M * artScale, BATTERY_ART_SIZE_M * artScale).setDepth(DEPTH.destroyer);
+    this.gun = scene.add.image(p.x, p.y, TEXTURE_KEYS.shoreGun).setOrigin(0.5, gunOriginY).setScale(perPx * artScale).setDepth(DEPTH.destroyer + ADD_DEPTH_STEP);
     this.graphics = g;
     this.label = scene.add.text(p.x, p.y + half + BATTERY_LABEL_GAP_M, BATTERY_LABEL, hudTextStyle(BATTERY_LABEL_FONT_PX, BATTERY_LABEL_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.destroyer);
     for (let i = 0; i < BATTERY_SHELL_POOL_SIZE; i++) this.shellSprites.push(scene.add.image(0, 0, TEXTURE_KEYS.shell).setTint(BATTERY_SHELL_TINT).setScale(1 / RENDER_SCALE).setDepth(DEPTH.shell).setVisible(false));
-    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BATTERY_SHELL_TINT).setScale(BATTERY_ART_FLASH_RADIUS_M / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false); // IP1b: 24 → 62 m・0.12 → 0.24 秒
+    this.flash = scene.add.image(0, 0, TEXTURE_KEYS.muzzleFlash).setTint(BATTERY_SHELL_TINT).setScale((BATTERY_ART_FLASH_RADIUS_M * artScale) / EXPLOSION_RING_RADIUS_UNITS / RENDER_SCALE).setDepth(DEPTH.effects).setVisible(false); // IP1b: 24 → 62 m・0.12 → 0.24 秒
   }
 
   /** 固定ステップ（大発の後。大発の気づきと艇の射撃の閃光を読む） */
@@ -106,6 +120,13 @@ export class ShoreBattery {
     c.bargesAlerted = bargesAlerted;
     c.flashM = flashM;
     stepShoreBattery(this.state, this.p, c, this.rng, feelDt, dt, this.events);
+  }
+
+  /** 生存者の海へ 1 発（v0.8.5 IP2。systems/shore-guns が core/survivor-shelling の撃った時に呼ぶ。弾は core が砲弾のプールへ撃った）: 閃光・反動・火花と砲の向き（見た目だけ・乱数なし） */
+  fireAtSea(x: number, y: number): void {
+    this.seaX = x;
+    this.seaY = y;
+    this.events.onFire(this.p.x, this.p.y);
   }
 
   updateVisuals(realDt: number): void {
@@ -134,13 +155,15 @@ export class ShoreBattery {
   private aimGun(realDt: number): void {
     this.t += realDt;
     const b = this.check.boat;
-    const target = batteryAimDeg(this.state.alerted && this.state.inArc, b.x - this.p.x, b.y - this.p.y, this.t);
+    const track = this.state.alerted && this.state.inArc;
+    const sea = !track && !Number.isNaN(this.seaX); // 生存者の海を撃っている（v0.8.5 IP2。us_07 だけ。ほかの任務は NaN のまま＝今の向き）
+    const target = sea ? batteryAimDeg(true, this.seaX - this.p.x, this.seaY - this.p.y, this.t) : batteryAimDeg(track, b.x - this.p.x, b.y - this.p.y, this.t);
     this.gunDeg = turnToward(this.gunDeg, target, BATTERY_TURN_DPS * realDt);
     let back = 0;
     if (this.recoilAge !== Infinity) {
       this.recoilAge += realDt;
       if (this.recoilAge >= BATTERY_RECOIL_S) this.recoilAge = Infinity;
-      else back = BATTERY_RECOIL_M * (1 - this.recoilAge / BATTERY_RECOIL_S) ** 2;
+      else back = BATTERY_RECOIL_M * this.artScale * (1 - this.recoilAge / BATTERY_RECOIL_S) ** 2;
     }
     const r = (this.gunDeg * Math.PI) / 180;
     this.gun.setPosition(this.p.x - Math.sin(r) * back, this.p.y + Math.cos(r) * back).setAngle(this.gunDeg);

@@ -295,16 +295,21 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
       expect(String((byId(gameData, id)['dawn_air'] as Rec)['source']), id).toContain('抜粋のみ・本文未読');
     }
   });
-  it('遊べる任務（us_01・us_02・us_03・us_04・us_05・us_06・jp_01・jp_02・jp_03・jp_04・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
-    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.8.2 S4: us_05（昼の空は味方＝own のまま・lead の L1。夜明けの後も空襲なし）。v0.8.1 S4: us_06（争奪の空を敵として遊ぶ＝lead の既定 L1。夜明けの後は日本機 4 機）。v0.6.4: jp_01（ヘンダーソン基地の制空下。空襲あり）。v0.6.7: jp_02（米の飛行艇。夜明けは 4 機）。v0.6.9: jp_04（タクロバンの米機の制空下。空襲あり）。v0.6.11 S6: jp_03（第38任務部隊の制空下。240 秒の後は 4 機）。v0.8.0 S5: us_04（争奪の空を敵として遊ぶ＝ユーザーの決め U1。夜明けの後は水上機 4 機）
-    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', us_04: 'enemy', us_05: 'own', us_06: 'enemy', jp_01: 'enemy', jp_02: 'enemy', jp_03: 'enemy', jp_04: 'enemy', jp_05: 'own', jp_06: 'enemy' };
+  it('遊べる任務（us_01・us_02・us_03・us_04・us_05・us_06・us_07・jp_01・jp_02・jp_03・jp_04・jp_05・jp_06）: play_as は enemy か own（争奪の遊び方はまだ無い）。世界の組み立てに dawnAir が入り、夜明けの符号が決まる', () => {
+    expect(PLAYABLE_IDS).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06']); // v0.8.5 S5: us_07（昼の空は味方＝own のまま。救助の時間の後も空襲なし）。v0.8.2 S4: us_05（昼の空は味方＝own のまま・lead の L1。夜明けの後も空襲なし）。v0.8.1 S4: us_06（争奪の空を敵として遊ぶ＝lead の既定 L1。夜明けの後は日本機 4 機）。v0.6.4: jp_01（ヘンダーソン基地の制空下。空襲あり）。v0.6.7: jp_02（米の飛行艇。夜明けは 4 機）。v0.6.9: jp_04（タクロバンの米機の制空下。空襲あり）。v0.6.11 S6: jp_03（第38任務部隊の制空下。240 秒の後は 4 機）。v0.8.0 S5: us_04（争奪の空を敵として遊ぶ＝ユーザーの決め U1。夜明けの後は水上機 4 機）
+    const want: Record<string, string> = { us_01: 'enemy', us_02: 'own', us_03: 'enemy', us_04: 'enemy', us_05: 'own', us_06: 'enemy', us_07: 'own', jp_01: 'enemy', jp_02: 'enemy', jp_03: 'enemy', jp_04: 'enemy', jp_05: 'own', jp_06: 'enemy' };
     for (const id of PLAYABLE_IDS) {
       expect(() => checkPlayableDawn(gameData, id)).not.toThrow();
       const s = buildWorldSetup(gameData, id);
       expect(s.dawnAir.playAs, id).toBe(want[id]);
       expect(new WorldDawn({ cameras: { main: {} } } as never, s, null).air, id).toBe(want[id] === 'enemy' ? DAWN_AIR_ENEMY : DAWN_AIR_OWN);
     }
-    expect(() => checkPlayableDawn(gameData, 'us_07')).toThrow(/遊べる任務でない/); // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ。v0.8.2 S0: us_05 も v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_07 へ
+    // v0.8.1 S0: us_06 は v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_05 へ。v0.8.2 S0: us_05 も v0_1_prototype を持つ（遊べるのは S4 から）ので例を us_07 へ。
+    // v0.8.5 S0: us_07 も v0_1_prototype を持つ（遊べるのは S5 から）＝遊べない任務が無くなるので、data を写して us_07 の v0_1_prototype を消した fixture で同じことを確かめる
+    const noProto = clone();
+    delete ((noProto.missionsSeed.missions as unknown as Rec[]).find((m) => m['id'] === 'us_07')!)['v0_1_prototype'];
+    expect(() => checkPlayableDawn(noProto, 'us_07')).toThrow(/遊べる任務でない/);
+    expect(() => checkPlayableDawn(gameData, 'us_07')).not.toThrow(); // 昼の空は味方（own）・空襲なし・S ボートは去る（none）
     expect(() => checkPlayableDawn(gameData, 'us_05')).not.toThrow(); // v0.8.2 S0: 列だけの隊（enemy_start なし・transit.column）も退く駆逐艦の隊（夜明けの空は own のまま＝lead の L1）
     expect(() => checkPlayableDawn(gameData, 'us_06')).not.toThrow();
     expect(() => getDawnAir(gameData, 'nope')).toThrow(/nope/);
@@ -410,7 +415,8 @@ describe('dawn_air の data（v0.6.1。13 任務すべて。spec §2・§6.1）'
     // v0.6.9 の jp_04 は jp_01 と同じ T-38・19 gal で 1,453。v0.6.11 S6 の jp_03 は T-38・16 gal で 1,224 ＋ 空襲の間の 240 ＝ 1,464（V-E10 の 240 ＋ 1,224 ＋ 1.5 < 1,500）。
     // v0.8.0 S5 の us_04 は Elco 80・33 gal で 1,188（アイドル 200 × 0.1 = 20 gal/h: 33 / 20 × 720。夜明けの 260 秒より後）。v0.8.1 S4 の us_06 は Elco 80・40 gal で 1,440（40 / 20 × 720。spec-v0810 §3.1 D-M5 の上限 41.6 gal の内）。
     // v0.8.2 S4 の us_05 は Elco 80・24 gal で 864（24 / 20 × 720。S3 の燃料のつまみ 34 → 24 gal）。IP3（実機 3 回目のユーザー「燃料は24galから34galに増やしてください」）で 34 gal＝1,224（夜明けの 270 秒より後・spec-v0820 §4.1 D-M6 の上限 41.6 gal の内）
-    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1224, 1440, 1453, 1440, 1464, 1453, 1440, 1224]);
+    // v0.8.5 S5 の us_07 は Higgins（アイドルは Elco 80 と同じ値＝20 gal/h）・41 gal で 1,476（41 / 20 × 720。救助の時間 300 秒より後）。IP1（水路が北を回る遠回り）で 56 gal・Higgins のアイドル 0.14（28 gal/h。jp_05 と同じ形）＝1,440（56 / 28 × 720）。IP3（救助の時間 390 秒・40 名の後も拾い続ける）で 70 gal・アイドル 0.18（36 gal/h）＝1,400（70 / 36 × 720）
+    expect(Object.values(idleS).map((x) => Math.round(x))).toEqual([1344, 1368, 1296, 1188, 1224, 1440, 1400, 1453, 1440, 1464, 1453, 1440, 1224]);
   });
   it('人物名を出さない（CLAUDE.md §11）: dawn_air の label_ja・refs の claim・source、dawn_strike・空襲と夜の哨戒の機体・dawn_air_strike と patrol_air の文', () => {
     const texts: string[] = [];

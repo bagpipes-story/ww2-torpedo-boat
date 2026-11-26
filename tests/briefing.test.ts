@@ -29,7 +29,7 @@ const nameOf = (id: string): string => enemyNameJa(gameData, id);
 const labelOf = (id: string): string => riskLabelJa(gameData, id);
 
 describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
-  it('任務一覧: 米PTキャンペーンの 6 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）、v0.8.1 S4 で us_06 も、v0.8.2 S4 で us_05 も（3 段目の左・us_06 は右）。sub は日付 ・ 場所', () => {
+  it('任務一覧: 米PTキャンペーンの 7 件を order 順に。v0.4.4 から 3 件とも出撃でき、v0.8.0 S5 で us_04 も（Title の格子の右下）、v0.8.1 S4 で us_06 も、v0.8.2 S4 で us_05 も（3 段目の左・us_06 は右）、v0.8.5 S5 で us_07 も（order 5＝年代順で us_04 の後・us_05 の前）。sub は日付 ・ 場所', () => {
     const menu = getMenuEntries(gameData);
     expect(menu.campaignName).toBe('米PTキャンペーン');
     expect(menu.entries).toEqual([
@@ -37,12 +37,13 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
       { id: 'us_02', title: '東京急行を迎え撃て', sub: '1942年12月11日 ・ ガダルカナル島沖（アイアンボトム・サウンド）', playable: true, status: '出撃準備 →' },
       { id: 'us_03', title: '大発を狩れ', sub: '1943年7月15日 ・ ニューギニア北岸（フォン半島）', playable: true, status: '出撃準備 →' },
       { id: 'us_04', title: 'ブラケット海峡の夜', sub: '1943年8月1日 ・ ブラケット海峡（コロンバンガラ島沖）', playable: true, status: '出撃準備 →' },
+      { id: 'us_07', title: 'D-Day・生存者救助', sub: '1944年6月6日 ・ ノルマンディー沖（ユタ・ビーチ）', playable: true, status: '出撃準備 →' },
       { id: 'us_05', title: 'スリガオ海峡・最初の接触', sub: '1944年10月24日 ・ ミンダナオ海（ボホール島沖）', playable: true, status: '出撃準備 →' },
       { id: 'us_06', title: 'オルモック湾の決着', sub: '1944年12月11日 ・ パロンポン沖（レイテ島西岸）', playable: true, status: '出撃準備 →' },
     ]);
   });
   it('任務一覧の検査: 他のキャンペーンと playable_from の無い任務は出ない。書式違い・日付違い・order の重複・出撃できる任務が無いのは例外', () => {
-    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）。v0.8.1 S4: us_06 にも（v0.8.1）。v0.8.2 S4: us_05 にも（v0.8.2）
+    const US_IDS = ['us_01', 'us_02', 'us_03', 'us_04', 'us_07', 'us_05', 'us_06']; // v0.8.0 S5: us_04 に playable_from（v0.8.0）。v0.8.1 S4: us_06 にも（v0.8.1）。v0.8.2 S4: us_05 にも（v0.8.2）。v0.8.5 S5: us_07 にも（v0.8.5。order 5）
     expect(getMenuEntries(gameData).entries.map((e) => e.id)).toEqual(US_IDS);
     const otherCampaign = clone();
     byId(otherCampaign, 'jp_01')['playable_from'] = 'v0.5.0';
@@ -91,6 +92,8 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     delete byId(nonePlayable, 'us_06')['v0_1_prototype'];
     expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.2 S4: us_05 が残る
     delete byId(nonePlayable, 'us_05')['v0_1_prototype'];
+    expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).not.toThrow(); // v0.8.5 S5: us_07 が残る
+    delete byId(nonePlayable, 'us_07')['v0_1_prototype'];
     expect(() => menuEntries(nonePlayable.missionsSeed.missions, 'us_pt')).toThrow(/出撃できる任務/);
   });
   it('日付: 1942-12-11 → 1942年12月11日、1942-03-11 → 1942年3月11日、1942/12/11 は例外', () => {
@@ -209,7 +212,7 @@ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト�
   const OTHER_SHA = '5cade61bd6deec74c0913f517bc82db372ba700a11299be3c822d0c85929f0e5';
   it('ほかの 11 任務（us_05 のほか。ノーマル・ハード × 史実モード × seed 4 つ）の日付・場所・題・6 行・史実は main 0176202 と同じ（sha256）', () => {
     expect(OTHER_BRIEFING_IDS.length).toBe(11);
-    expect([...OTHER_BRIEFING_IDS].sort()).toEqual([...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'us_05').sort());
+    expect([...OTHER_BRIEFING_IDS].sort()).toEqual([...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'us_05' && id !== 'us_07').sort()); // v0.8.5 S5: us_07 は新しい任務（文は tests/rescue-result）
     const j = otherBriefingsJson();
     expect(j.length).toBe(105341);
     expect(createHash('sha256').update(j).digest('hex')).toBe(OTHER_SHA);

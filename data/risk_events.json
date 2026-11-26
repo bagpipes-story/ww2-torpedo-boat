@@ -130,7 +130,15 @@
       "trigger": "機雷原帯に進入",
       "counterplay": "航路選択",
       "penalty": "大ダメージ",
-      "version": "v0.4"
+      "version": "v0.4",
+      "params": {
+        "damage": 60,
+        "fire_chance": 0.5,
+        "engine_damage_chance": 0.5,
+        "sight_m": 150,
+        "contact_m": 6,
+        "source": "design (v0.8.5 S0・spec-v0850 §4.2。us_07 の機雷原（missions_seed の v0_1_prototype.minefield）の 1 個の値。触れれば必ず爆発する（確率なし）: 浮いている自艇の船体（core/shells の pointNearBoat。半幅 + contact_m 6 m）の内。被害は今の被弾の作法（HitSpec）で damage 60・火災 0.5・機関損傷 0.5＝Higgins の HP 100 は 1 個では沈まず 2 個で沈む。昼なので艇から sight_m 150 m の内に入った機雷は見えて、以後見えたまま（全速 39 kt＝約 20 m/秒では 150 m は game の 7.5 秒＝体感 1.5 秒＝全速では避けきれない）。S ボート・砲弾・魚雷は触れない。史実: コリーの喪失の公式報告は機関区の下の触雷（NavSource は砲台の 21 cm 弾とする＝食い違い。medium。WebSearch の抜粋のみ・本文未読）。数は S3 の測りで直す)"
+      }
     },
     {
       "id": "collision_accident",

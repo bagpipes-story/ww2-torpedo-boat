@@ -29,7 +29,10 @@
 //   結果の行に両方の側で除いた数（ctrl A n B m。A＝基準 b7e9f44 は 0、B＝今の木は写すたびに 4）。CTRLUI=0 で除かない（違いが出るはず）。
 // v0.8.4（煙幕への乱射。史実モードだけ）: SET=hist で史実モード（両方の側に &historical）の us_01・us_02・us_06 × seed 1・2 を 200 秒（&nostrike。台本は煙幕を張らない）＝乱射の系列を作っても
 //   煙を使わない夜は基準と 1 ビットも同じ証。SET=histsmoke は同じ us_02 seed 1・2 で、最寄りの艦へ背を向けずに寄り、700 m の内に入ったら止まって煙幕を張り続ける台本（寄ってくる艦が 500 m の内に入る）（o.smoke）＝違いが出るはずの組（最初の違いを出す）。SET=smokeoff は同じ煙幕の台本を史実モードのオフで＝同じはずの組。
-// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|hist|histsmoke|smokeoff] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.8.5 S2（spec-v0850 §5 の門 4）: SET=us07 で us_07（D-Day・生存者救助。救助・機雷原・210 mm の砲台・S ボート）のノーマル・ハード × seed 1・2 を 320 秒（救助の時間 300 秒の後まで。all には入れない。
+//   S2 は A＝B＝今の木で決定性とページのエラー・S2 の後は A を S2 の commit のビルドに）。写しに救助（s.rs: 乗せている・渡した・砲撃で失った・他艦が拾った・群の残り）・機雷（見えた・爆発）・
+//   フィッチの砲火（退いた数）・沿岸砲（撃った・命中）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
+// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|us07|hist|histsmoke|smokeoff] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { anchorPair } from './anchor-filter.mjs';
@@ -90,6 +93,9 @@ export function abRun(o) {
     if (w.recon) s.rc = [w.recon.state.stage, w.recon.state.radioBroken, r6(w.recon.state.trackedS), w.recon.state.draws];
     if (w.destroyers && w.destroyers.roles) s.sc = Array.from(w.destroyers.roles.st.away);
     if (w.destroyers && w.destroyers.magazine) s.mg = [w.destroyers.magazine.detonations, w.destroyers.magazine.draws];
+    // 救助・機雷・フィッチの砲火・大発の無い任務の沿岸砲（v0.8.5 S2。us_07）。無い任務は鍵ごと無い
+    if (w.rescue) { const st = w.rescue.state; s.rs = [st.aboard, st.delivered, st.lostShell, st.byOthers, Array.from(st.left), w.rescue.mines ? [w.rescue.mines.seen, w.rescue.mines.blown] : 0, w.rescue.cover ? w.rescue.cover.count : 0]; }
+    if (w.shoreGuns) s.sg = [w.shoreGuns.shoreShots, w.shoreGuns.shoreHits];
     s.hud = o.s4 ? window.__s4Hud(hl.objects('Hud'), o.s4, frames.length).filter((x) => x.type === 'Text').map((x) => x.text) : hl.texts('Hud');
     if (o.cam) {
       // カメラ（v0.6.11 S8b の CAM=1: jp_03 だけ隠れ場所の中で見越しを 0 にした＝ほかの任務のカメラが同じかを見る）
@@ -173,6 +179,8 @@ export function abCases(set, input) {
     us06: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_06', hard, seed, secs: envNum('SECS', 200), set: 'us06' }))),
     // us_05 のスリガオ海峡・最初の接触（v0.8.2 S2。片道の列・見張り・報告・弾薬庫）: 夜明けの 270 秒まで。S2 は A＝B＝今の木（決定性）・S2b から A は S2 の commit のビルド
     us05: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_05', hard, seed, secs: envNum('SECS', 270), set: 'us05' }))),
+    // us_07 の D-Day・生存者救助（v0.8.5 S2）: 救助の時間 300 秒の後まで 320 秒。S2 は A＝B＝今の木（決定性）・S2 の後は A を S2 の commit のビルドに
+    us07: () => [false, true].flatMap((hard) => [1, 2].map((seed) => ({ ...base, mission: 'us_07', hard, seed, secs: envNum('SECS', 320), set: 'us07' }))),
     // 史実モード（v0.8.4）: 煙を使わない夜は基準と同じ（hist）・止まって煙幕を張る夜は違う（histsmoke）
     hist: () => ['us_01', 'us_02', 'us_06'].flatMap((mission) => [1, 2].map((seed) => ({ ...base, mission, hard: false, seed, nodawn: true, historical: true, secs: envNum('SECS', 200), set: 'hist' }))),
     histsmoke: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, historical: true, smoke: true, secs: envNum('SECS', 200), set: 'histsm' })),

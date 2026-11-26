@@ -10,6 +10,7 @@ import type { GunboatTelemetry } from './gunboat';
 import type { LandingTelemetry } from './landing';
 import type { PatrolTelemetry } from './patrol-air-state';
 import type { PtTelemetry } from './pt-boats';
+import type { PtNames, RescueTelemetry } from './rescue-telemetry';
 import type { SpeedStep } from './boat-motion';
 
 /** HUD に渡す自艇の状態。Mission が毎フレーム書き、HUD が読む（1 個だけ作る） */
@@ -162,6 +163,8 @@ export interface BoatTelemetry {
   anchor?: AnchorTelemetry; // 止まった艦と暗い岸を背に（v0.8.1 S2。us_06）: 気づいた・動き出した・背に岸の秒・止まった艦への魚雷（systems/anchor-telemetry。setup.anchors の無い任務は鍵ごと無い）
   recon?: ReconTelemetry; // 報告・無線・中継（v0.8.2 S2。us_05）: 段・追った秒・無線・中継の輪（systems/recon-telemetry。setup.recon の無い任務は鍵ごと無い）。文は S4
   magazine?: MagazineTelemetry; // 戦艦の弾薬庫（v0.8.2 S2。us_05）: 誘爆の秒と何本目・引いた回数と確率の和（systems/recon-telemetry。規則のある艦のいない任務は鍵ごと無い）
+  rescue?: RescueTelemetry; // 生存者の救助・機雷・フィッチの砲火（v0.8.5 S2。us_07。core/rescue-telemetry・systems/rescue-telemetry。setup.rescue の無い任務は鍵ごと無い）。文は S4
+  ptNames?: PtNames; // PT の隊の HUD の名（v0.8.5 S2。記録に name_short_ja のある隊＝us_07 の「Sボート」だけ。無ければ ui/pt-lines は「米PT」・「ガソリンに引火」）
 }
 
 /** 報告の HUD・Result の材料（v0.8.2 S2。読み手は S4 の ui/recon-lines・recon-result）。秒はみな固定ステップの時計（NaN は未だ） */

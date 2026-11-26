@@ -134,10 +134,11 @@ describe('2 行目（22 px で ≤ 840 px。spec §10.1）', () => {
       expect(s).not.toContain('夜明け');
     }
     expect(new Set(texts).size).toBeGreaterThan(60);
-    // 待機の行は陰（東）では「陰（東）」に縮む（840 px を超えるため。spec §18）、壕は名のまま
+    // 待機の行（v0.8.5 IP7 から「空襲が去るまで m:ss」は左上の時計と 4 行目の任務の行に任せて抜いた＝陰（東）も名のまま 840 px に収まる。IP5 までは「陰（東）」に縮んだ）
     const wait = (s: number, latch: number): string => evacLine(clone(e0, { phase: G_HIDDEN, shelter: s, latch, leftS: 65 })).text;
-    expect(wait(3, SW_WAIT_NEUTRAL)).toBe('第1隊 陰（東）で待機 ・ 空襲が去るまで 1:05 ・ 離してから倒すと出る');
-    expect(wait(0, SW_WAIT_INPUT)).toBe('第1隊 中の壕で待機 ・ 空襲が去るまで 1:05 ・ 倒すと出る');
+    expect(wait(3, SW_WAIT_NEUTRAL)).toBe('第1隊 屋我地の陰（東）で待機 ・ 離してから倒すと出る');
+    expect(wait(0, SW_WAIT_INPUT)).toBe('第1隊 中の壕で待機 ・ 倒すと出る');
+    expect(evacLineKey(clone(e0, { phase: G_HIDDEN, shelter: 0, latch: SW_WAIT_INPUT, leftS: 65 }))).toBe(evacLineKey(clone(e0, { phase: G_HIDDEN, shelter: 0, latch: SW_WAIT_INPUT, leftS: 12 }))); // 秒はキーにも無い
     expect(evacLine(clone(e0, { near: 3, nearFree: 3, nearEdgeM: 1407 })).text).toBe('第1隊を操作中 ・ 近い隠れ場所 屋我地の陰（東） 空き 3 ・ 1420 m');
     expect(evacLine(clone(e0, { event: EVE_SINK, eventSub: EVS_LEADER, eventGroup: 1, eventN: 14, eventTargeted: true })).text).toBe('第2隊の隊長艇 沈没 ・ 僚艇が隊長艇に（残存 14） ・ 編隊は第2隊を追う');
     expect(evacLine(clone(e0, { event: EVE_SINK, eventSub: EVS_SEAT, eventN: 14, eventTargeted: false })).text).toBe('隊長艇 沈没！ 僚艇に乗り移った（残存 14）');
@@ -178,14 +179,15 @@ describe('3 行目（20 px で ≤ 596 px＝W 1280 で左上の HP の箱に触�
           expect(jaWidthPx(s, 20), s).toBeLessThanOrEqual(EVAC_STATUS_MAX_PX);
           expect(s).not.toContain('夜明け');
         }
-    expect(max).toBeGreaterThan(500);
+    expect(max).toBeGreaterThan(300); // v0.8.5 IP7 で残存・隠れた艇を 4 行目の任務の行へ移した（いちばん長い形 約 337 px。IP5 までは 500 px 超）
     const e = clone(e0, { control: 2, survivors: 18, hiddenBoats: 15, nextWaveS: 17.4 });
     e.hp.set([60, -1, 42.5]);
-    expect(evacStatusLine(e)).toBe('第3隊 HP 60・沈・43 ・ 残 18／18 ・ 隠 15 ・ 次 0:18');
-    expect(evacStatusLine(clone(e, { nextWaveS: NaN }))).toBe('第3隊 HP 60・沈・43 ・ 残 18／18 ・ 隠 15 ・ 波なし');
-    expect(evacStatusLine(clone(e, { settled: true }))).toBe('第3隊 HP 60・沈・43 ・ 残 18／18 ・ 隠 15 ・ 確定');
-    // キー: 次の波の秒が変われば変わり、文に出ない値（座席の位置）では変わらない
+    expect(evacStatusLine(e)).toBe('第3隊 HP 60・沈・43 ・ 次 0:18');
+    expect(evacStatusLine(clone(e, { nextWaveS: NaN }))).toBe('第3隊 HP 60・沈・43 ・ 波なし');
+    expect(evacStatusLine(clone(e, { settled: true }))).toBe('第3隊 HP 60・沈・43 ・ 確定');
+    // キー: 次の波の秒が変われば変わり、文に出ない値（座席の位置・IP7 から残存と隠れた艇）では変わらない
     const k = evacStatusKey(e);
+    expect(evacStatusKey(clone(e, { survivors: 12, hiddenBoats: 3 }))).toBe(k);
     expect(evacStatusKey(clone(e, { nextWaveS: 16.2 }))).not.toBe(k);
     expect(evacStatusKey(clone(e, { nextWaveS: 17.1 }))).toBe(k);
     expect(evacStatusKey(clone(e, { nearDx: 5 }))).toBe(k);
@@ -325,7 +327,7 @@ describe('小さな世界の夜の HUD（台本 seq・seq_shoot・stay。キー�
     if (policy !== 'stay') {
       expect([...s.lines].some((x) => x.includes('レールで上げている'))).toBe(true);
       expect([...s.lines].some((x) => x.includes('を引き継いだ'))).toBe(true);
-      expect([...s.lines].some((x) => x.includes('で待機 ・ 空襲が去るまで'))).toBe(true);
+      expect([...s.lines].some((x) => /で待機 ・ (離してから)?倒すと出る/.test(x))).toBe(true); // v0.8.5 IP7: 秒は任務の行と左上の時計
     }
     if (policy === 'seq_shoot') expect(s.events.has(EVE_GUN * 10)).toBe(true);
   });

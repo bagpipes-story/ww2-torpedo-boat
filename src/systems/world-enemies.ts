@@ -5,6 +5,9 @@
 // v0.8.2 S2（us_05）: 弾薬庫（systems/ship-magazine。seed+44）は規則のある艦のいる隊だけ、報告（systems/world-recon。無線 seed+45・中継の輪の絵）は setup.recon の世界だけ作る。
 // recon の世界だけ艦の砲弾の命中の手を包んで無線の故障を引く（無い任務は世界の hitBoat そのもの＝今の手）。
 // v0.8.4: 煙幕への乱射（systems/smoke-barrage-fire。seed+46）は史実モードで煙幕のある艇と艦の隊のいる世界だけ、隊の全艦に付ける（無い世界は乱数の系列も作らない＝今のまま）。
+// v0.8.5 S2（us_07）: 大発が無く沿岸砲がある任務だけ、沿岸砲の持ち主 systems/shore-guns（seed+8〜。着弾は survivors＝救助の群。IP2 から生存者の海への砲撃 seed+48）を作る（us_03 の大発の狩りの沿岸砲は今のまま）。
+//   IP2: S ボートの第二波（rescue.sboat_wave2）は隊の後ろに確保（線と出発点の揺らぎ seed+49。core/sboat-wave）。
+//   PT の隊の絵の鍵と HUD の名は記録から（config/pt-look-data。data の無い tests は米PT の既定）。
 import type Phaser from 'phaser';
 import { boatTextureKey } from '../config/game-config';
 import type { GameData } from '../config/game-data';
@@ -30,6 +33,9 @@ import { EnemySide } from './enemy-side';
 import { EscortBoat } from './escort-boat';
 import { Gunboat, type GunboatGunKit } from './gunboat';
 import { PtSquadron } from './pt-squadron';
+import { createSboatWave, SBOAT_WAVE_SEED_OFFSET, sboatWaveParams } from '../core/sboat-wave';
+import { ShoreGuns, type ShoreGunsSurvivors } from './shore-guns';
+import { PT_LOOK_DEFAULT, ptLookOf } from '../config/pt-look-data';
 import type { PtTargetConvoy } from './pt-target';
 import type { SplashPool } from './splash-pool';
 import type { WorldEvents } from './world-events';
@@ -49,6 +55,8 @@ export interface Enemies {
   enemy: EnemySide;
   /** 報告・無線・中継（v0.8.2 S2。setup.recon の世界＝us_05 だけ）。無い任務は null */
   recon: WorldRecon | null;
+  /** 大発の無い任務の沿岸砲（v0.8.5 S2。us_07）。大発の任務（沿岸砲は大発の狩りの中）・沿岸砲の無い任務は null */
+  shoreGuns: ShoreGuns | null;
 }
 
 export function buildEnemies(
@@ -66,6 +74,8 @@ export function buildEnemies(
   convoy: PtTargetConvoy | null = null,
   /** data（v0.8.4。煙幕への乱射の値 historical_mode.smoke_barrage を読む＝世界を作るたびに検査。省けば乱射なし） */
   data: GameData | null = null,
+  /** 生存者の海（v0.8.5 S2。us_07 の救助の群＝沿岸砲の着弾が奪う。IP2 から砲台が生存者の海を撃つ。無い任務は null） */
+  survivors: ShoreGunsSurvivors | null = null,
 ): Enemies {
   const mission = s.mission;
   const ds = s.destroyer;
@@ -103,10 +113,14 @@ export function buildEnemies(
   // 米PT の隊（v0.6.3）: 掃射の被害は砲弾と同じ経路（終了理由 pt_fire）。seed+18 の系列は米PT の任務でだけ作る（ほかの任務の生成と乱数は変えない）。
   // 艇の砲（実機 1 回目から jp_05 の T-14 の 13mm。seed+20 は PtSquadron が砲のあるときだけ作る）で沈めた PT は大発の撃破と同じ onSunk
   // 隼艇（v0.6.6。輸送隊と米PT の隊のある任務の WorldSetup.gunboat だけ）: 隊が隊の後・標的スロットの前に作る（乱数は 25mm の seed+22 だけ。動きと被弾は引かない）
-  const pt = s.ptBoats;
+  // S ボートの第二波（v0.8.5 IP2。us_07 の rescue.sboat_wave2 だけ）: 隊の後ろに足して確保し（線と出発点は seed+49 の揺らぎ）、出るまでは海域の外（core/sboat-wave。無い任務は今の隊のまま）
+  const wave2 = s.rescue?.wave2 ?? null;
+  const pt = s.ptBoats && wave2 ? sboatWaveParams(s.ptBoats, wave2, new SeededRng((seed + SBOAT_WAVE_SEED_OFFSET) >>> 0)) : s.ptBoats;
   const gb = s.gunboat;
   const makeGunboat = gb && pt && convoy ? (q: PtSection, kit: GunboatGunKit): Gunboat => new Gunboat(scene, gb, { player: boat, convoy: convoy.state, convoyParams: convoy.p, pts: q, ring: mission.returnPoint, bounds: mission.bounds, visRange2: s.visRange2 }, s.vis, pt.baseDetectM, onSunk, kit) : null;
-  const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat) : null;
+  const pts = pt ? new PtSquadron(scene, pt, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, hitBoat, s.guns, mission.enemyId, onSunk, convoy, makeGunboat, data ? ptLookOf(data, mission.enemyId) : PT_LOOK_DEFAULT) : null;
+  if (pts && wave2 && s.ptBoats) pts.wave = createSboatWave(pts.section, s.ptBoats.count);
   const enemy = new EnemySide(destroyers, hunt, pts);
-  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon };
+  const shoreGuns = !s.barges && s.shoreBatteries.length > 0 ? new ShoreGuns(scene, s.shoreBatteries, seed, boat, s.boatHalfLengthM, s.boatHalfBeamM, splashes, hitBoat, survivors, mission.coast ? { width: mission.bounds.width, coastY: mission.bounds.height, landM: mission.coast.landM } : null) : null; // 岸（v0.8.5 IP5。砲台の後ろへ陸の塗りを伸ばす＝絵だけ）
+  return { gunRng, destroyers, escort, escortHit, hunt, pts, gunboat: pts ? pts.gunboat : null, enemy, recon, shoreGuns };
 }

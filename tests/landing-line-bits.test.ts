@@ -33,7 +33,7 @@ const KV: KVariant[] = [
   { name: '36 遠い', mode: MISSION_LANDING_THREAT, pt: QUIET, base: { reportSub: 1, reportDirIdx: 1, reportStep: 18 }, probes: [{ field: 'sub', o: { reportSub: 2 } }, { field: 'dir', o: { reportDirIdx: 6 } }, { field: 'step', o: { reportStep: 9 } }] },
   { name: '36 近い', mode: MISSION_LANDING_THREAT, pt: QUIET, base: { reportSub: 2, reportDirIdx: 0, reportStep: 13 }, probes: [{ field: 'dir', o: { reportDirIdx: 7 } }, { field: 'step', o: { reportStep: 63 } }] },
   { name: '36 雷跡', mode: MISSION_LANDING_THREAT, pt: QUIET, base: { wakes: 3, wakeCpaS: 11.2 }, probes: [{ field: 'step', o: { wakeCpaS: 2.5 } }, { field: 'step', o: { wakeCpaS: 80 } }, { field: 'pct', o: { wakes: 6 } }, { field: 'pct', o: { wakes: 200 } }] },
-  { name: '平常', mode: MISSION_PT, pt: QUIET, base: { pct: 0.5, armed: 2 }, probes: [{ field: 'pct', o: { pct: 0.71 } }, { field: 'pct', o: { pct: 1 } }, { field: 'armed', o: { armed: 1 } }, { field: 'armed', o: { armed: 9 } }] },
+  { name: '平常', mode: MISSION_PT, pt: QUIET, base: { pct: 0.5, armed: 2 }, probes: [{ field: 'armed', o: { armed: 1 } }, { field: 'armed', o: { armed: 9 } }] }, // % は v0.8.5 IP7 から任務の行（平常のキーに無い）
   { name: 'みな去った後の待ち', mode: MISSION_PT, pt: GONE, base: { leftS: 61.2 }, probes: [{ field: 'left', o: { leftS: 30 } }, { field: 'left', o: { leftS: 999 } }] },
   { name: '呼びかけの待ち', mode: MISSION_CALL, pt: QUIET, base: { leftS: 61.2 }, probes: [{ field: 'left', o: { leftS: 139.1 } }, { field: 'left', o: { leftS: 0.1 } }] },
   { name: '37 射線', mode: MISSION_LANDING_FIRE_LINE, pt: QUIET, base: { fireLineI: 0, fireLineDirIdx: 2, fireLineStep: 8 }, probes: [{ field: 'dir', o: { fireLineDirIdx: 7 } }, { field: 'step', o: { fireLineStep: 3 } }, { field: 'step', o: { fireLineStep: 999 } }] },

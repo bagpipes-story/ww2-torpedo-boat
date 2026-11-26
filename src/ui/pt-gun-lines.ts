@@ -9,7 +9,7 @@
 // v0.6.10 S6（卯月。jp_04）: 卯月の砲が起こした出来事は頭を「卯月 撃退！ 米PT 1 隻が離脱」など（キーの bit 16＝ui/ally-lines の K_ALLY_EVENT。隼艇と同じ頭の形・足した連射は「自艇」）。
 import { GUN_BUTTON_LABEL } from '../config/hunt-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_STRONG, HUD_COLOR_WARN } from '../config/hud-text-config';
-import { PT_DISTANCE_STEP_M, PT_RESULT_SHOW_MS } from '../config/pt-config';
+import { PT_DISTANCE_STEP_M, PT_MARKER_LABEL, PT_NAME_DEFAULT_JA, PT_RESULT_SHOW_MS, PT_SUNK_DEFAULT_JA } from '../config/pt-config';
 import type { BoatTelemetry } from '../core/boat-motion';
 import type { PtTelemetry } from '../core/pt-boats';
 import { GUN_FIRING, GUN_NO_TARGET, GUN_OUT_OF_ARC, GUN_OUT_OF_RANGE, GUN_SAFE } from '../core/gun-battery';
@@ -51,8 +51,9 @@ export function ptGunLine(t: BoatTelemetry, key: number): HudLine {
   if (st === PT_GUN_RELOAD) return { text: `弾倉交換 ・ あと ${(key >> K_RELOAD) & 7} 秒`, color: HUD_COLOR_STRONG };
   if (st === GUN_OUT_OF_ARC) return { text: '射界外 ・ 舷側に向けよ（艇首・艇尾は撃てない）', color: HUD_COLOR_WARN };
   if (st === GUN_OUT_OF_RANGE) return { text: `射程外 ・ ${p.gunRangeM} m まで引きつけよ`, color: HUD_COLOR_WARN };
-  if (st !== GUN_FIRING) return { text: '撃てる PT が見えない', color: HUD_COLOR_STRONG };
-  const head = `射撃中 ・ PT ${((key >> K_DIST) & 63) * PT_DISTANCE_STEP_M} m`;
+  const nm = t.ptNames ? t.ptNames.nameJa : PT_MARKER_LABEL; // 隊の名（v0.8.5 S4。us_07 は「Sボート」。米PT の任務は今の「PT」のまま）
+  if (st !== GUN_FIRING) return { text: `撃てる ${nm} が見えない`, color: HUD_COLOR_STRONG };
+  const head = `射撃中 ・ ${nm} ${((key >> K_DIST) & 63) * PT_DISTANCE_STEP_M} m`;
   // 速くて遠いは 1 つの文で両方を言う（レビュー ux-6: 速いだけを言うと、14 kt に落としても 550 m ではまだ当たらず、2 度目の直しが要った）
   if ((key & K_FAST) !== 0 && (key & K_FAR) !== 0) return { text: `${head} ・ 遠くて速い（${p.gunEffectiveM} m 以内・${p.silentMaxKt} kt 以下で）`, color: HUD_COLOR_WARN };
   if ((key & K_FAST) !== 0) return { text: `${head} ・ 速くて散る（${p.silentMaxKt} kt 以下で）`, color: HUD_COLOR_WARN };
@@ -103,7 +104,7 @@ export function mergeBurstBits(p: PtTelemetry): number {
  * 隼艇の砲が起こした出来事（v0.6.6）は頭が「隼艇 撃退！ 米PT 1 隻が離脱」など（gunboatJa は data の隼艇の名）で、足した連射の結果は「自艇 被弾 N 発（HP −x）」「自艇 被弾なし」。
  * landing は揚陸の任務（v0.6.9。待ちの語は「揚陸を待て」）。卯月の砲が起こした出来事（v0.6.10 S6。キーの K_ALLY_EVENT）は隼艇と同じ頭の形で allyJa（data の卯月の呼び名）
  */
-export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = '', landing = false, allyJa = ''): HudLine {
+export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = '', landing = false, allyJa = '', nm = PT_NAME_DEFAULT_JA, sunkJa = PT_SUNK_DEFAULT_JA): HudLine {
   const kind = key & 7;
   const n = (key >> 3) & 7;
   const head =
@@ -111,7 +112,7 @@ export function ptGunEventLine(key: number, damagePerHit: number, gunboatJa = ''
       ? gunboatEventHeadJa(kind, gunboatJa)
       : (key & K_ALLY_EVENT) !== 0
         ? gunboatEventHeadJa(kind, allyJa)
-        : kind === PT_GUN_EV_SUPPRESS ? '米PT 制圧！ 追撃をやめて離れる' : kind === PT_GUN_EV_SUNK ? '米PT 撃沈！ ガソリンに引火' : kind === PT_GUN_EV_CREW ? '米PT 撃退！ 死傷者が出て離脱' : '米PT 撃退！ 穴だらけで離脱';
+        : kind === PT_GUN_EV_SUPPRESS ? `${nm} 制圧！ 追撃をやめて離れる` : kind === PT_GUN_EV_SUNK ? `${nm} 撃沈！ ${sunkJa}` : kind === PT_GUN_EV_CREW ? `${nm} 撃退！ 死傷者が出て離脱` : `${nm} 撃退！ 穴だらけで離脱`;
   const h = (key >> K_MERGED_HITS) & 63;
   // 足すのは自艇への連射の結果。隼艇・卯月の出来事の行では「自艇 被弾 N 発」（頭の「隼艇」と「連射 被弾」で隼艇の被弾に読めた。同じ 2 字で幅は同じ。レビュー ux:ux-2）
   const who = (key & (K_GUNBOAT_EVENT | K_ALLY_EVENT)) !== 0 ? '自艇' : '連射';

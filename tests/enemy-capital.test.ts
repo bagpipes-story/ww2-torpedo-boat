@@ -24,14 +24,22 @@ describe('今の記録と data は main 0176202 のまま（新しい記録・�
     expect(ids.slice(ids.indexOf('ijn_subchaser'), ids.indexOf('ijn_subchaser') + 4)).toEqual(['ijn_subchaser', 'ijn_battleship_fuso', 'ijn_cruiser_mogami', 'daihatsu_barge']);
     expect(ids.length).toBe(19);
   });
-  it('missions_seed の us_05 以外の任務・risk_events の radio_failure 以外の記録は 1 字も同じ。scoring.json は 3 つの鍵だけ足した（今の値は変えない）', () => {
+  // v0.8.5 S0: us_07 を書き直し（spec-v0850 §2.2）・order を年代順に（us_06 6 → 7・us_05 5 → 6）・risk_events の mine に params・scoring.json に 3 つの鍵（rescue）。
+  // 今の値は us_07 と us_05 を除き us_06 の order を 6 に戻した sha（main 38acd73 の data で同じ式が同じ値。main 0176202 の式の値 669f69e0… は 38acd73 でも同じだった）・mine は params を外した sha（0176202 の値のまま）
+  it('missions_seed の us_05・us_07 以外の任務（us_06 の order は v0.8.5 で 7）・risk_events の radio_failure 以外の記録（mine は v0.8.5 の params の他）は 1 字も同じ。scoring.json は v0.8.2・v0.8.5 で 3 つずつ鍵を足しただけ（今の値は変えない）', () => {
     const ms = gameData.missionsSeed as unknown as Rec;
-    expect(sha({ ...ms, missions: (ms['missions'] as Rec[]).filter((m) => m['id'] !== 'us_05') })).toBe('669f69e090fbbf4b4c6a56009a19d6d07b99c2962ad315a72f6b790170119f98');
+    const missions = (ms['missions'] as Rec[]).filter((m) => m['id'] !== 'us_05' && m['id'] !== 'us_07').map((m) => (m['id'] === 'us_06' ? { ...m, order: 6 } : m));
+    // v0.8.5 S5: jp_hard の source に解放の一覧の注（「。v0.8.0 からは上の unlock_mission_ids で…3 任務」）を足した＝文だけ。それを外せば同じ
+    const S5_NOTE = '。v0.8.0 からは上の unlock_mission_ids で us_01〜us_03 に固定＝v0.8.5 で us_07 が遊べるようになっても 3 任務';
+    const campaigns = (ms['campaigns'] as Rec[]).map((c) => (c['id'] === 'jp_hard' ? { ...c, source: String(c['source']).replace(S5_NOTE, '') } : c));
+    expect(String((ms['campaigns'] as Rec[])[1]!['source'])).toContain(S5_NOTE);
+    expect(sha({ ...ms, campaigns, missions })).toBe('1e48bf5ee682774b80d06ad8b434ab7165df73023d2e56ffce40498bb291ccd9');
     const re = gameData.riskEvents as unknown as Rec;
-    expect(sha({ ...re, events: (re['events'] as Rec[]).filter((e) => e['id'] !== 'radio_failure') })).toBe('6570ba60a8b30c7c6546dea32f5f9478d379ed4820afd026797d541ad40d1103');
+    const events = (re['events'] as Rec[]).filter((e) => e['id'] !== 'radio_failure').map((e) => { if (e['id'] !== 'mine') return e; const { params: _p, ...rest } = e; return rest; });
+    expect(sha({ ...re, events })).toBe('6570ba60a8b30c7c6546dea32f5f9478d379ed4820afd026797d541ad40d1103');
     const sc = gameData.scoring as unknown as { objective_by_type: Rec; kill: { points_by_enemy: Rec } };
-    expect(Object.entries(sc.objective_by_type).filter(([k]) => k !== 'source')).toEqual([['intercept_destroyer', 300], ['barge_hunt', 300], ['escort_vip', 300], ['attack_and_survive', 300], ['patrol_and_evade', 300], ['escort_convoy', 300], ['evacuate_under_air_raid', 300], ['recon_and_attack', 300]]);
-    expect(sc.kill.points_by_enemy).toEqual({ daihatsu_barge: 75, ijn_transport: 400, us_pt_enemy: 140, ijn_battleship_fuso: 200, ijn_cruiser_mogami: 200 });
+    expect(Object.entries(sc.objective_by_type).filter(([k]) => k !== 'source')).toEqual([['intercept_destroyer', 300], ['barge_hunt', 300], ['escort_vip', 300], ['attack_and_survive', 300], ['patrol_and_evade', 300], ['escort_convoy', 300], ['evacuate_under_air_raid', 300], ['recon_and_attack', 300], ['rescue', 300]]);
+    expect(sc.kill.points_by_enemy).toEqual({ daihatsu_barge: 75, ijn_transport: 400, us_pt_enemy: 140, ijn_battleship_fuso: 200, ijn_cruiser_mogami: 200, de_sboat_enemy: 70 });
     const rf = (re['events'] as Rec[]).find((e) => e['id'] === 'radio_failure')!;
     expect([rf['count'], rf['share'], rf['enemy_direct'], rf['game_event'], rf['version'], rf['label_ja']]).toEqual([0, 0, true, 'radio_failure', 'v0.8.2', '無線の故障（被弾で報告が送れない。中継の輪へ）']);
   });

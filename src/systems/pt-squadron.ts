@@ -11,8 +11,7 @@
 // 乱数: seed+18（PT_SEED_OFFSET）の 1 系列（1 発 2 回と命中の火災・機関）と、艇に砲があるときだけ seed+20（PtGun）。米PT の隊の無い任務ではこのクラスを作らない（ほかの系列は動かさない）。
 // v0.6.6（隼艇。jp_01 のハードだけ）: 隊の後に隼艇（systems/gunboat）を作って標的スロットの末尾に足し、自艇の 25mm の後に隼艇の 25mm（seed+22）と米PT が隼艇を見つける距離、標的が隼艇なら接触の閃光は隼艇から。
 // どちらの砲が PT の最後の結末を決めたかを onFate で覚える（手柄の分け。systems/gunboat-credit）。隼艇の無い任務は今のまま。
-// v0.6.10 S5b（卯月。jp_04）: 卯月が照らしている PT（setAlly で受けた印 lit）は自艇の視程の外でも描く。卯月の砲が決めた結末は world-ally が fateVisual（見せるだけ: 灰色・沈む絵・onSunk）を呼び、
-// 卯月の手柄（core の credit。FATE_BY_ALLY は core だけが書く）は ally で HUD・Result へ。onFate は卯月の手柄に書かない（LD8。模擬と同じ数え）。
+// v0.6.10 S5b（卯月。jp_04）: 卯月が照らしている PT（setAlly で受けた印 lit）は自艇の視程の外でも描く。卯月の砲が決めた結末は world-ally が fateVisual（見せるだけ: 灰色・沈む絵・onSunk）を呼び、卯月の手柄（core の credit。FATE_BY_ALLY は core だけが書く）は ally で HUD・Result へ。onFate は卯月の手柄に書かない（LD8。模擬と同じ数え）。
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, TEXTURE_KEYS, artImageScale } from '../config/game-config';
 import { AIR_STRIKE_RUN_LINE_ALPHA, AIR_STRIKE_RUN_LINE_TINT, AIR_STRIKE_RUN_LINE_WIDTH_M } from '../config/dawn-config';
@@ -34,7 +33,7 @@ import type { Gunboat, GunboatGunKit } from './gunboat';
 import { PtGun } from './pt-gun';
 import { PtTargets, type PtTargetConvoy } from './pt-target';
 import { SplashPool } from './splash-pool';
-
+import { PT_LOOK_DEFAULT, type PtLook } from '../config/pt-look-data';
 /** 固定ステップで世界から読む部分（MissionWorld がそのまま満たす）。detect は駆逐艦と同じ「見つかった回数」（Result の回避の点） */
 export interface PtSquadronView {
   readonly boat: { readonly state: BoatState; readonly sinking: boolean };
@@ -81,6 +80,7 @@ export class PtSquadron {
   private view: PtSquadronView | null = null;
   /** 卯月（v0.6.10 S5b。jp_04。world-ally の組み立てで 1 回 setAlly だけが書く。無い任務・&noally は null）: 照らされている PT の印と卯月の手柄（HUD の「命中 計 N」から引く・Result） */
   ally: { readonly lit: Uint8Array; readonly credit: AllyCredit } | null = null;
+  wave: import('../core/sboat-wave').SboatWaveState | null = null; // S ボートの第二波（v0.8.5 IP2。us_07 だけ world-enemies が組み立てで 1 回書き、systems/world-rescue が進める。無い任務は null）
 
   private readonly events: PtEvents = {
     onContact: (gained) => this.targets?.onContact(gained),
@@ -126,10 +126,10 @@ export class PtSquadron {
     readonly enemyId: string,
     /** 13mm で PT を沈めた（世界が命中スローと Scene の爆発。大発の撃破と同じ） */
     private readonly onSunk: (x: number, y: number) => void,
-    /** 味方の大発の輸送隊（v0.6.4。systems/convoy。無い任務は null＝標的は自艇だけで v0.6.3 の枝） */
+    /** 味方の大発の輸送隊（v0.6.4。systems/convoy。無い任務は null＝標的は自艇だけで v0.6.3 の枝）・隼艇を作る（v0.6.6。world-enemies。隊を作った後に呼ぶ＝判断が隊を読む。無い任務は null） */
     convoy: PtTargetConvoy | null = null,
-    /** 隼艇を作る（v0.6.6。world-enemies。隊を作った後に呼ぶ＝判断が隊を読む。無い任務は null） */
     makeGunboat: ((q: PtSection, kit: GunboatGunKit) => Gunboat) | null = null,
+    readonly look: PtLook = PT_LOOK_DEFAULT, // 絵の鍵と HUD の名（v0.8.5 S2。config/pt-look-data。us_07 の S ボートは tex-sboat・「Sボート」。米PT は今のまま）
   ) {
     this.rng = new SeededRng((seed + PT_SEED_OFFSET) >>> 0);
     this.section = createPtSection(p, PT_SHELL_POOL_SIZE);
@@ -140,7 +140,7 @@ export class PtSquadron {
     this.targets = convoy ? new PtTargets(boat, boatHalfLengthM, boatHalfBeamM, convoy, this.section, this.gunboat) : null;
     if (this.targets) this.check.targets = this.targets.hulls;
     this.shown = new Uint8Array(p.count);
-    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, TEXTURE_KEYS.ptBoat).setScale(artImageScale(TEXTURE_KEYS.ptBoat)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
+    for (const b of this.section.boats) this.sprites.push(scene.add.image(b.x, b.y, look.texKey).setScale(artImageScale(look.texKey)).setAngle(b.headingDeg).setDepth(DEPTH.destroyer).setVisible(false));
     for (let i = 0; i < PT_SHELL_POOL_SIZE; i++) this.tracers.push(scene.add.image(0, 0, TEXTURE_KEYS.gunTracer).setScale(1 / RENDER_SCALE).setTint(MG_TRACER_TINT).setDepth(DEPTH.shell).setVisible(false));
     // 航過の赤い線: 夜明けの空襲の爆撃進路の線と同じ絵・色・濃さ・太さ（ユーザーが知っている「この線から離れる」）。長さは一定なので倍率は 1 回だけ
     this.line = scene.add.image(0, 0, TEXTURE_KEYS.tracer).setOrigin(0, 0.5).setTint(AIR_STRIKE_RUN_LINE_TINT).setAlpha(AIR_STRIKE_RUN_LINE_ALPHA).setDepth(DEPTH.returnRing).setVisible(false);

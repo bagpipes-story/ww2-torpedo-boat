@@ -77,7 +77,7 @@ const PLANNED_NEW: Readonly<Record<string, 'redraw-new' | 'fx'>> = {
   'tex-shore-battery': 'redraw-new', 'tex-shore-gun': 'redraw-new', // IP1b（U4「沿岸砲もリメイク」: 平らな赤い四角＝Graphics の塗りを絵に。鍵は新しい＝v0.6.11 は Graphics で鍵なし）
 };
 /** 艇の絵の鍵（Boot が遊べる任務の自艇・僚艇・隼艇から作る 5 枚） */
-const BOAT_IDS = ['jp_h38_hayabusa', 'jp_t14', 'jp_t38', 'us_elco77', 'us_elco80'];
+const BOAT_IDS = ['jp_h38_hayabusa', 'jp_t14', 'jp_t38', 'us_elco77', 'us_elco80', 'us_higgins78']; // v0.8.5 S0: us_07 の自艇 Higgins（形は表に無い艇の既定＝elco80 の形。Higgins の形は S2）
 const KEY_VALUES = Object.values(TEXTURE_KEYS) as string[];
 
 describe('TEXTURE_KEYS の棚卸し（v0.7.0 S0）', () => {
@@ -95,7 +95,7 @@ describe('TEXTURE_KEYS の棚卸し（v0.7.0 S0）', () => {
     for (const v of KEY_VALUES) expect(v.startsWith('tex-boat-') || v.startsWith('tex-evac-cover-art-') || v === 'tex-evac-cave-art').toBe(false);
     for (const v of Object.keys(PLANNED_NEW)) expect(v.startsWith('tex-boat-') || v.startsWith('tex-evac-')).toBe(false);
   });
-  it('艇の絵の鍵は tex-boat-<艇の id>（v0.6.0）で、Boot が作るのは 5 枚（自艇・僚艇・ハードの隼艇）', () => {
+  it('艇の絵の鍵は tex-boat-<艇の id>（v0.6.0）で、Boot が作るのは 6 枚（自艇・僚艇・ハードの隼艇。v0.8.5 S0 から us_07 の Higgins）', () => {
     expect(GAME_CONFIG).toContain('export function boatTextureKey(boatId: string): string {\n  return `tex-boat-${boatId}`;\n}');
     expect(bootBoatIds()).toEqual(BOAT_IDS);
   });
@@ -187,6 +187,7 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
     got['tex-searchlight'] = px(searchlightTexSize(s.coneDeg, SEARCHLIGHT_TEX_LENGTH_UNITS, K_15));
     expect(got).toEqual({
       'tex-boat-jp_h38_hayabusa': '10x40', 'tex-boat-jp_t14': '8x33', 'tex-boat-jp_t38': '10x40', 'tex-boat-us_elco77': '14x52', 'tex-boat-us_elco80': '14x54',
+      'tex-boat-us_higgins78': '14x52', // v0.8.5 S0 の新しい鍵（us_07 の Higgins 23.8 × 6.1 m。f5563ab に無い＝式の値。実物は tex-ab の「新しい鍵」）
       'tex-destroyer': '24x258', 'tex-transport': '35x262', 'tex-barge': '8x33', 'tex-barge-friendly': '8x33', 'tex-pt-boat': '14x54',
       'tex-transport-friendly': '35x262', 'tex-destroyer-friendly': '20x225', 'tex-torpedo': '4x14', 'tex-wake-dot': '8x8', 'tex-explosion-ring': '96x96',
       'tex-aircraft': '66x53', 'tex-starshell': '282x282', 'tex-smoke-puff': '142x142', 'tex-searchlight': '61x280',
@@ -196,10 +197,11 @@ describe('assets/art-dims の式（v0.6.11 の placeholder の式と同じ）', 
     expect(Object.keys(ART_TEX_DENSITY).sort()).toEqual([
       'tex-barge', 'tex-barge-friendly', 'tex-battleship-fuso', 'tex-boat-jp_h38_hayabusa', 'tex-boat-jp_t14', 'tex-boat-jp_t38', 'tex-boat-us_elco77', 'tex-boat-us_elco80',
       'tex-cruiser-mogami', 'tex-destroyer', 'tex-destroyer-friendly', 'tex-destroyer-mutsuki', 'tex-destroyer-us', 'tex-pt-boat', 'tex-subchaser', 'tex-transport', 'tex-transport-friendly',
-    ]); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）・S2b: ハードの駆潜艇の tex-subchaser（D-A2）・v0.8.2 S2b: us_05 の戦艦・重巡（D-A1・D-A2）
+      'tex-boat-us_higgins78', 'tex-destroyer-ally-us', 'tex-sboat', // v0.8.5 S2: us_07 の Higgins・味方のフレッチャー級（フィッチとコリー）・S ボート
+    ].sort()); // v0.8.1 S2: 敵の卯月の tex-destroyer-mutsuki（D-A1）・S2b: ハードの駆潜艇の tex-subchaser（D-A2）・v0.8.2 S2b: us_05 の戦艦・重巡（D-A1・D-A2）
     for (const [key, S] of Object.entries(ART_TEX_DENSITY)) expect([1, 2, 4], key).toContain(S);
     expect([artTexDensity('tex-aircraft'), artTexDensity('tex-torpedo')]).toEqual([1, 1]);
-    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32], 'tex-subchaser': [102, 13.4], 'tex-battleship-fuso': [425.5, 66.2], 'tex-cruiser-mogami': [401.2, 40.4] };
+    const hulls: Record<string, [number, number]> = { ...s.hulls, 'tex-destroyer-us': [229.6, 24], 'tex-destroyer-mutsuki': [205.4, 18.32], 'tex-subchaser': [102, 13.4], 'tex-battleship-fuso': [425.5, 66.2], 'tex-cruiser-mogami': [401.2, 40.4], 'tex-destroyer-ally-us': [229.6, 24], 'tex-sboat': [69.8, 10.6], 'tex-boat-us_higgins78': [47.6, 12.2] }; // v0.8.5 S2: フィッチとコリー（us_destroyer の寸法）・S ボート（de_s100）・Higgins
     const SINK_SCALE_TO = Number(/export const SINK_SCALE_TO = ([0-9.]+);/.exec(readFileSync('src/config/ui-config.ts', 'utf8'))![1]); // ui-config は DOM の game-config を引くので字で読む
     const ks = [...KS];
     for (let i = 0; i <= 720; i++) ks.push(1 + i / 360); // k 1〜3 を 1/360 刻み（IP3: U9 で dpr の上限 3＝iPhone 15 の dpr 3 は k ≈ 1.64）
@@ -253,7 +255,7 @@ describe('世界の絵の原点（setOrigin）は鍵ごとに今のまま', () =
   });
   it('描き直すほかの絵（艇・艦・大発・米PT・魚雷・機・星弾・煙幕）は中央（setOrigin なし）', () => {
     for (const name of [...REDRAW.filter((n) => n !== 'searchlight'), 'boat']) if (o[name]) expect(o[name], name).toEqual(['default']);
-    for (const name of ['destroyer', 'transport', 'transportFriendly', 'destroyerFriendly', 'torpedo', 'barge', 'bargeFriendly', 'ptBoat', 'enemyAircraft', 'starshell', 'smokePuff']) expect(o[name], name).toBeDefined();
+    for (const name of ['destroyer', 'transport', 'transportFriendly', 'destroyerFriendly', 'torpedo', 'barge', 'bargeFriendly', 'enemyAircraft', 'starshell', 'smokePuff']) expect(o[name], name).toBeDefined(); // ptBoat は v0.8.5 S2 から config/pt-look-data の鍵（pt-squadron は look.texKey。原点なし＝tests/boat-paint の行）
   });
 });
 

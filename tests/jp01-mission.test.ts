@@ -241,7 +241,7 @@ describe('jp_01 の世界（spec §B.2・§E.5）', () => {
     const world = readFileSync('src/systems/mission-world.ts', 'utf8');
     // 書き方の揺れ（空白・改行）では落ちない形で、配線（輸送隊なら決着／偽）だけを見る。v0.6.9 S5a: 揚陸の任務（jp_04。this.landing）の枝が先に付いた（揚陸の無い任務は null で輸送隊の枝へ）
     // v0.8.2 S2（us_05 の報告の任務。lead の L22）: 敵の側の目標の後ろに「報告が届いた」の枝（recon の無い任務は null＝objectiveDone || false で同じ値）
-    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
+    expect(world).toMatch(/returnCallDone\(\)[^{]*\{\s*return this\.rescue \? this\.rescue\.objectiveReached : this\.landing \? this\.landing\.resolved : this\.convoy \? this\.convoy\.resolved : this\.enemy\.objectiveDone \|\| \(this\.recon !== null && this\.recon\.delivered\);/);
     expect(world).toMatch(/noTargetsLeft\(\)[^{]*\{\s*return this\.landing \? false : this\.convoy \? false : this\.enemy\.noTargetsLeft;/);
   });
   it('達成（Result の objectiveDone。systems/mission-telemetry）は終了理由から: 帰投して上陸がノルマ以上。2/3 で沈めば達成でない（帰投 700 > 沈没 580）、3/3 決着でも帰投前は呼びかけだけ', () => {
@@ -296,12 +296,12 @@ describe('jp_01 の Briefing・Title（spec §D.1）', () => {
 });
 
 describe('jp_01 の HUD と Result（spec §D.2・§D.3・§D.5）', () => {
-  it('出撃時の 2 行目（jp_01 の世界の値）: 「大発 3 隻 ・ 上陸 0/3 ・ 浜まで 2800 m ・ 米PT 2 隻 東で哨戒中」（最後尾 x 960 → 転舵 2,979 → 浜 711 m＝2,731 m）。全速なら「13 kt 以下に」（T-38 の静音の上限）', () => {
+  it('出撃時の 2 行目（jp_01 の世界の値）: 「大発 浜まで 2800 m ・ 米PT 2 隻 東で哨戒中」（最後尾 x 960 → 転舵 2,979 → 浜 711 m＝2,731 m）。全速なら「13 kt 以下に」（T-38 の静音の上限）', () => {
     const t = tele01();
     expect(t.convoy).toMatchObject({ enabled: true, total: 3, afloat: 3, arrived: 0, sunk: 0, resolved: false, fromDirJa: '東' });
     expect(t.convoy.leftM).toBeCloseTo(2730.8, 1);
     expect([t.pt.total, t.pt.alive, t.pt.silentMaxKt, t.pt.leaveDirJa, t.pt.damagePerHit, t.pt.gunEnabled, t.pt.gunRangeM]).toEqual([2, 2, 13, '北東', 4, true, 600]);
-    expect(row(t)).toEqual([MISSION_PT, '大発 3 隻 ・ 上陸 0/3 ・ 浜まで 2800 m ・ 米PT 2 隻 東で哨戒中', '#e6eef7']);
+    expect(row(t)).toEqual([MISSION_PT, '大発 浜まで 2800 m ・ 米PT 2 隻 東で哨戒中', '#e6eef7']);
     expect(textWidthPx(row(t)[1], 22)).toBeLessThanOrEqual(LINE2_MAX_PX);
     const fast = tele01();
     Object.assign(fast.pt, { sighted: true, dx: 0, dy: -600 });

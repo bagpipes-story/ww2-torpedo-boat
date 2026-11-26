@@ -38,12 +38,12 @@ describe('揚陸の 2 行目の文（spec §5.2）', () => {
     expect(PT04.leaveDirJa).toBe('北');
   });
 
-  it('平常（MISSION_PT・見えていない）: 揚陸の %（切り捨て）と狙う米PT（みな撃てれば来る方角、減れば残り、0 ならもう撃てない）', () => {
-    expect(row(frame(tl({ pct: 0.995, armed: 2 }, QUIET)))).toEqual([MISSION_PT, '揚陸 99% ・ 米PT 2 隻が北と東から輸送船を狙う', HUD_COLOR_STRONG]);
-    expect(frame(tl({ pct: 0.995, armed: 3 }, { ...QUIET, alive: 3 }, {}, true)).text).toBe('揚陸 99% ・ 米PT 3 隻が北・東・北東から輸送船を狙う');
-    expect(frame(tl({ pct: 0.5, armed: 1 }, QUIET)).text).toBe('揚陸 50% ・ 米PT 残り 1 隻が輸送船を狙う');
-    expect(frame(tl({ pct: 0.5, armed: 0 }, { ...QUIET, alive: 1 })).text).toBe('揚陸 50% ・ 米PT はもう魚雷を撃てない');
-    expect(frame(tl({}, QUIET)).text).toBe('揚陸 0% ・ 米PT 2 隻が北と東から輸送船を狙う');
+  it('平常（MISSION_PT・見えていない）: 狙う米PT（揚陸の % は v0.8.5 IP7 から 4 行目の任務の行）（みな撃てれば来る方角、減れば残り、0 ならもう撃てない）', () => {
+    expect(row(frame(tl({ pct: 0.995, armed: 2 }, QUIET)))).toEqual([MISSION_PT, '米PT 2 隻が北と東から輸送船を狙う', HUD_COLOR_STRONG]);
+    expect(frame(tl({ pct: 0.995, armed: 3 }, { ...QUIET, alive: 3 }, {}, true)).text).toBe('米PT 3 隻が北・東・北東から輸送船を狙う');
+    expect(frame(tl({ pct: 0.5, armed: 1 }, QUIET)).text).toBe('米PT 残り 1 隻が輸送船を狙う');
+    expect(frame(tl({ pct: 0.5, armed: 0 }, { ...QUIET, alive: 1 })).text).toBe('米PT はもう魚雷を撃てない');
+    expect(frame(tl({}, QUIET)).text).toBe('米PT 2 隻が北と東から輸送船を狙う');
   });
 
   it('見えている PT（R8/F13d）: 止まって・静音は「600 m まで寄って撃つか速く走って引きつけよ」、速いと「まもなく見つかる ・ 赤い線に備えよ」（どちらも方角）', () => {

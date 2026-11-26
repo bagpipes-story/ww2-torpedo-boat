@@ -8,6 +8,7 @@ import type Phaser from 'phaser';
 import { TEXTURE_KEYS, boatTextureKey } from '../config/game-config';
 import { BOAT_ART_DEFAULT_KIND, BOAT_ART_KIND_BY_ID, BOAT_ART_LAYOUTS, PALETTE_ENEMY, PALETTE_PLAYER, type BoatArtKind } from '../config/boat-art-config';
 import { BOAT_PAINT_DETAILS } from '../config/boat-paint-config';
+import { SBOAT_TEXTURE_KEY } from '../config/pt-look-data';
 import type { BoatTextureSpec } from './art-dims';
 import { paintSmallBoat } from './boat-paint';
 import { paintHullCanvas } from './ship-art';
@@ -31,4 +32,9 @@ export function generatePlayerBoatTexture(scene: Phaser.Scene, spec: BoatTexture
 /** 敵の米PT（S2a。tex-pt-boat。jp_01・jp_04・jp_05）: Elco 80 と同じ形を敵の色で（形は自艇と同じ＝史実。色で敵。去れば PT_RETIRED_TINT の掛け算で灰）。pt-placeholder の generatePtBoatTexture が呼ぶ */
 export function paintPtBoatTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
   paintBoatKind(scene, TEXTURE_KEYS.ptBoat, spec, 'elco80', PALETTE_ENEMY.deck);
+}
+
+/** 敵の S ボート（v0.8.5 S2。tex-sboat。us_07）: S-100 級の形を敵の色で（寸法は de_s100 × sprite_scale。Boot が us_elco80 でない PT の隊の最初の任務から 1 回。去れば PT_RETIRED_TINT の掛け算で灰） */
+export function paintSboatTexture(scene: Phaser.Scene, spec: BoatTextureSpec): void {
+  paintBoatKind(scene, SBOAT_TEXTURE_KEY, spec, 'sboat', PALETTE_ENEMY.deck);
 }
