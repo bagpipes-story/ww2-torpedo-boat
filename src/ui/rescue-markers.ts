@@ -5,7 +5,7 @@
 // 矢印の絵は帰投の印（tex-home-marker）に色を掛ける（新しい絵の鍵は作らない＝tex-ab は変わらない）。救助の無い任務は作らない（ui/hud-markers）。
 // v0.8.5 IP5（実機 2 回目「沿岸砲もきちんと描画してください」）: 砲台ごとに赤い「砲台 N m」（敵の印の三角の絵・ラベルは矢印の上）。砲台は浅瀬の縁から 850 m 先の陸で艇の画面にほぼ入らないので、
 //   画面の外（砲台の中心が本当の画面の矩形の外＝hideMargin 0）の砲台を、自艇が射界の中にいる間か撃ってから RESCUE_BATTERY_MARKER_HOLD_MS の間だけ縁に出し、撃った時は矢印を膨らませる（砲口の閃光の代わり。実時間）。
-//   置き方は生存者・フィッチの印と同じ（角とスティックを避け、帰投・フィッチ・生存者・先の砲台の印から離し、最後に一時停止の塊）。印の数は作る時の砲台の数（ハード 3）。
+//   置き方は生存者・フィッチの印と同じ（角とスティックを避け、帰投・フィッチ・生存者の印から離し、最後に一時停止の塊）。印は作る時の砲台の数（ハード 3）だけ持つが、出すのは一番近い 1 本（IP4/5 の統合）。
 // §7: 距離の平方根は出ている印のフレームに 1 回（edge-marker の hypot／フィッチは輪の縁まで）。文は刻みが変わった時だけ setText（edge-marker）。確保しない。
 import type Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH, HUD_MARGIN, TEXTURE_KEYS } from '../config/game-config';
@@ -60,33 +60,38 @@ export class RescueEdgeMarkers {
     if (this.batteries.length > 0) this.refreshBatteries(t, home);
   }
 
-  /** 砲台の印（v0.8.5 IP5）: 射界の中か撃ってから HOLD の間・画面の外なら縁へ。撃った時は矢印を膨らませて戻す（実時間）。帰投・フィッチ・生存者・先の砲台から離す */
+  /** 砲台の印（v0.8.5 IP5）: 射界の中か撃ってから HOLD の間・画面の外なら縁へ。撃った時は矢印を膨らませて戻す（実時間）。帰投・フィッチ・生存者から離す。
+   *  v0.8.5 IP4/5 の統合: 出すのは条件を満たす砲台のうち自艇に一番近い 1 本だけ（ハードで 3 本が下の縁に並んで字が詰まった＝画面写し）。どの砲台が撃っても矢印を膨らませる */
   private refreshBatteries(t: BoatTelemetry, home: EdgeMarker | undefined): void {
     const r = t.rescue!;
     const now = this.scene.time.now;
+    let pick = -1;
+    let best = Infinity;
+    let youngest = Infinity;
     for (let i = 0; i < this.batteries.length; i++) {
-      const m = this.batteries[i]!;
       const f = i < r.batteryFired.length ? r.batteryFired[i]! : 0;
       if (f !== this.fired[i]) {
         this.fired[i] = f;
         this.firedAt[i] = now;
       }
       const age = now - this.firedAt[i]!;
-      m.refresh(r.batteryDx[i] ?? NaN, r.batteryDy[i] ?? NaN, r.batteryInArc[i] === 1 || age < RESCUE_BATTERY_MARKER_HOLD_MS, t);
-      m.setArrowScale(age < RESCUE_BATTERY_PULSE_MS ? 1 + (RESCUE_BATTERY_PULSE_SCALE - 1) * (1 - age / RESCUE_BATTERY_PULSE_MS) : 1);
+      if (age < youngest) youngest = age;
+      const dx = r.batteryDx[i] ?? NaN;
+      const dy = r.batteryDy[i] ?? NaN;
+      const d2 = dx * dx + dy * dy;
+      if ((r.batteryInArc[i] === 1 || age < RESCUE_BATTERY_MARKER_HOLD_MS) && d2 < best) {
+        best = d2;
+        pick = i;
+      }
+    }
+    for (let i = 0; i < this.batteries.length; i++) {
+      const m = this.batteries[i]!;
+      m.refresh(r.batteryDx[i] ?? NaN, r.batteryDy[i] ?? NaN, i === pick, t);
       if (!m.isShown) continue;
+      m.setArrowScale(youngest < RESCUE_BATTERY_PULSE_MS ? 1 + (RESCUE_BATTERY_PULSE_SCALE - 1) * (1 - youngest / RESCUE_BATTERY_PULSE_MS) : 1);
       this.place(m, home, this.fitch.isShown ? this.fitch : undefined);
       if (this.survivors.isShown) this.apart(this.survivors, m);
-      for (let j = 0; j < i; j++) if (this.batteries[j]!.isShown) this.apart(this.batteries[j]!, m);
       clearOfPauseCluster(m, this.pauseKeep);
-      // 一時停止の塊を避けて同じ x へ寄った 2 本（ハードの西の 2 つの砲台）が重なれば後の 1 本を出さない（data の順＝先の砲台が残る。距離は先の印が言う）
-      for (let j = 0; j < i; j++) {
-        const a = this.batteries[j]!;
-        if (a.isShown && Math.abs(a.shownX - m.shownX) < (a.labelWidth + m.labelWidth) / 2 + RESCUE_LABEL_SEP_GAP_PX && Math.abs(a.shownY - m.shownY) < RESCUE_MARKER_SEP_PX) {
-          m.refresh(NaN, NaN, false, t);
-          break;
-        }
-      }
     }
   }
 
