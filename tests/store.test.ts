@@ -16,7 +16,7 @@ import {
 } from '../src/core/store';
 
 const ACC = { normal: 1, hard: 1.5, historical: 1.25, custom: 1 };
-const item = (id: string, price: number): StoreItem => ({ id, nameJa: id, shortJa: id, descJa: id, price, boats: ['b'], excludeMissions: [], effect: { kind: 'boat_torpedo_count', count: 6 } });
+const item = (id: string, price: number): StoreItem => ({ id, nameJa: id, shortJa: id, descJa: id, price, reward: false, boats: ['b'], excludeMissions: [], effect: { kind: 'boat_torpedo_count', count: 6 } });
 const st = (o: Partial<StoreState> = {}): StoreState => ({ ...emptyStoreState(), ...o });
 
 describe('保存の文字列（parseStoreState・serializeStoreState）', () => {

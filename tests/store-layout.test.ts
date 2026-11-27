@@ -42,7 +42,7 @@ import {
   type Rect,
 } from '../src/config/store-layout-config';
 import { TITLE_MUSIC_GAP, TITLE_SOUND_W } from '../src/config/title-layout-config';
-import { formatPoints, loadoutSubJa, storeEffectJa } from '../src/ui/store-texts';
+import { formatPoints, loadoutSubJa, storeCardSubJa } from '../src/ui/store-texts';
 import { textWidthPx } from './pt-ui-kit';
 
 const src = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
@@ -127,11 +127,12 @@ describe('ストアの画面', () => {
     expect(storeCardRect(7, 8, 1280).y + storeCardRect(7, 8, 1280).h).toBe(storeGridBottom(8));
     expect(storeGridBottom(8)).toBeLessThan(storeActionRect(1280).y - 80);
   });
-  it('1 枚の題（26 px）＋右の状態（22 px）と効きの短い文（18 px）は枠の余白の内（品の全部・状態のいちばん長い物）', () => {
+  it('1 枚の題（26 px）＋右の状態（22 px）と 2 行目（18 px。効きの短い文・ご褒美は札）は枠の余白の内（品の全部・状態のいちばん長い物。ご褒美の進み 13/13 も）', () => {
+    expect(ITEMS.filter((x) => x.reward).map((x) => x.id)).toEqual(['crew_veteran']); // v0.9.0 IP3
     for (const it of ITEMS) {
-      const states = [`${formatPoints(it.price)} 点`, STORE_UNEQUIPPED_JA];
+      const states = [it.reward ? '13/13' : `${formatPoints(it.price)} 点`, STORE_UNEQUIPPED_JA];
       for (const s of states) expect(textWidthPx(it.nameJa, STORE_CARD_TITLE_PX) + 24 + textWidthPx(s, STORE_CARD_STATE_PX), `${it.id} ${s}`).toBeLessThanOrEqual(597 - 2 * MENU_PAD_X);
-      expect(textWidthPx(storeEffectJa(gameData, it), STORE_CARD_SUB_PX) + 24 + textWidthPx(STORE_UNEQUIPPED_JA, STORE_CARD_STATE_PX), it.id).toBeLessThanOrEqual(597 - 2 * MENU_PAD_X);
+      for (const s of states) expect(textWidthPx(storeCardSubJa(gameData, it), STORE_CARD_SUB_PX) + 24 + textWidthPx(s, STORE_CARD_STATE_PX), `${it.id} ${s}`).toBeLessThanOrEqual(597 - 2 * MENU_PAD_X);
     }
   });
 });
@@ -153,7 +154,8 @@ describe('Briefing の「装備: デフォルト／カスタム」', () => {
     expect(textWidthPx(BRIEF_LOADOUT_DEFAULT_SUB_JA, BRIEF_LOADOUT_SUB_PX)).toBeLessThanOrEqual(inner);
     expect(BRIEF_LOADOUT_SUB_MAX_PX).toBe(inner);
     const shorts = ITEMS.map((x) => x.shortJa);
-    expect(loadoutSubJa(shorts)).toBe(shorts.join('・')); // 今の 4 品は全部並ぶ
+    expect(loadoutSubJa(shorts.slice(0, 4))).toBe(shorts.slice(0, 4).join('・')); // 交換の 4 品は全部並ぶ（ご褒美も装着すれば「ほか n」。v0.9.0 IP3）
+    expect(loadoutSubJa(shorts)).toMatch(/ ほか \d$/);
     expect(textWidthPx(loadoutSubJa(shorts), BRIEF_LOADOUT_SUB_PX)).toBeLessThanOrEqual(inner);
     const many = [...shorts, '40mm', '37mm', '機関の整備', 'SO レーダー'];
     expect(loadoutSubJa(many)).toMatch(/ ほか \d$/);

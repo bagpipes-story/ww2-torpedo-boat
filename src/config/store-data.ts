@@ -1,5 +1,5 @@
 // ストアの品の表と貯め方（v0.9.0。data/store.json。spec-v0900 §4.2・§7）の読み出しと Boot の検査 V-S1〜V-S4。例外は鍵を名指す日本語（ほかの *-mission-data と同じ作法）。
-// V-S1 形（鍵・id の重複なし・値段は正の整数・効きの形は 4 つだけ・source は design）・V-S2 名指した艇・任務・魚雷・キャンペーンが data にあり、艇が boat_condition を満たす
+// V-S1 形（鍵・id の重複なし・値段は正の整数・効きの形は 5 つだけ・source は design。v0.9.0 IP3 から kind reward＝値段の代わりに reward_rule）・V-S2 名指した艇・任務・魚雷・キャンペーンが data にあり、艇が boat_condition を満たす
 // （燃料は満タンを超えない）・V-S3 2 つの品が同じ鍵を触らない・V-S4 自艇の記録を自艇以外も読む所（us_01 の僚艇・jp_03 の 18 隻・us_07 の味方の艇の "player_full"）の読む鍵に
 // 品が触るなら、その品の shared_ok に名がある。全任務の組み立ては Boot ではしない（tests/custom-loadout が 13 任務×ハード×品で組む）。window を読まない（tests と scripts から読める）。
 import type { GameData } from './game-data';
@@ -8,10 +8,14 @@ import type { StoreAccrual, StoreCatalogue, StoreEffect, StoreEffectKind, StoreI
 
 type Rec = Record<string, unknown>;
 
-const ITEM_KEYS = ['id', 'kind', 'name_ja', 'short_ja', 'desc_ja', 'price', 'boats', 'exclude_missions', 'effect', 'source'] as const;
+const ITEM_KEYS = ['id', 'kind', 'name_ja', 'short_ja', 'desc_ja', 'boats', 'exclude_missions', 'effect', 'source'] as const;
 const ITEM_OPTIONAL_KEYS = ['boat_condition', 'shared_ok'] as const;
-/** v0.9 で置ける品の種類（ally は v0.10 の殴り込みの味方の予約＝今は置かない） */
-const ITEM_KINDS = ['equipment'] as const;
+/**
+ * v0.9 で置ける品の種類と、種類ごとに要る鍵（ally は v0.10 の殴り込みの味方の予約＝今は置かない）: equipment は price（点で交換）、reward（v0.9.0 IP3 のご褒美）は
+ * price を持たず reward_rule（渡す条件。今は historical_default_all＝ストアを開く条件の任務をみな史実モード × デフォルトの装備で達成）
+ */
+const ITEM_KIND_KEYS = { equipment: 'price', reward: 'reward_rule' } as const;
+const REWARD_RULES = ['historical_default_all'] as const;
 
 /** 効きの形ごとの鍵（effect の中。kind を除く）と、触る data の鍵（V-S3・V-S4。boat. は自艇の記録、mission. は任務の記録） */
 export const STORE_EFFECT_SPEC: Readonly<Record<StoreEffectKind, { readonly keys: readonly string[]; readonly touches: readonly string[] }>> = {
@@ -19,6 +23,7 @@ export const STORE_EFFECT_SPEC: Readonly<Record<StoreEffectKind, { readonly keys
   boat_torpedo_count: { keys: ['count'], touches: ['boat.torpedoes.count'] },
   boat_smoke: { keys: ['duration_s', 'cooldown_s'], touches: ['boat.smoke.duration_s', 'boat.smoke.cooldown_s'] },
   mission_fuel_factor: { keys: ['factor'], touches: ['mission.v0_1_prototype.fuel_allotment_gal'] },
+  boat_crew: { keys: ['reload_s', 'extinguish_hold_s'], touches: ['boat.gun_battery.magazine.reload_s', 'boat.damage.extinguish_hold_s'] },
 };
 
 /** 自艇の記録を自艇以外も読む所（V-S4。コードの事実＝どこが何を読むか。'*' は記録の全部） */
@@ -67,6 +72,9 @@ function readEffect(raw: unknown, label: string): StoreEffect {
     case 'mission_fuel_factor':
       if (!isPos(raw['factor'])) bad('V-S1', `${label}.effect.factor は正の数`);
       return { kind: 'mission_fuel_factor', factor: raw['factor'] as number };
+    case 'boat_crew':
+      if (!isPos(raw['reload_s']) || !isPos(raw['extinguish_hold_s'])) bad('V-S1', `${label}.effect.reload_s・extinguish_hold_s は正の数`);
+      return { kind: 'boat_crew', reloadS: raw['reload_s'] as number, extinguishHoldS: raw['extinguish_hold_s'] as number };
   }
 }
 
@@ -94,19 +102,24 @@ export function itemTargetMissions(data: GameData, item: StoreItem): Rec[] {
 function readItem(data: GameData, raw: unknown, i: number, seen: Set<string>): StoreItem {
   const label = `items[${i}]`;
   if (!isObj(raw)) return bad('V-S1', `${label} は object`);
+  const kind = raw['kind'];
+  if (typeof kind !== 'string' || !(kind in ITEM_KIND_KEYS)) return bad('V-S1', `${label}.kind は ${Object.keys(ITEM_KIND_KEYS).join('・')}（${String(kind)}）`);
+  const kindKey = ITEM_KIND_KEYS[kind as keyof typeof ITEM_KIND_KEYS];
+  const required: readonly string[] = [...ITEM_KEYS, kindKey];
   const ks = Object.keys(raw);
-  const allowed: readonly string[] = [...ITEM_KEYS, ...ITEM_OPTIONAL_KEYS];
+  const allowed: readonly string[] = [...required, ...ITEM_OPTIONAL_KEYS];
   const extra = ks.filter((k) => !allowed.includes(k));
-  const missing = ITEM_KEYS.filter((k) => !(k in raw));
-  if (extra.length > 0 || missing.length > 0) bad('V-S1', `${label} の鍵は ${ITEM_KEYS.join('・')}（任意 ${ITEM_OPTIONAL_KEYS.join('・')}）。余り ${extra.join('・') || 'なし'}・欠け ${missing.join('・') || 'なし'}`);
+  const missing = required.filter((k) => !(k in raw));
+  if (extra.length > 0 || missing.length > 0) bad('V-S1', `${label}（${kind}）の鍵は ${required.join('・')}（任意 ${ITEM_OPTIONAL_KEYS.join('・')}）。余り ${extra.join('・') || 'なし'}・欠け ${missing.join('・') || 'なし'}`);
   const id = raw['id'];
   if (!isStr(id)) return bad('V-S1', `${label}.id は空でない文字列`);
   if (seen.has(id)) bad('V-S1', `items の id（${id}）が重複している`);
   seen.add(id);
   const L = `items.${id}`;
-  if (!(ITEM_KINDS as readonly unknown[]).includes(raw['kind'])) bad('V-S1', `${L}.kind は ${ITEM_KINDS.join('・')}（${String(raw['kind'])}）`);
+  const reward = kind === 'reward';
   for (const k of ['name_ja', 'short_ja', 'desc_ja']) if (!isStr(raw[k])) bad('V-S1', `${L}.${k} は空でない文字列`);
-  if (!(Number.isInteger(raw['price']) && (raw['price'] as number) > 0)) bad('V-S1', `${L}.price は正の整数（点）`);
+  if (!reward && !(Number.isInteger(raw['price']) && (raw['price'] as number) > 0)) bad('V-S1', `${L}.price は正の整数（点）`);
+  if (reward && !(REWARD_RULES as readonly unknown[]).includes(raw['reward_rule'])) bad('V-S1', `${L}.reward_rule は ${REWARD_RULES.join('・')}（${String(raw['reward_rule'])}）`);
   if (!isIdList(raw['boats'], true)) bad('V-S1', `${L}.boats は空でない・重複の無い艇の id の配列`);
   if (!isIdList(raw['exclude_missions'], false)) bad('V-S1', `${L}.exclude_missions は重複の無い任務の id の配列`);
   if (!isStr(raw['source']) || !raw['source'].startsWith('design')) bad('V-S1', `${L}.source は design で始める（品の値はみな設計値）`);
@@ -119,7 +132,8 @@ function readItem(data: GameData, raw: unknown, i: number, seen: Set<string>): S
     nameJa: raw['name_ja'] as string,
     shortJa: raw['short_ja'] as string,
     descJa: raw['desc_ja'] as string,
-    price: raw['price'] as number,
+    price: reward ? 0 : (raw['price'] as number),
+    reward,
     boats: (raw['boats'] as string[]).slice(),
     excludeMissions: (raw['exclude_missions'] as string[]).slice(),
     effect: readEffect(raw['effect'], L),
@@ -134,6 +148,7 @@ function readItem(data: GameData, raw: unknown, i: number, seen: Set<string>): S
     for (const [path, want] of Object.entries(cond as Rec)) if (pathValue(rec, path) !== want) bad('V-S2', `${L}: 艇 ${b} の ${path} は ${JSON.stringify(want)} でない（${JSON.stringify(pathValue(rec, path))}。boat_condition）`);
     if (e.kind === 'boat_torpedo_count' && typeof pathValue(rec, 'torpedoes.count') !== 'number') bad('V-S2', `${L}: 艇 ${b} に torpedoes.count が無い`);
     if (e.kind === 'boat_smoke' && (rec['smoke_generator'] !== true || !isObj(rec['smoke']))) bad('V-S2', `${L}: 艇 ${b} に煙幕（smoke_generator・smoke）が無い`);
+    if (e.kind === 'boat_crew') for (const path of ['gun_battery.magazine.reload_s', 'damage.extinguish_hold_s']) if (typeof pathValue(rec, path) !== 'number') bad('V-S2', `${L}: 艇 ${b} に ${path} が無い`);
   }
   if (e.kind === 'mission_torpedo' && !(data.torpedoes.torpedoes as readonly Rec[]).some((t) => t['id'] === e.torpedoId)) bad('V-S2', `${L}.effect.torpedo_id（${e.torpedoId}）が torpedoes.json に無い`);
   const targets = itemTargetMissions(data, item);

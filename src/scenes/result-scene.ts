@@ -13,6 +13,8 @@ import { sortieAchieved } from '../core/store';
 import { missionScoreInput } from '../systems/mission-score';
 import type { StoreSortieRecord } from '../systems/store-storage';
 import { resultCustomTagJa, storeResultPartJa } from '../ui/store-texts';
+import { getStoreCatalogue, storeItemById } from '../config/store-data';
+import { TROPHY_TEXT_COLOR, rewardResultJa } from '../config/trophy-config';
 import { evacScorePartJa, evacTimeLinesJa } from '../ui/evac-result';
 import type { DawnResult } from '../core/dawn-air';
 import {
@@ -210,6 +212,7 @@ export class ResultScene extends Phaser.Scene {
     const objPart = r.evac ? evacScorePartJa(r.evac, score.objective, score.deliveries, scoringParams.evacBoatPoints) : h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${convoyPart}${ptKillPart}${evadePart}` : r.patrol ? `達成 ${score.objective}${evadePart}` : `${r.escort ? '達成' : r.recon ? '報告' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${r.recon ? ` ・ 撃沈 ${score.kills}` : ''}${evadePart}`;
     const homeJa = r.evac ? '退避' : '帰投'; // jp_03 は「帰投」と言わない（v0.6.11 S8。Briefing・HUD は「壕か陰へ」「隠れた」）。点は同じ帰投の 700
     line(`${homeJa} ${score.survival}${r.returned && r.dawn.caughtOutside ? `（${r.evac ? '空襲後' : r.rescue ? RESCUE_AFTER_JA : '夜明け後'} ×${scoringParams.afterDawnFactor}）` : ''} ・ ${objPart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+    if (r.store && r.store.rewards.length > 0) line(rewardResultJa(r.store.rewards.map((id) => storeItemById(getStoreCatalogue(base), id)?.nameJa ?? id)), HUD_FONT_HEADING_PX, TROPHY_TEXT_COLOR); // ご褒美を渡した出撃だけ（v0.9.0 IP3）
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     const ships = resultShipsJa(r); // 夜明けに退いた艦（v0.6.2）は「退いた」。1 隻の任務は駆逐艦の撃沈数で（輸送船が沈まなくても「撃沈」）

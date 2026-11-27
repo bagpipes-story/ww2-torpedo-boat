@@ -29,6 +29,8 @@ function itemChanges(data: GameData, item: StoreItem, m: Rec): boolean {
       return pathValue(boat, 'smoke.duration_s') !== e.durationS || pathValue(boat, 'smoke.cooldown_s') !== e.cooldownS;
     case 'mission_fuel_factor':
       return e.factor !== 1;
+    case 'boat_crew':
+      return pathValue(boat, 'gun_battery.magazine.reload_s') !== e.reloadS || pathValue(boat, 'damage.extinguish_hold_s') !== e.extinguishHoldS;
   }
 }
 
@@ -65,6 +67,13 @@ export function applyStoreItems(base: GameData, missionId: string, ids: readonly
       case 'mission_fuel_factor':
         proto['fuel_allotment_gal'] = (proto['fuel_allotment_gal'] as number) * e.factor;
         break;
+      case 'boat_crew': {
+        // ご褒美「歴戦の乗員」（v0.9.0 IP3）: 砲・弾倉・被害の記録を写して 2 つの値だけ（乗員の減りの倍率 crew_effects と他の値は同じ物を指す）
+        const gun = b0['gun_battery'] as Rec;
+        boat['gun_battery'] = { ...gun, magazine: { ...(gun['magazine'] as Rec), reload_s: e.reloadS } };
+        boat['damage'] = { ...(b0['damage'] as Rec), extinguish_hold_s: e.extinguishHoldS };
+        break;
+      }
     }
   }
   m['v0_1_prototype'] = proto;

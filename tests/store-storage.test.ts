@@ -38,7 +38,7 @@ const GRANT = getStoreCatalogue(gameData).grantPoints;
 describe('任務の終わり（recordStoreSortie）', () => {
   it('点を足して 1 つの鍵に書く・達成なら達成の鍵に足す（同じ任務は 1 回）・閉じている間は支度金なし', () => {
     const r = recordStoreSortie(gameData, 'us_02', true, 1300);
-    expect(r).toEqual({ credited: 1300, granted: 0, total: 1300, saved: true });
+    expect(r).toEqual({ credited: 1300, granted: 0, total: 1300, saved: true, rewards: [] });
     recordStoreSortie(gameData, 'us_02', true, 200);
     expect([...achievedMissionIds()]).toEqual(['us_02']);
     expect(loadStoreState(gameData).points).toBe(1500);
@@ -51,9 +51,9 @@ describe('任務の終わり（recordStoreSortie）', () => {
     for (const id of OPEN.slice(0, -1)) expect(recordStoreSortie(gameData, id, true, 100).granted).toBe(0);
     expect(storedStoreStatus(gameData)).toEqual({ open: false, done: 12, total: 13 });
     const r = recordStoreSortie(gameData, OPEN[OPEN.length - 1]!, true, 100);
-    expect(r).toEqual({ credited: 100, granted: GRANT, total: 1300 + GRANT, saved: true });
+    expect(r).toEqual({ credited: 100, granted: GRANT, total: 1300 + GRANT, saved: true, rewards: [] });
     expect(storedStoreStatus(gameData).open).toBe(true);
-    expect(recordStoreSortie(gameData, 'us_01', false, 100)).toEqual({ credited: 100, granted: 0, total: 1400 + GRANT, saved: true });
+    expect(recordStoreSortie(gameData, 'us_01', false, 100)).toEqual({ credited: 100, granted: 0, total: 1400 + GRANT, saved: true, rewards: [] });
   });
   it('帰投の記録（night-hunters.cleared）は達成に数えない', () => {
     ls.map.set('night-hunters.cleared', JSON.stringify(OPEN));
@@ -62,7 +62,7 @@ describe('任務の終わり（recordStoreSortie）', () => {
   });
   it('書けない・localStorage が無い → saved false で例外なし・壊れた保存は 0 点から', () => {
     ls.failWrites = true;
-    expect(recordStoreSortie(gameData, 'us_02', true, 500)).toEqual({ credited: 500, granted: 0, total: 500, saved: false });
+    expect(recordStoreSortie(gameData, 'us_02', true, 500)).toEqual({ credited: 500, granted: 0, total: 500, saved: false, rewards: [] });
     ls.failWrites = false;
     ls.map.set('night-hunters.store', '{broken');
     expect(loadStoreState(gameData).points).toBe(0);

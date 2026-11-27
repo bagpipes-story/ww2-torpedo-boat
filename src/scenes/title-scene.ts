@@ -3,7 +3,7 @@
 // v0.6.7: 任務が 4 つ以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
 // v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
-// v0.9.0 IP2: 達成した任務の行の右に印「✓ 達成 ・ ハード ・ 史実（カスタム）」（ui/title-achieved。達成の無い行は今のまま）・開いているタブの 2 行目に「 ・ 達成 n/N」。
+// v0.9.0 IP2: 達成した任務の行の右に印（ui/title-achieved。IP3 から「✓ 達成」だけ・史実 × デフォルトの行は左に小さなトロフィー。達成の無い行は今のまま）・開いているタブの 2 行目に「 ・ 達成 n/N」。
 // v0.9.0 S1: 左上に「ストア」（13 任務を達成した端末か ?debug&store=1 だけ。閉じている端末には何も出さない＝Title は v0.8.5 と同じ）。開いて初めての Title で支度金を 1 回配る。
 import Phaser from 'phaser';
 import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
@@ -71,7 +71,7 @@ import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '..
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 import { TITLE_STORE_JA, TITLE_STORE_PX, TITLE_STORE_RECT, TITLE_STORE_SUB_PX } from '../config/store-layout-config';
 import { grantStoreOpening, loadStoreState } from '../systems/store-storage';
-import { storeIsOpen, titleAchievedRecord } from '../systems/sortie-loadout';
+import { shownAchievedRecord, storeIsOpen } from '../systems/sortie-loadout';
 import { addTitleAchievedMark } from '../ui/title-achieved';
 import { formatPoints } from '../ui/store-texts';
 import { titleCompactOn, titleGridOn, titleGridSubJa, titleRowLook, titleRowRect } from '../ui/title-grid';
@@ -112,7 +112,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(cx, TITLE_LOGO_Y, TITLE_LOGO_TEXT, hudTextStyle(TITLE_LOGO_PX, HUD_COLOR_STRONG)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
     // キャンペーンのタブ（v0.6.0）: 選んでいるタブは枠を強く。未解放は条件と進みを出して押せない。押したら registry に覚えて作り直す（Title は静的な画面。§7）
     const campaigns = getCampaigns(data);
-    const achieved = titleAchievedRecord(data); // 達成の記録（v0.9.0 IP2。保存 ＋ ?debug&achieved。行の印とタブの「達成 n/N」）
+    const achieved = shownAchievedRecord(data); // 達成の記録（v0.9.0 IP2。保存 ＋ ?debug&achieved。行の印とタブの「達成 n/N」）
     const tabsLeft = cx - (campaigns.length * TITLE_TAB_W + (campaigns.length - 1) * TITLE_TAB_GAP) / 2;
     campaigns.forEach((c, i) => {
       const st = selected.status.get(c.id)!;
@@ -152,7 +152,7 @@ export class TitleScene extends Phaser.Scene {
       );
       row.setEnabled(e.playable);
       this.rows.push(row);
-      addTitleAchievedMark(this, row, r, look.h, titleCompactOn(n), achieved.get(e.id) ?? 0); // 達成の印（v0.9.0 IP2。達成していない行は何も作らない）
+      addTitleAchievedMark(this, row, r, titleCompactOn(n), achieved.get(e.id) ?? 0); // 達成の印（v0.9.0 IP2・IP3「✓ 達成」と史実 × デフォルトのトロフィー。達成していない行は何も作らない）
     });
     this.add.text(cx, TITLE_HINT_Y, TITLE_HINT_BY_CAMPAIGN_JA[selected.id] ?? TITLE_HINT_JA, hudTextStyle(TITLE_HINT_PX, HUD_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
     // 難易度（v0.4.5）: タップで ノーマル ⇄ ハード。registry に持ち回る（Briefing → Mission → Result の「もう一度」まで同じ難易度）

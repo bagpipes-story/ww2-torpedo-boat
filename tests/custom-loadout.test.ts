@@ -27,10 +27,11 @@ const FROZEN = deepFreeze(clone());
 const custom = (id: string, items: string[], hard = false, historical = false) => ({ ...directSortie(id, 1, 'none', hard, historical), custom: { items } });
 
 describe('デフォルトは base そのもの（ビット同一の芯）', () => {
-  it('条件の任務は 13（data の open.campaigns の遊べる任務）・品は v0.9.0 の数の 4 つ', () => {
+  it('条件の任務は 13（data の open.campaigns の遊べる任務）・品は v0.9.0 の数の 4 つ＋ご褒美 1 つ（IP3。歴戦の乗員）', () => {
     expect(MISSIONS).toHaveLength(13);
     expect(getStoreCatalogue(gameData).openMissionIds).toEqual(MISSIONS);
-    expect(ITEMS).toEqual(['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6']);
+    expect(ITEMS).toEqual(['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran']);
+    expect(getStoreCatalogue(gameData).items.map((x) => [x.id, x.reward, x.price])).toEqual([['fuel_tank', false, 3000], ['smoke_large', false, 4000], ['torp_mk13', false, 4000], ['torp_rack6', false, 8000], ['crew_veteran', true, 0]]);
   });
   it.each(VARIANTS)('$id hard=$hard: デフォルトの出撃（custom の鍵なし）は史実モードでも toBe。史実モードのカスタムは史実オフのカスタムと同じ data・同じ印（v0.9.0 IP1）', ({ id, hard }) => {
     for (const hist of [false, true]) {
@@ -61,13 +62,13 @@ describe('効く品と効き', () => {
   it('任務ごとに効く品（表の順）: 燃料・煙幕は米の 7 任務、Mk 13 は Mk 8 の Elco 80 の任務（us_02・us_04）、架台 6 は Elco 80・Higgins（us_02〜us_07）', () => {
     const got = Object.fromEntries(MISSIONS.filter((m) => m.startsWith('us_')).map((id) => [id, effectiveStoreItems(gameData, id, ITEMS)]));
     expect(got).toEqual({
-      us_01: ['fuel_tank', 'smoke_large'],
-      us_02: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6'],
-      us_03: ['fuel_tank', 'smoke_large', 'torp_rack6'],
-      us_04: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6'],
-      us_05: ['fuel_tank', 'smoke_large', 'torp_rack6'],
-      us_06: ['fuel_tank', 'smoke_large', 'torp_rack6'],
-      us_07: ['fuel_tank', 'smoke_large', 'torp_rack6'],
+      us_01: ['fuel_tank', 'smoke_large', 'crew_veteran'],
+      us_02: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran'],
+      us_03: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
+      us_04: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran'],
+      us_05: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
+      us_06: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
+      us_07: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
     });
     expect(effectiveStoreItems(gameData, 'us_02', ['nope', 'torp_mk13'])).toEqual(['torp_mk13']);
   });
@@ -93,10 +94,40 @@ describe('効く品と効き', () => {
     expect(d.hitRateModel).toBe(FROZEN.hitRateModel);
     expect(JSON.stringify(gameData)).toBe(before);
   });
-  it('us_01 の僚艇（同じ us_elco77）は燃料・煙幕では変わらない（V-S4: 僚艇が読む鍵に触らない）', () => {
+  it('us_01 の僚艇（同じ us_elco77）は燃料・煙幕・乗員では変わらない（V-S4: 僚艇が読む鍵に触らない）', () => {
     const a = buildWorldSetup(applyStoreItems(FROZEN, 'us_01', ITEMS), 'us_01');
     expect(a.escort).toEqual(buildWorldSetup(FROZEN, 'us_01').escort);
     expect(a.smokeParams?.durationS).toBe(8);
+    expect(a.damageParams.extinguishHoldS).toBe(0.6);
+  });
+  it.each(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07'])('%s: ご褒美「歴戦の乗員」（boat_crew。v0.9.0 IP3）は自艇の弾倉交換 3.2 → 2.0 秒・消火 1 → 0.6 秒だけ。乗員の倍率・砲のほかの値・僚艇・味方の艇・base は同じ', (id) => {
+    const before = JSON.stringify(gameData);
+    const d = applyStoreItems(FROZEN, id, ['crew_veteran']);
+    expect(effectiveStoreItems(gameData, id, ['crew_veteran'])).toEqual(['crew_veteran']);
+    const a = buildWorldSetup(d, id);
+    const b = buildWorldSetup(FROZEN, id);
+    expect(a.damageParams).toEqual({ ...b.damageParams, extinguishHoldS: 0.6 });
+    expect(b.damageParams.extinguishHoldS).toBe(1);
+    expect(a.crew).toEqual(b.crew);
+    expect(a.crewEffects).toEqual(b.crewEffects);
+    expect(a.escort).toEqual(b.escort); // us_01 の僚艇（ほかの任務は null）
+    expect(a.boatParams).toEqual(b.boatParams);
+    expect(a.smokeParams).toEqual(b.smokeParams);
+    expect(a.torpedoParams).toEqual(b.torpedoParams);
+    expect(a.torpedoCapacity).toBe(b.torpedoCapacity);
+    expect(a.fuelAllotmentGal).toBe(b.fuelAllotmentGal);
+    expect(JSON.stringify((a as unknown as Rec)['rescue'] ?? null)).toBe(JSON.stringify((b as unknown as Rec)['rescue'] ?? null)); // us_07 の味方の艇（player_full の速さ）は同じ
+    const ga = getLoadout(d, getPrototypeMission(d, id))!.gun!;
+    const gb = getLoadout(FROZEN, getPrototypeMission(FROZEN, id))!.gun!;
+    expect(gb.magazine?.reloadS).toBe(3.2);
+    expect(ga).toEqual({ ...gb, magazine: { ...gb.magazine!, reloadS: 2 } });
+    // 写したのは自艇の記録だけ（gun_battery・damage の中のほかの物は同じ参照）
+    const boatId = getPrototypeMission(d, id).playerBoatId;
+    const nb = (d.boats.boats as readonly Rec[]).find((x) => x['id'] === boatId)!;
+    const ob = (FROZEN.boats.boats as readonly Rec[]).find((x) => x['id'] === boatId)!;
+    expect((nb['damage'] as Rec)['crew_effects']).toBe((ob['damage'] as Rec)['crew_effects']);
+    expect((nb['gun_battery'] as Rec)['groups']).toBe((ob['gun_battery'] as Rec)['groups']);
+    expect(JSON.stringify(gameData)).toBe(before);
   });
   it('同じ出撃の 2 回目は覚えた物（Mission と Hud が同じ物）', () => {
     const s = custom('us_04', ['torp_mk13']);
@@ -147,6 +178,17 @@ describe('Boot の検査（validateStore の V-S1〜V-S4）', () => {
     ['V-S2', '除く任務が無い', (s: Rec) => (items(s)[0]!['exclude_missions'] = ['us_99'])],
     ['V-S3', '2 つの品が同じ鍵', (s: Rec) => items(s).push({ ...items(s)[0]!, id: 'fuel_tank_2' })],
     ['V-S4', '日本の jp_03 の 18 隻が読む艇に触る', (s: Rec) => items(s).push({ ...items(s)[3]!, id: 'jp_rack', boats: ['jp_t38'], boat_condition: {} })],
+    // v0.9.0 IP3: ご褒美（kind reward）と boat_crew
+    ['V-S1', 'ご褒美に値段がある', (s: Rec) => (items(s)[4]!['price'] = 100)],
+    ['V-S1', 'ご褒美に reward_rule が無い', (s: Rec) => delete items(s)[4]!['reward_rule']],
+    ['V-S1', 'ご褒美の reward_rule が表に無い', (s: Rec) => (items(s)[4]!['reward_rule'] = 'all_hard')],
+    ['V-S1', '交換の品に reward_rule がある', (s: Rec) => (items(s)[0]!['reward_rule'] = 'historical_default_all')],
+    ['V-S1', '交換の品に値段が無い', (s: Rec) => delete items(s)[0]!['price']],
+    ['V-S1', '乗員の効きが 0', (s: Rec) => ((items(s)[4]!['effect'] as Rec)['reload_s'] = 0)],
+    ['V-S1', '乗員の効きの鍵が欠ける', (s: Rec) => delete (items(s)[4]!['effect'] as Rec)['extinguish_hold_s']],
+    ['V-S2', '乗員の艇に弾倉が無い（英の艇）', (s: Rec) => (items(s)[4]!['boats'] = ['us_elco80', 'uk_vosper73'])],
+    ['V-S3', '2 つの品が乗員の鍵を触る', (s: Rec) => items(s).push({ ...items(s)[4]!, id: 'crew_2' })],
+    ['V-S4', '日本の jp_03 の 18 隻の艇に乗員', (s: Rec) => (items(s)[4]!['boats'] = ['us_elco80', 'jp_t38'])],
   ])('%s: %s → 例外', (code, _label, f) => {
     expect(() => validateStore(broken(f as (s: Rec) => void))).toThrow(code);
   });

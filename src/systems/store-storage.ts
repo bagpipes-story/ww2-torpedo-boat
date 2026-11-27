@@ -1,14 +1,15 @@
 // ストアの保存（v0.9.0。spec-v0900 §4.5）: localStorage の鍵 2 つ。night-hunters.store（財布・持ち物・装着・装備の選び・支度金を配ったか。1 つの JSON）と
 // night-hunters.achieved（達成の記録。ユーザーの決め U2。帰投の記録 night-hunters.cleared とは別。v0.9.0 IP1 から任務ごとに「どの形で達成したか」のビット＝core/achieved-record。
 // S0・S1 のビルドが書いた id の JSON 配列も読める＝その id はノーマル・史実オフ・デフォルトの達成）。
+// v0.9.0 IP3: ご褒美（data の kind reward）は任務の終わりに、保存の記録で 13 任務がみな史実 × デフォルトの達成なら持ち物に足して装着（同じ 1 回の setItem。持ち物＝渡した印）。
 // 書くのは任務の終わり（Mission の endMission で 1 回）とストアの画面の交換・装着の時だけ（update では触らない。§7）。読めない・書けない（プライベートブラウズ・容量・無効）時は
 // 既定（0 点・持ち物なし・デフォルト）のまま／覚えないだけで、例外を外へ出さない（progress-storage・kpi-storage と同じ作法）。
 // iOS の注意: Safari とホーム画面のアプリ（PWA）は保存場所が別＝点も別。?debug&store=1 で開いたとみなすのは systems/sortie-loadout の storeIsOpen（保存は変えない）。
 // window を読まない（config/game-config を import しない＝tests が node で読める）。
 import type { GameData } from '../config/game-data';
 import { getStoreCatalogue, storeItemById } from '../config/store-data';
-import { ACH_BIT_PLAIN, achievedIdSet, addAchieved, parseAchievedRecord, serializeAchievedRecord, type AchievedRecord } from '../core/achieved-record';
-import { creditSortie, equippedItemIds, parseStoreState, purchaseItem, serializeStoreState, setItemEquipped, storeOpenStatus, type LoadoutMode, type PurchaseRefusal, type StoreState } from '../core/store';
+import { ACH_BIT_PLAIN, achievedIdSet, addAchieved, historicalDefaultAll, parseAchievedRecord, serializeAchievedRecord, type AchievedRecord } from '../core/achieved-record';
+import { creditSortie, equippedItemIds, grantRewards, parseStoreState, purchaseItem, serializeStoreState, setItemEquipped, storeOpenStatus, type LoadoutMode, type PurchaseRefusal, type StoreState } from '../core/store';
 
 const STORE_KEY = 'night-hunters.store';
 const ACHIEVED_KEY = 'night-hunters.achieved';
@@ -19,10 +20,15 @@ const ACHIEVED_KEY = 'night-hunters.achieved';
  */
 let memoryStore: string | null = null;
 
-/** Boot が 1 回（?debug&points=N）: 財布を N 点の写しにする（保存は変えない） */
-export function enableStoreMemory(data: GameData, points: number): void {
+/**
+ * Boot が 1 回（?debug&points=N・v0.9.0 IP3 の ?debug&achieved=all:hist）: 財布を写しにする（保存は変えない）。points が null なら点は保存の物のまま。
+ * grant（ご褒美の id）は写しの持ち物に足して装着する（?debug&achieved でご褒美の条件を満たした時。localStorage には書かない）
+ */
+export function enableStoreMemory(data: GameData, points: number | null, grant: readonly string[] = []): void {
   memoryStore = null;
-  memoryStore = serializeStoreState({ ...loadStoreState(data), points: Math.max(0, Math.floor(points)) });
+  const s = loadStoreState(data);
+  const g = grantRewards(s, getStoreCatalogue(data).items.filter((x) => grant.includes(x.id)), grant.length > 0).state;
+  memoryStore = serializeStoreState({ ...g, points: points === null ? s.points : Math.max(0, Math.floor(points)) });
 }
 
 /** tests: 写しをやめる */
@@ -97,20 +103,24 @@ export interface StoreSortieRecord {
   /** 足した後の点 */
   total: number;
   saved: boolean;
+  /** この出撃で渡したご褒美の id（v0.9.0 IP3。Result の「ご褒美: … を手に入れた」。渡さなければ []） */
+  rewards: string[];
 }
 
 /**
  * 任務の終わりに 1 回だけ（Mission の endMission。ended の印で二重に来ない＝Result の作り直しでは呼ばない）: 達成なら達成の記録に足し、点を足し、
- * 保存の達成で開いていてまだ配っていなければ支度金を足す（1 回の setItem）。points は倍率込み（core/store の sortieAccrual）。
+ * 保存の達成で開いていてまだ配っていなければ支度金を足し、ご褒美の条件を満たしていればご褒美を渡す（財布は 1 回の setItem）。points は倍率込み（core/store の sortieAccrual）。
  * variantBit は達成した形のビット（core/achieved-record の achievedVariantBit。省けばノーマル・史実オフ・デフォルト）
  */
 export function recordStoreSortie(data: GameData, missionId: string, achieved: boolean, points: number, variantBit: number = ACH_BIT_PLAIN): StoreSortieRecord {
   if (achieved) recordAchieved(missionId, variantBit);
   const cat = getStoreCatalogue(data);
   const before = loadStoreState(data);
-  const { state, granted } = creditSortie(before, points, storedStoreStatus(data).open, cat.grantPoints);
+  const { state: credited, granted } = creditSortie(before, points, storedStoreStatus(data).open, cat.grantPoints);
+  // ご褒美（v0.9.0 IP3）: 保存の記録で 13 任務がみな史実 × デフォルトの達成なら、まだ持っていないご褒美を持ち物に足して装着（点と同じ 1 回の setItem）
+  const { state, granted: rewards } = grantRewards(credited, cat.items, historicalDefaultAll(achievedRecord(), cat.openMissionIds));
   const saved = saveStoreState(state);
-  return { credited: state.points - before.points - granted, granted, total: state.points, saved };
+  return { credited: state.points - before.points - granted, granted, total: state.points, saved, rewards };
 }
 
 /**

@@ -1,5 +1,5 @@
 {
-  "$schema_note": "ストア（v0.9.0。spec-v0900 §4.2・§4.5）。任務の得点をストアの点として貯め、13 任務（open.campaigns の遊べる任務）をすべて達成した端末で開く店の品と貯め方。数値はすべて design（史実の値ではない）。品の効きは data の鍵を写して直す（config/custom-loadout の copy-on-write。base の data は書き換えない）。効きの形は effect.kind の 4 つだけ（config/store-data の V-S1）: mission_torpedo（任務の torpedo_type を替える）・boat_torpedo_count（艇の torpedoes.count）・boat_smoke（艇の smoke.duration_s・cooldown_s）・mission_fuel_factor（任務の v0_1_prototype.fuel_allotment_gal に掛ける）。boats は効く艇の id（任務の player_boat）、boat_condition は艇の記録が満たす条件（点で区切った鍵 → 値）、exclude_missions は効かない任務、shared_ok は自艇の記録を自艇以外も読む所（escort・evac・rescue_player_full）のうち、触ってよい物（V-S4）。日本の艇には品を置かない（ユーザーの決め Q2 の設計の既定＝弱者視点）。kind は equipment だけ（v0.10 の殴り込みの味方は ally の予約）。",
+  "$schema_note": "ストア（v0.9.0。spec-v0900 §4.2・§4.5）。任務の得点をストアの点として貯め、13 任務（open.campaigns の遊べる任務）をすべて達成した端末で開く店の品と貯め方。数値はすべて design（史実の値ではない）。品の効きは data の鍵を写して直す（config/custom-loadout の copy-on-write。base の data は書き換えない）。効きの形は effect.kind の 5 つだけ（config/store-data の V-S1）: mission_torpedo（任務の torpedo_type を替える）・boat_torpedo_count（艇の torpedoes.count）・boat_smoke（艇の smoke.duration_s・cooldown_s）・mission_fuel_factor（任務の v0_1_prototype.fuel_allotment_gal に掛ける）。boats は効く艇の id（任務の player_boat）、boat_condition は艇の記録が満たす条件（点で区切った鍵 → 値）、exclude_missions は効かない任務、shared_ok は自艇の記録を自艇以外も読む所（escort・evac・rescue_player_full）のうち、触ってよい物（V-S4）。日本の艇には品を置かない（ユーザーの決め Q2 の設計の既定＝弱者視点）。kind は equipment（点で交換）と reward（v0.9.0 IP3 のご褒美。price を持たず reward_rule の条件で渡す）（v0.10 の殴り込みの味方は ally の予約）。効きの形 boat_crew（v0.9.0 IP3）は艇の gun_battery.magazine.reload_s と damage.extinguish_hold_s。",
   "version": "0.9.0",
   "open": {
     "campaigns": ["us_pt", "jp_hard"],
@@ -64,6 +64,18 @@
       "exclude_missions": [],
       "effect": { "kind": "boat_torpedo_count", "count": 6 },
       "source": "design (spec-v0900 §4.2。史実の根拠は無い。日本の艇は jp_03 の座席で 2 本を分け合う規則（CLAUDE.md §2）なので対象外)"
+    },
+    {
+      "id": "crew_veteran",
+      "kind": "reward",
+      "name_ja": "歴戦の乗員",
+      "short_ja": "歴戦の乗員",
+      "desc_ja": "乗員が熟練する。機銃の弾倉交換 3.2 秒 → 2.0 秒・消火の長押し 1 秒 → 0.6 秒（乗員が減った時の重さは今のまま）。どの米の艇にも付く",
+      "reward_rule": "historical_default_all",
+      "boats": ["us_elco77", "us_elco80", "us_higgins78"],
+      "exclude_missions": [],
+      "effect": { "kind": "boat_crew", "reload_s": 2.0, "extinguish_hold_s": 0.6 },
+      "source": "design (v0.9.0 IP3。ユーザーの言葉 2026-11-27「全シナリオ史実デフォルトでクリアして場合のみ、ご褒美追加装備がもらえるなど、頑張った証が分かるようになればいいな」と問いの答え「歴戦の乗員（推奨）」。kind reward＝交換できず、reward_rule historical_default_all（open の 13 任務をみな史実モード × デフォルトの装備で達成）を満たした任務の終わりに持ち物に入り装着される。reload_s 2.0 はユーザーが選んだ案の値（3.2 → 2.0＝0.625 倍）。extinguish_hold_s 0.6 は同じ割合（1 × 0.625 を 0.1 秒に丸め）。乗員の減りの倍率 damage.crew_effects はそのまま（減れば今と同じ割合で遅くなる）。命中率の設計（正しく狙った 1 本 35〜45%）は魚雷と照準に触れないので変えない。us_01 の僚艇（escort）は同じ us_elco77 の記録の速さ・加速・旋回・寸法・HP だけを読み、us_07 の味方の艇は speed_max_kt だけを読む＝この 2 つの鍵は自艇だけに効く（V-S4）。使えばカスタム（印が付く・通算の命中率に数えない）)"
     }
   ]
 }

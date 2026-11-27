@@ -12,7 +12,10 @@ import {
   ACH_MASK_ALL,
   achievedCount,
   achievedIdSet,
-  achievedMarkOf,
+  historicalDefaultAll,
+  historicalDefaultCount,
+  historicalDefaultTrophy,
+  MASK_HIST_DEFAULT,
   achievedVariantBit,
   addAchieved,
   parseAchievedRecord,
@@ -76,22 +79,34 @@ describe('足す・数える', () => {
   });
 });
 
-describe('印の材料（achievedMarkOf）', () => {
-  const P = bit(false, false, false), H = bit(true, false, false), S = bit(false, true, false), C = bit(false, false, true), HC = bit(true, false, true), SC = bit(false, true, true), HSC = bit(true, true, true), HS = bit(true, true, false);
-  it('達成・ハード・史実と、それぞれ「カスタムでだけ」', () => {
-    expect(achievedMarkOf(0)).toEqual({ any: false, anyCustomOnly: false, hard: false, hardCustomOnly: false, historical: false, historicalCustomOnly: false });
-    expect(achievedMarkOf(P)).toEqual({ any: true, anyCustomOnly: false, hard: false, hardCustomOnly: false, historical: false, historicalCustomOnly: false });
-    expect(achievedMarkOf(P | H | SC)).toEqual({ any: true, anyCustomOnly: false, hard: true, hardCustomOnly: false, historical: true, historicalCustomOnly: true });
-    expect(achievedMarkOf(P | HC | SC)).toMatchObject({ anyCustomOnly: false, hardCustomOnly: true, historicalCustomOnly: true });
-    expect(achievedMarkOf(C)).toMatchObject({ any: true, anyCustomOnly: true, hard: false, historical: false });
-    expect(achievedMarkOf(C | HC | SC)).toMatchObject({ anyCustomOnly: true, hard: true, hardCustomOnly: true, historical: true, historicalCustomOnly: true });
-    // ハード＋史実の同時の達成は両方の札に数える。デフォルトの装備で 1 度でも達成した組は「カスタムでだけ」でない
-    expect(achievedMarkOf(HS)).toMatchObject({ hard: true, hardCustomOnly: false, historical: true, historicalCustomOnly: false });
-    expect(achievedMarkOf(HSC | H)).toMatchObject({ hard: true, hardCustomOnly: false, historical: true, historicalCustomOnly: true });
-    expect(achievedMarkOf(S | SC)).toMatchObject({ historical: true, historicalCustomOnly: false });
+describe('史実 × デフォルトの達成（v0.9.0 IP3。トロフィーとご褒美の材料）', () => {
+  const P = bit(false, false, false), H = bit(true, false, false), S = bit(false, true, false), HS = bit(true, true, false);
+  const C = bit(false, false, true), HC = bit(true, false, true), SC = bit(false, true, true), HSC = bit(true, true, true);
+  it('トロフィーは史実モード × デフォルトの装備の形（4・8）だけ。ハードの史実 × デフォルトなら hard', () => {
+    expect(MASK_HIST_DEFAULT).toBe(S | HS);
+    expect(historicalDefaultTrophy(0)).toBeNull();
+    expect(historicalDefaultTrophy(S)).toEqual({ hard: false });
+    expect(historicalDefaultTrophy(HS)).toEqual({ hard: true });
+    expect(historicalDefaultTrophy(S | HS | P)).toEqual({ hard: true });
+    // ノーマル・ハードの史実オフ・カスタムの形（史実でカスタムも）はトロフィーなし
+    for (const m of [P, H, C, HC, SC, HSC, P | H | C | HC | SC | HSC]) expect(historicalDefaultTrophy(m), String(m)).toBeNull();
+    for (const bad of [256, 1.5, -1, NaN]) expect(historicalDefaultTrophy(bad), String(bad)).toBeNull();
+    // 255 通りの全部: トロフィーは (m & 12) が立つ時だけ
+    for (let m = 1; m <= 255; m++) expect(historicalDefaultTrophy(m) !== null, String(m)).toBe((m & 12) !== 0);
   });
-  it('範囲の外の値（256・小数・負）は達成なし', () => {
-    for (const bad of [256, 1.5, -1, NaN]) expect(achievedMarkOf(bad).any, String(bad)).toBe(false);
+  it('数と全部（ご褒美の条件）: 13 任務がみな史実 × デフォルト。S0／S1 の配列の記録（ビット 1）とカスタムの史実では満たさない。任務が空なら偽', () => {
+    const open = getStoreCatalogue(gameData).openMissionIds;
+    const rec = parseAchievedRecord(null);
+    open.forEach((id, i) => addAchieved(rec, id, i % 2 === 0 ? S : HS));
+    expect(historicalDefaultCount(rec, open)).toBe(13);
+    expect(historicalDefaultAll(rec, open)).toBe(true);
+    expect(historicalDefaultAll(rec, [])).toBe(false);
+    rec.set(open[5]!, P | H | SC | HSC); // 1 つだけ史実はカスタムでだけ
+    expect(historicalDefaultCount(rec, open)).toBe(12);
+    expect(historicalDefaultAll(rec, open)).toBe(false);
+    const legacy = parseAchievedRecord(JSON.stringify(open)); // S0・S1 の配列
+    expect(historicalDefaultCount(legacy, open)).toBe(0);
+    expect(historicalDefaultAll(legacy, open)).toBe(false);
   });
 });
 

@@ -1,18 +1,18 @@
 // 出撃の装備の入口（v0.9.0 S0）: ?debug&custom=<品の id>（Briefing の切り替えは S1）で出撃にカスタムの印を付ける・任務の終わりにストアの点と達成を 1 回だけ記録する。
-// v0.9.0 S1: Briefing の「装備: デフォルト／カスタム」の決め（briefingLoadout）。
+// v0.9.0 S1: Briefing の「装備: デフォルト／カスタム」の決め（briefingLoadout）。v0.9.0 IP3: 画面に出す達成の記録（?debug&achieved の形込み）・Briefing のトロフィー・ご褒美の進み。
 // Briefing・Mission の create と endMission だけが呼ぶ（update では呼ばない。§7）。data の上書きそのものは config/custom-loadout。
-import { DEBUG_ACHIEVED_IDS } from '../config/debug-achieved';
-import { DEBUG_CUSTOM_ALL, DEBUG_CUSTOM_ITEMS, DEBUG_STORE_OPEN } from '../config/game-config';
+import { DEBUG_ACHIEVED } from '../config/debug-achieved';
+import { DEBUG_CUSTOM_ALL, DEBUG_CUSTOM_ITEMS, DEBUG_STORE_OPEN, DEBUG_STORE_POINTS } from '../config/game-config';
 import type { GameData } from '../config/game-data';
 import { effectiveStoreItems, withCustomLoadout } from '../config/custom-loadout';
 import { hasHardVariant } from '../config/mission-data';
 import { getStoreCatalogue } from '../config/store-data';
-import { ACH_BIT_PLAIN, achievedVariantBit, addAchieved, type AchievedRecord } from '../core/achieved-record';
+import { achievedVariantBit, addAchieved, historicalDefaultAll, historicalDefaultCount, historicalDefaultTrophy, type AchievedRecord } from '../core/achieved-record';
 import type { Sortie } from '../core/sortie';
 import { briefingLoadoutShown, sortieAchieved } from '../core/store';
 import type { MissionResult } from '../scenes/result-scene';
 import { missionStorePoints } from './mission-score';
-import { achievedRecord, equippedStoreItems, loadStoreState, recordStoreSortie, storedStoreStatus, type StoreSortieRecord } from './store-storage';
+import { achievedRecord, enableStoreMemory, equippedStoreItems, loadStoreState, recordStoreSortie, storedStoreStatus, type StoreSortieRecord } from './store-storage';
 
 /** ?debug&custom があればその品（all は表の全部）でカスタムの印を付けた出撃（効く品が無い・custom が無い → sortie そのもの。史実モードでも付ける＝v0.9.0 IP1） */
 export function sortieWithDebugCustom(sortie: Sortie, data: GameData): Sortie {
@@ -40,14 +40,36 @@ export function recordSortieStore(result: MissionResult, base: GameData): StoreS
 }
 
 /**
- * Title の印の達成の記録（v0.9.0 IP2。create で 1 回）: 保存の記録に、?debug&achieved=<id をコンマで>|all の任務をノーマル・史実オフ・デフォルトの達成として足した写し
- * （保存は変えない。ストアを開く条件と支度金は保存の記録だけ＝systems/store-storage の storedStoreStatus）
+ * 画面に出す達成の記録（v0.9.0 IP2 の Title。IP3 から Briefing のトロフィーとストアのご褒美の札も。create で 1 回）: 保存の記録に、?debug&achieved=<id|all>[:形] の任務を
+ * その形（config/debug-achieved）の達成として足した写し（保存は変えない。ストアを開く条件・支度金・ご褒美を渡すのは保存の記録だけ＝systems/store-storage）
  */
-export function titleAchievedRecord(data: GameData): AchievedRecord {
+export function shownAchievedRecord(data: GameData): AchievedRecord {
   const rec = achievedRecord();
-  const dbg = DEBUG_ACHIEVED_IDS;
-  if (dbg !== null) for (const id of dbg.includes(DEBUG_CUSTOM_ALL) ? getStoreCatalogue(data).openMissionIds : dbg) addAchieved(rec, id, ACH_BIT_PLAIN);
+  const dbg = DEBUG_ACHIEVED;
+  if (dbg !== null) for (const d of dbg) for (const id of d.id === DEBUG_CUSTOM_ALL ? getStoreCatalogue(data).openMissionIds : [d.id]) addAchieved(rec, id, d.bit);
   return rec;
+}
+
+/** Briefing のトロフィー（v0.9.0 IP3。create で 1 回）: その任務を史実 × デフォルトで達成していれば { hard }（ハードの史実 × デフォルトでも）、無ければ null */
+export function briefingTrophy(data: GameData, missionId: string): { readonly hard: boolean } | null {
+  return historicalDefaultTrophy(shownAchievedRecord(data).get(missionId) ?? 0);
+}
+
+/** ストアのご褒美の進み（v0.9.0 IP3。ストアの create で 1 回）: 史実 × デフォルトで達成した任務の数 / 13 */
+export function rewardProgress(data: GameData): { done: number; total: number } {
+  const ids = getStoreCatalogue(data).openMissionIds;
+  return { done: historicalDefaultCount(shownAchievedRecord(data), ids), total: ids.length };
+}
+
+/**
+ * Boot が 1 回: ?debug&points=N（v0.9.0 S1）と、?debug&achieved でご褒美の条件を満たした時（IP3。例 all:hist）は財布を写しにする（写しの持ち物にご褒美を装着して足す。
+ * localStorage の財布は変えない＝ご褒美を保存に書かない）。どちらでもなければ何もしない
+ */
+export function debugStoreMemory(data: GameData): void {
+  const cat = getStoreCatalogue(data);
+  const grant = DEBUG_ACHIEVED !== null && historicalDefaultAll(shownAchievedRecord(data), cat.openMissionIds) ? cat.items.filter((x) => x.reward).map((x) => x.id) : [];
+  const points = Number.isFinite(DEBUG_STORE_POINTS) ? DEBUG_STORE_POINTS : null;
+  if (points !== null || grant.length > 0) enableStoreMemory(data, points, grant);
 }
 
 /** Briefing の「装備」（create で 1 回）: 切り替えを出すか・カスタムを選んでいるか・その任務に効く装着中の品（表の順） */

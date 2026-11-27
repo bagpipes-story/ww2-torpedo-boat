@@ -1,5 +1,6 @@
 // ストア（v0.9.0 S1。spec-v0900 §4.6）: 財布・品の格子（題・効きの短い文・状態）・選んだ品の説明と効く任務・右下の主ボタン（交換する → 本当に交換 → 交換／外す ⇄ 装着する）・「← 任務一覧」。
 // Title の左上の「ストア」から（13 任務の達成か ?debug&store=1）。曲は Title が頼んだメニューの曲のまま（音の層を import しない＝tests/sfx-rules の許可表の外）。静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。品を選ぶと変わった物だけ setText・setSelected。
+// v0.9.0 IP3: ご褒美「歴戦の乗員」の札（まだなら右に進み n/13・主ボタンは「ご褒美」で押せない。渡した後はほかの品と同じ 外す ⇄ 装着する）。
 // 交換と装着の入り切りは保存（systems/store-storage。交換は点を引くのと持ち物に足すのを 1 回の setItem）してから作り直す（格子の状態・財布を組み直す＝Title のタブと同じ作法）。
 import Phaser from 'phaser';
 import { DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_DATA, RENDER_SCALE, SCENE_KEYS } from '../config/game-config';
@@ -46,7 +47,9 @@ import { HOME_COLOR_TEXT, HUD_COLOR, HUD_COLOR_STRONG, HUD_COLOR_WARN, hudTextSt
 import type { StoreItem, StoreState } from '../core/store';
 import { loadStoreState, purchaseStoreItem, setStoreItemEquipped } from '../systems/store-storage';
 import { MenuButton, addBuildLabel, menuWrapStyle } from '../ui/menu-ui';
-import { formatPoints, storeCardState, storeEffectJa, storeItemMissionsJa, walletJa, type StoreCardTone } from '../ui/store-texts';
+import { formatPoints, storeCardState, storeCardSubJa, storeItemMissionsJa, walletJa, type StoreCardTone } from '../ui/store-texts';
+import { STORE_REWARD_ACTION_JA, storeRewardProgressJa } from '../config/trophy-config';
+import { rewardProgress } from '../systems/sortie-loadout';
 
 /** 作り直しの時に渡す物（選んでいた品と、保存できなかった時の一言） */
 interface StoreInit {
@@ -66,6 +69,8 @@ export class StoreScene extends Phaser.Scene {
   private state!: StoreState;
   private selected = 0;
   private notice = '';
+  /** ご褒美の進み（v0.9.0 IP3。史実 × デフォルトで達成した任務 / 13。create で 1 回） */
+  private progress = { done: 0, total: 0 };
   /** 「本当に交換」の 3 秒（押せば交換・過ぎれば「交換する」へ戻る） */
   private confirm?: Phaser.Time.TimerEvent;
   /** 二重遷移の防止 */
@@ -89,6 +94,7 @@ export class StoreScene extends Phaser.Scene {
     const data = getGameData(this.registry, REGISTRY_KEY_DATA);
     this.items = getStoreCatalogue(data).items;
     this.state = loadStoreState(data);
+    this.progress = rewardProgress(data);
     const n = this.items.length;
     if (this.selected < 0 || this.selected >= n) this.selected = 0;
 
@@ -102,14 +108,14 @@ export class StoreScene extends Phaser.Scene {
     const compact = n >= STORE_CARD_COMPACT_FROM;
     this.items.forEach((it, i) => {
       const r = storeCardRect(i, n, GAME_WIDTH);
-      const st = storeCardState(this.state, it);
+      const st = storeCardState(this.state, it, this.progress);
       const card = new MenuButton(
         this,
         {
           ...r,
           title: it.nameJa,
           titlePx: STORE_CARD_TITLE_PX,
-          sub: storeEffectJa(data, it),
+          sub: storeCardSubJa(data, it), // ご褒美（v0.9.0 IP3）は「ご褒美（史実・デフォルトで全13任務を達成）」
           subPx: STORE_CARD_SUB_PX,
           ...(compact ? { padY: STORE_CARD_COMPACT_PAD_Y } : {}),
           right: st.text,
@@ -178,6 +184,13 @@ export class StoreScene extends Phaser.Scene {
       a.setEnabled(true);
       return;
     }
+    if (it.reward) {
+      // まだ渡していないご褒美（v0.9.0 IP3）: 交換できない。進み「史実デフォルト n/13」
+      a.setTitle(STORE_REWARD_ACTION_JA);
+      a.setSub(storeRewardProgressJa(this.progress.done, this.progress.total));
+      a.setEnabled(false);
+      return;
+    }
     const short = it.price - s.points;
     a.setTitle(STORE_BUY_JA);
     a.setSub(short > 0 ? `あと ${formatPoints(short)} 点` : `${formatPoints(it.price)} 点`);
@@ -195,6 +208,7 @@ export class StoreScene extends Phaser.Scene {
       this.rebuild('');
       return;
     }
+    if (it.reward) return; // ご褒美は交換しない（主ボタンは押せない）
     if (!this.confirm) {
       this.action?.setTitle(STORE_CONFIRM_JA);
       this.action?.setSub(`${formatPoints(it.price)} 点 ・ もう一度押す`);

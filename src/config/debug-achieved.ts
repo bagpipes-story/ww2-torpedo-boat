@@ -1,11 +1,15 @@
-// ?debug&achieved=<任務の id をコンマで区切る>（v0.9.0 IP2。achieved=all でストアを開く条件の 13 任務）: その任務を達成済み（ノーマル・史実オフ・デフォルト）とみなして
-// Title の行の印「✓ 達成」とタブの「達成 n/N」を出す（iPhone で印を確かめる。保存は変えない。ストアは開かない＝開くのは ?debug&store=1）。無ければ null。
-// config/game-config（300 行）から分けた（?debug の読み方は同じ: DEBUG_ENABLED の時だけ URL を読む）。読むのは systems/sortie-loadout の titleAchievedRecord（Title の create で 1 回）。
+// ?debug&achieved=<語をコンマで区切る>（v0.9.0 IP2。IP3 で形を足した）: 語は <任務の id か all>[:<形>]。all はストアを開く条件の 13 任務。形は
+//   （無し）＝ノーマル・史実オフ・デフォルト（IP2 のまま）・hard＝ハード・hist＝史実モード × デフォルト・hardhist＝ハードの史実モード × デフォルト
+// 例 ?debug&achieved=all:hist（13 任務を史実 × デフォルトで達成＝Briefing のトロフィー・Title の小さなトロフィー・ストアのご褒美「歴戦の乗員」を持つ写し）・
+//    ?debug&achieved=us_02:hardhist（us_02 の Briefing に「史実で達成（ハード）」）。
+// その形で達成済みとみなして Title・Briefing・ストアに出す（iPhone で確かめる）。保存は変えない（達成の鍵もご褒美も書かない）。ストアは開かない（開くのは ?debug&store=1）。無ければ null。
+// config/game-config（300 行）から分けた（?debug の読み方は同じ: DEBUG_ENABLED の時だけ URL を読む）。読むのは systems/sortie-loadout の shownAchievedRecord・debugStoreMemory。
 import { DEBUG_ENABLED } from './game-config';
+import { parseDebugAchieved } from '../core/achieved-record';
 
-function debugAchievedIds(): string[] | null {
+function debugAchieved(): { id: string; bit: number }[] | null {
   if (!DEBUG_ENABLED) return null;
   const v = new URLSearchParams(window.location.search).get('achieved');
-  return v === null ? null : v.split(',').filter((x) => x !== '');
+  return v === null ? null : parseDebugAchieved(v);
 }
-export const DEBUG_ACHIEVED_IDS = debugAchievedIds();
+export const DEBUG_ACHIEVED = debugAchieved();

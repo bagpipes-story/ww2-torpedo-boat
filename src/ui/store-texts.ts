@@ -4,6 +4,7 @@ import type { GameData } from '../config/game-data';
 import { effectiveStoreItems } from '../config/custom-loadout';
 import { getStoreCatalogue } from '../config/store-data';
 import { BRIEF_LOADOUT_SUB_MAX_PX, BRIEF_LOADOUT_SUB_PX, RESULT_CUSTOM_TAG_JA, STORE_EQUIPPED_JA, STORE_UNEQUIPPED_JA } from '../config/store-layout-config';
+import { storeRewardJa } from '../config/trophy-config';
 import type { StoreItem, StoreState } from '../core/store';
 
 /** 12345 → 「12,345」（3 桁ごとのコンマ。端末の言語設定に依らない） */
@@ -37,15 +38,26 @@ export function storeEffectJa(data: GameData, item: StoreItem): string {
       return `${torpedoShortName(data, e.torpedoId)}を積む`;
     case 'boat_torpedo_count':
       return `魚雷 ${e.count} 本`;
+    case 'boat_crew':
+      return `弾倉交換 ${e.reloadS.toFixed(1)} 秒 ・ 消火 ${e.extinguishHoldS} 秒`;
   }
 }
 
 export type StoreCardTone = 'price' | 'short' | 'on' | 'off';
 
-/** 格子の 1 枚の右の状態: 持っていなければ値段（足りなければ short）、持っていれば「装着中」／「外している」 */
-export function storeCardState(s: StoreState, item: StoreItem): { text: string; tone: StoreCardTone } {
+/**
+ * 格子の 1 枚の右の状態: 持っていなければ値段（足りなければ short）、持っていれば「装着中」／「外している」。
+ * ご褒美（v0.9.0 IP3）はまだ持っていなければ値段の代わりに進み「n/13」（progress。史実 × デフォルトで達成した任務の数）
+ */
+export function storeCardState(s: StoreState, item: StoreItem, progress: { readonly done: number; readonly total: number } = { done: 0, total: 0 }): { text: string; tone: StoreCardTone } {
   if (s.owned.includes(item.id)) return s.off.includes(item.id) ? { text: STORE_UNEQUIPPED_JA, tone: 'off' } : { text: STORE_EQUIPPED_JA, tone: 'on' };
+  if (item.reward) return { text: `${progress.done}/${progress.total}`, tone: 'short' };
   return { text: `${formatPoints(item.price)} 点`, tone: s.points >= item.price ? 'price' : 'short' };
+}
+
+/** 格子の 1 枚の 2 行目: 品の効きの短い文。ご褒美（v0.9.0 IP3）は値段の代わりの札「ご褒美（史実・デフォルトで全13任務を達成）」（効きは選んだ時の説明に出る） */
+export function storeCardSubJa(data: GameData, item: StoreItem): string {
+  return item.reward ? storeRewardJa(getStoreCatalogue(data).openMissionIds.length) : storeEffectJa(data, item);
 }
 
 /** 品が何かを変える任務（ストアを開く条件の任務の順。Briefing の切り替えが出る任務と同じ判定） */

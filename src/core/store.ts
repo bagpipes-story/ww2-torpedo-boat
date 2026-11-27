@@ -8,7 +8,9 @@ export type StoreEffect =
   | { readonly kind: 'mission_torpedo'; readonly torpedoId: string }
   | { readonly kind: 'boat_torpedo_count'; readonly count: number }
   | { readonly kind: 'boat_smoke'; readonly durationS: number; readonly cooldownS: number }
-  | { readonly kind: 'mission_fuel_factor'; readonly factor: number };
+  | { readonly kind: 'mission_fuel_factor'; readonly factor: number }
+  /** 艇の乗員（v0.9.0 IP3 のご褒美「歴戦の乗員」）: 機銃の弾倉交換 gun_battery.magazine.reload_s と消火の長押し damage.extinguish_hold_s（乗員が減った時の倍率 crew_effects は今のまま） */
+  | { readonly kind: 'boat_crew'; readonly reloadS: number; readonly extinguishHoldS: number };
 
 export type StoreEffectKind = StoreEffect['kind'];
 
@@ -17,7 +19,13 @@ export interface StoreItem {
   readonly nameJa: string;
   readonly shortJa: string;
   readonly descJa: string;
+  /** 値段（点）。ご褒美（reward）は 0＝交換できない */
   readonly price: number;
+  /**
+   * ご褒美（data の kind が reward。v0.9.0 IP3）: 交換できず、条件（史実 × デフォルトで 13 任務を達成）を満たした任務の終わりに持ち物に入る（装着して渡す）。
+   * 持っていれば装着の入り切りはほかの品と同じ
+   */
+  readonly reward: boolean;
   /** 効く艇（任務の player_boat） */
   readonly boats: readonly string[];
   /** 効かない任務 */
@@ -133,14 +141,25 @@ export function creditSortie(s: StoreState, points: number, open: boolean, grant
   return { state: { ...s, owned: s.owned.slice(), off: s.off.slice(), points: s.points + add + grant, granted: s.granted || open }, granted: grant };
 }
 
-export type PurchaseRefusal = 'unknown' | 'owned' | 'short';
+export type PurchaseRefusal = 'unknown' | 'reward' | 'owned' | 'short';
 
-/** 交換: 表にある・まだ持っていない・点が足りる品だけ。成り立てば点を引いて持ち物に足し、装着する（off から外す）。新しい物を返す */
+/** 交換: 表にある・ご褒美でない・まだ持っていない・点が足りる品だけ。成り立てば点を引いて持ち物に足し、装着する（off から外す）。新しい物を返す */
 export function purchaseItem(s: StoreState, item: StoreItem | undefined): { ok: true; state: StoreState } | { ok: false; reason: PurchaseRefusal } {
   if (!item) return { ok: false, reason: 'unknown' };
+  if (item.reward) return { ok: false, reason: 'reward' };
   if (s.owned.includes(item.id)) return { ok: false, reason: 'owned' };
   if (s.points < item.price) return { ok: false, reason: 'short' };
   return { ok: true, state: { ...s, points: s.points - item.price, owned: [...s.owned, item.id], off: s.off.filter((x) => x !== item.id) } };
+}
+
+/**
+ * ご褒美を渡す（v0.9.0 IP3。任務の終わりの 1 回＝systems/store-storage の recordStoreSortie。earned はご褒美の条件を満たしたか）: 満たしていれば、まだ持っていないご褒美を
+ * 持ち物に足して装着する（off から外す）。持ち物に入っていること＝渡した印（別の印は持たない。前のビルドが表に無い品として落としても、次の任務の終わりで戻る）。新しい物と渡した id を返す
+ */
+export function grantRewards(s: StoreState, items: readonly StoreItem[], earned: boolean): { state: StoreState; granted: string[] } {
+  const granted = earned ? items.filter((x) => x.reward && !s.owned.includes(x.id)).map((x) => x.id) : [];
+  if (granted.length === 0) return { state: s, granted };
+  return { state: { ...s, owned: [...s.owned, ...granted], off: s.off.filter((x) => !granted.includes(x)) }, granted };
 }
 
 /** 装着の入り切り（持っている品だけ。持っていなければそのまま）。新しい物を返す */

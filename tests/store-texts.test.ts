@@ -15,12 +15,13 @@ describe('文（ui/store-texts）', () => {
     expect([0, 999, 1000, 12345, 1234567].map(formatPoints)).toEqual(['0', '999', '1,000', '12,345', '1,234,567']);
     expect(walletJa(20000)).toBe('所持 20,000 点');
   });
-  it('効きの短い文は data の値から（4 品）', () => {
+  it('効きの短い文は data の値から（4 品＋ご褒美。v0.9.0 IP3）', () => {
     expect(cat.items.map((x) => [x.id, storeEffectJa(gameData, x)])).toEqual([
       ['fuel_tank', '燃料の割当 ×1.25'],
       ['smoke_large', '煙幕 8 秒 ・ 次まで 15 秒'],
       ['torp_mk13', '米 Mk 13魚雷を積む'],
       ['torp_rack6', '魚雷 6 本'],
+      ['crew_veteran', '弾倉交換 2.0 秒 ・ 消火 0.6 秒'],
     ]);
   });
   it('効く任務は何かを変える任務だけ（Briefing の切り替えが出る任務と同じ判定）', () => {
