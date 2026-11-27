@@ -1,5 +1,7 @@
 // 出撃の装備「デフォルト／カスタム」（v0.9.0。ユーザーの決め U1。spec-v0900 §4.1）: ストアの品を当てた出撃の data を 1 か所で作る。
-// デフォルト（sortie に custom の鍵が無い・史実モード）は base そのもの（同じ参照）＝世界・HUD・Result は v0.8.5 と 1 ビットも同じ。
+// デフォルト（sortie に custom の鍵が無い）は base そのもの（同じ参照）＝世界・HUD・Result は v0.8.5 と 1 ビットも同じ（史実モードのデフォルトも今の史実モードと同じ）。
+// v0.9.0 IP1（ユーザーの言葉 2026-11-27「史実モードでもカスタム装備使える仕様でいいです。でも史実でカスタムを使ったという表示と記録は必要です。」）: 史実モードでもカスタムを当てる
+// （S0・S1 の「史実モードはデフォルトに固定」をやめた。表示は HUD の「［史実・カスタム］」と Result の「（史実）（カスタム）」、記録は core/achieved-record の形のビット）。
 // カスタムは自艇の記録と任務の記録（と v0_1_prototype）だけを写して直した別の物（copy-on-write。base は決して書き換えない＝tests は base を深く freeze して当てる）。
 // 呼ぶのは Mission・Hud・Briefing の create だけ（出撃ごとに 1 回。同じ出撃の 2 回目からは覚えた物を返す）。Result の配点は base のまま。window を読まない（tests と scripts から読める）。
 import type { GameData } from './game-data';
@@ -30,7 +32,7 @@ function itemChanges(data: GameData, item: StoreItem, m: Rec): boolean {
   }
 }
 
-/** その任務で効く品の id（表の順。表に無い id・効かない品は落とす）。史実モードの判定はここではしない（sortieGameData と withCustomLoadout） */
+/** その任務で効く品の id（表の順。表に無い id・効かない品は落とす）。史実モードかどうかは見ない（v0.9.0 IP1 から史実モードでも同じ品が効く） */
 export function effectiveStoreItems(data: GameData, missionId: string, ids: readonly string[]): string[] {
   const m = missionRecord(data, missionId);
   if (!m) return [];
@@ -74,12 +76,12 @@ export function applyStoreItems(base: GameData, missionId: string, ids: readonly
 let memo: { base: GameData; key: string; data: GameData } | null = null;
 
 /**
- * 出撃の data: カスタムでなければ（custom の鍵が無い・史実モード）base そのもの（同じ参照）。カスタムなら品を当てた物
+ * 出撃の data: カスタムでなければ（custom の鍵が無い）base そのもの（同じ参照）。カスタムなら品を当てた物（史実モードでも同じ。v0.9.0 IP1）
  * （同じ base・任務・品の 2 回目は覚えた物＝Mission と Hud が同じ物を読む）
  */
 export function sortieGameData(base: GameData, sortie: Sortie): GameData {
   const c = sortie.custom;
-  if (!c || sortie.historical) return base;
+  if (!c) return base;
   const key = `${sortie.missionId}|${c.items.join(',')}`;
   if (memo && memo.base === base && memo.key === key) return memo.data;
   const data = applyStoreItems(base, sortie.missionId, c.items);
@@ -87,9 +89,8 @@ export function sortieGameData(base: GameData, sortie: Sortie): GameData {
   return data;
 }
 
-/** 出撃にカスタムの印を付ける（史実モード・効く品が無い → sortie そのもの＝デフォルト。付ける時は新しい物で、items はその任務で効く品だけ） */
+/** 出撃にカスタムの印を付ける（効く品が無い → sortie そのもの＝デフォルト。付ける時は新しい物で、items はその任務で効く品だけ。史実モードの出撃にも付ける＝v0.9.0 IP1） */
 export function withCustomLoadout(sortie: Sortie, data: GameData, ids: readonly string[]): Sortie {
-  if (sortie.historical) return sortie;
   const items = effectiveStoreItems(data, sortie.missionId, ids);
   return items.length === 0 ? sortie : { ...sortie, custom: { items } };
 }

@@ -44,7 +44,7 @@ describe('任務の終わり（recordStoreSortie）', () => {
     expect(loadStoreState(gameData).points).toBe(1500);
     recordStoreSortie(gameData, 'us_03', false, 0);
     expect([...achievedMissionIds()]).toEqual(['us_02']);
-    expect(JSON.parse(ls.map.get('night-hunters.achieved')!)).toEqual(['us_02']);
+    expect(JSON.parse(ls.map.get('night-hunters.achieved')!)).toEqual({ v: 2, m: { us_02: 1 } }); // v0.9.0 IP1: 形のビット（tests/achieved-record）
     expect(JSON.parse(ls.map.get('night-hunters.store')!)).toMatchObject({ v: 1, points: 1500, granted: false });
   });
   it('13 任務目の達成の出撃で支度金を 1 回だけ（次からは配らない）', () => {

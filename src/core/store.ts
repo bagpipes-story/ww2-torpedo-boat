@@ -108,7 +108,8 @@ export function sortieAccrual(total: number, a: StoreAccrual, o: { readonly hard
 
 /**
  * 達成（ユーザーの決め U2「13任務すべて達成」。問いの言葉「目的を果たして帰投」）: 帰投して（敵艦隊なしの cleared も帰投に数える）任務の目標を果たした出撃。
- * ノーマル・ハードのどちらでも同じ 1 つ（night-hunters.achieved は任務の id の集合）
+ * ストアを開く条件はどの形（ノーマル・ハード・史実モード・カスタム）の達成でも同じ 1 つ。どの形で達成したかは core/achieved-record のビット（v0.9.0 IP1）。
+ * Result の見出しの「任務達成／任務未達」と Title の行の印もこの 1 つの規則（v0.9.0 IP2）
  */
 export function sortieAchieved(r: { readonly returned: boolean; readonly objectiveDone: boolean }): boolean {
   return r.returned && r.objectiveDone;
@@ -156,9 +157,9 @@ export function equippedItemIds(s: StoreState): string[] {
 }
 
 /**
- * Briefing の「装備: デフォルト／カスタム」を出すか（v0.9.0 S1。ユーザーの決め U1）: ストアが開いていて、史実モードでなく（史実モードはデフォルトに固定）、
- * 港の空襲の 2 択の無い任務で（同じ帯を使う。今の 13 任務に空襲は無い＝tests/store-layout）、その任務に効く装着中の品が 1 つ以上ある時だけ
+ * Briefing の「装備: デフォルト／カスタム」を出すか（v0.9.0 S1。ユーザーの決め U1）: ストアが開いていて、港の空襲の 2 択の無い任務で（同じ帯を使う。今の 13 任務に空襲は無い＝
+ * tests/store-layout）、その任務に効く装着中の品が 1 つ以上ある時だけ。史実モードでも出す（v0.9.0 IP1。ユーザーの言葉「史実モードでもカスタム装備使える仕様でいいです」。S1 は史実モードでは出さなかった）
  */
-export function briefingLoadoutShown(o: { readonly open: boolean; readonly historical: boolean; readonly raid: boolean; readonly effectiveItems: number }): boolean {
-  return o.open && !o.historical && !o.raid && o.effectiveItems > 0;
+export function briefingLoadoutShown(o: { readonly open: boolean; readonly raid: boolean; readonly effectiveItems: number }): boolean {
+  return o.open && !o.raid && o.effectiveItems > 0;
 }

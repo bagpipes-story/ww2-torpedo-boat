@@ -1,5 +1,5 @@
 // Briefing の「装備: デフォルト／カスタム」（v0.9.0 S1。ユーザーの決め U1 の語）: 出撃の左 16 の 400 × 112 のボタン。出すかどうかは systems/sortie-loadout の briefingLoadout
-// （ストアが開いていて・史実モードでなく・空襲の 2 択が無く・その任務に効く装着中の品がある時だけ）。押すと選びを保存して Briefing を作り直す（数値の行をカスタムの値で組み直す）。
+// （ストアが開いていて・空襲の 2 択が無く・その任務に効く装着中の品がある時だけ。v0.9.0 IP1 から史実モードでも出す）。押すと選びを保存して Briefing を作り直す（数値の行をカスタムの値で組み直す）。
 // 作るのは Briefing の create の 1 回だけ（§7）。
 import type Phaser from 'phaser';
 import { GAME_WIDTH } from '../config/game-config';

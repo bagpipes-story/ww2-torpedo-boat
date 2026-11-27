@@ -50,11 +50,10 @@ describe('文（ui/store-texts）', () => {
 });
 
 describe('Briefing の切り替えを出すか（core/store の briefingLoadoutShown）', () => {
-  it('開いていて・史実モードでなく・空襲が無く・効く装着中の品がある時だけ', () => {
-    const ok = { open: true, historical: false, raid: false, effectiveItems: 1 };
+  it('開いていて・空襲が無く・効く装着中の品がある時だけ（史実モードかどうかは見ない＝v0.9.0 IP1）', () => {
+    const ok = { open: true, raid: false, effectiveItems: 1 };
     expect(briefingLoadoutShown(ok)).toBe(true);
     expect(briefingLoadoutShown({ ...ok, open: false })).toBe(false);
-    expect(briefingLoadoutShown({ ...ok, historical: true })).toBe(false);
     expect(briefingLoadoutShown({ ...ok, raid: true })).toBe(false);
     expect(briefingLoadoutShown({ ...ok, effectiveItems: 0 })).toBe(false);
   });
@@ -95,7 +94,7 @@ describe('?debug&points=N の財布の写し（enableStoreMemory）', () => {
     recordStoreSortie(gameData, 'us_02', true, 700);
     expect(loadStoreState(gameData)).toMatchObject({ points: 20000 - 8000 + 700, owned: ['fuel_tank', 'torp_rack6'], mode: 'custom' });
     expect(ls.map.get('night-hunters.store')).toBe(before);
-    expect(ls.map.get('night-hunters.achieved')).toBe('["us_02"]');
+    expect(ls.map.get('night-hunters.achieved')).toBe('{"v":2,"m":{"us_02":1}}'); // v0.9.0 IP1: 形のビット（省けばノーマル・史実オフ・デフォルト＝1）
     clearStoreMemory();
     expect(loadStoreState(gameData).points).toBe(100);
   });

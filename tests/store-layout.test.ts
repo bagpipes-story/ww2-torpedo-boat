@@ -167,7 +167,7 @@ describe('Briefing の「装備: デフォルト／カスタム」', () => {
   });
   it('配線（ソース）: 出撃はカスタムを選んだ時だけ印を付け、数値の行もその data で組む。押すと選びを保存して同じ夜で作り直す', () => {
     const code = src('scenes/briefing-scene.ts');
-    expect(code).toContain('const loadout = briefingLoadout(base, id, this.historical, p !== null);');
+    expect(code).toContain('const loadout = briefingLoadout(base, id, p !== null);'); // v0.9.0 IP1: 史実モードでも出す（引数から史実を外した）
     expect(code).toContain('this.sortie = sortieWithBriefingLoadout(rollRaid(id, this.seed, p, DEBUG_RAID_OVERRIDE, this.hard, this.historical), base, loadout);');
     expect(code).toContain('const data = sortieGameData(base, this.sortie);');
     expect(code).toContain("setStoreLoadoutMode(base, custom ? 'custom' : 'default');");

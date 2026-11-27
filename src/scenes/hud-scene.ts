@@ -21,7 +21,7 @@ import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
 import { isSortie, type Sortie } from '../core/sortie';
 import { sortieGameData } from '../config/custom-loadout';
-import { HUD_CUSTOM_BADGE_JA } from '../config/store-layout-config';
+import { HUD_CUSTOM_BADGE_JA, HUD_HIST_CUSTOM_BADGE_JA } from '../config/store-layout-config';
 import { HOME_COLOR_TEXT, HUD_COLOR_KPI, HUD_FONT_DEBUG_PX, HUD_HIST_BADGE_JA, HUD_HIST_BADGE_X, hudTextStyle } from '../config/ui-config';
 import { ControlToggleButtons } from '../systems/control-toggle-buttons';
 import { KeyboardInput } from '../systems/keyboard-input';
@@ -106,8 +106,8 @@ export class HudScene extends Phaser.Scene {
     const objective = objectiveSpecOf(this.telemetry, mission.convoy?.arrive_quota ?? 0); // 成否の数のある任務だけ（v0.8.5 IP7。沈めて帰る・生きて帰る任務は null）
     if (objective) this.objectiveLine = new ObjectiveLine(this, objective);
     // 史実モードの印（v0.5.2 実機 1・2 回目）: 左上の FPS の右に黄色で［史実］とだけ。固定文字列なので 1 回だけ描く（§7）
-    if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud);
-    else if (this.sortie?.custom) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_CUSTOM_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HOME_COLOR_TEXT)).setDepth(DEPTH.hud); // カスタムの装備（v0.9.0 S1。同じ所に青で。史実とは同時に出ない）
+    if (this.historical) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, this.sortie?.custom ? HUD_HIST_CUSTOM_BADGE_JA : HUD_HIST_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HUD_COLOR_KPI)).setDepth(DEPTH.hud); // 史実モードのカスタム（v0.9.0 IP1）は 1 つの文「［史実・カスタム］」
+    else if (this.sortie?.custom) this.add.text(HUD_HIST_BADGE_X, HUD_MARGIN, HUD_CUSTOM_BADGE_JA, hudTextStyle(HUD_FONT_DEBUG_PX, HOME_COLOR_TEXT)).setDepth(DEPTH.hud); // カスタムの装備（v0.9.0 S1。同じ所に青で）
     this.hpBar = new HpBar(this);
     this.fuelGauge = new FuelGauge(this);
     if (this.telemetry.engine.on) this.engineHud = new EngineHud(this); // Mission が launch の前にテレメトリを 1 回書く（?debug&engoff の夜は on false）

@@ -34,7 +34,7 @@ export interface Sortie {
   historical: boolean;
   /**
    * カスタムの装備で出た（v0.9.0。ユーザーの決め U1。config/custom-loadout）: その任務で効くストアの品の id。デフォルトの出撃は鍵ごと無い
-   * （今までの Sortie と同じ物＝isSortie・再生の写し・Result の材料が変わらない）。史実モードの出撃には付けない
+   * （今までの Sortie と同じ物＝isSortie・再生の写し・Result の材料が変わらない）。史実モードの出撃にも付く（v0.9.0 IP1。S0・S1 は付けなかった）
    */
   custom?: SortieCustom;
 }

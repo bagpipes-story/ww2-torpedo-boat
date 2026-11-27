@@ -7,14 +7,18 @@ import { DEBUG_DIRECT_MISSION, DEBUG_RAID_OVERRIDE, DEPTH, GAME_HEIGHT, GAME_WID
 import { getGameData, getScoringParams } from '../config/game-data';
 import { hasHardVariant } from '../config/mission-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BODY_MAX_Y, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
+import { missionAchieveJa } from '../config/briefing-data';
 import { computeScore } from '../core/scoring';
+import { sortieAchieved } from '../core/store';
 import { missionScoreInput } from '../systems/mission-score';
 import type { StoreSortieRecord } from '../systems/store-storage';
 import { resultCustomTagJa, storeResultPartJa } from '../ui/store-texts';
 import { evacScorePartJa, evacTimeLinesJa } from '../ui/evac-result';
 import type { DawnResult } from '../core/dawn-air';
 import {
+  HOME_COLOR_TEXT,
   HUD_COLOR_STRONG,
+  HUD_COLOR_WARN,
   HUD_FONT_HEADING_PX,
   HUD_FONT_SPEED_PX,
   RESULT_INPUT_DELAY_MS,
@@ -32,7 +36,7 @@ import type { KpiResultLines } from '../systems/kpi-storage';
 import { escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
 import { sfxMusic, sfxResultBell } from '../systems/sfx-bus';
 import { MUSIC_CTX_MENU, MUSIC_FADE } from '../config/sfx-music-config';
-import { resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
+import { resultConditionJa, resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
 import { convoyHeadJa } from '../ui/convoy-lines';
 import { landingHeadJa } from '../ui/landing-result';
 import { dawnResultLine } from '../ui/dawn-lines';
@@ -178,8 +182,13 @@ export class ResultScene extends Phaser.Scene {
       y += size + RESULT_LINE_GAP;
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
-    const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
-    line((r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // 救助の任務（v0.8.5 S4。ui/rescue-result）・カスタムの印（v0.9.0 S1。デフォルトは ''）
+    const base = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const hardV = r.sortie.hard && hasHardVariant(base, r.sortie.missionId);
+    // 頭の語と色は達成（core/store の sortieAchieved。v0.9.0 IP2）: 「任務達成 — …」は味方の青、「任務未達 — …」は警告の色。未達はすぐ下に「達成の条件: …」（Briefing の「成功」の文）
+    const achieved = sortieAchieved(r);
+    line((r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(achieved, r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX, achieved ? HOME_COLOR_TEXT : HUD_COLOR_WARN); // 救助の任務（v0.8.5 S4。ui/rescue-result）・カスタムの印（v0.9.0 S1。デフォルトは ''）
+    const cond = achieved ? '' : resultConditionJa(missionAchieveJa(base, r.sortie.missionId, hardV));
+    if (cond) line(cond, HUD_FONT_HEADING_PX);
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {
@@ -188,7 +197,7 @@ export class ResultScene extends Phaser.Scene {
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
-    const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
+    const scoringParams = getScoringParams(base);
     // 材料は systems/mission-score（v0.9.0 で抜き出し。ストアの点は Mission の endMission が同じ式で 1 回だけ足す＝ここでは計算して出すだけ）
     const score = computeScore(missionScoreInput(r), scoringParams);
     line(`スコア ${score.total}${r.store ? storeResultPartJa(r.store) : ''}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // ストアの点（v0.9.0 S1。開いている端末だけ）

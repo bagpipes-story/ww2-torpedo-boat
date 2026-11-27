@@ -154,7 +154,7 @@ describe('jp_01 のハードの世界（米PT 3 隻・ノルマ 3）', () => {
     expect(textWidthPx(worst, 24), worst).toBeLessThanOrEqual(1280 - 2 * 24);
     // result-scene はハードの違いのある任務のハードだけ objectiveDone を渡す（見出しの「（ハード）」と同じ条件。v0.6.7 S0 から本文の枝は ui/result-body）
     const rs = readFileSync('src/scenes/result-scene.ts', 'utf8');
-    expect(rs).toContain('const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);');
+    expect(rs).toContain('const hardV = r.sortie.hard && hasHardVariant(base, r.sortie.missionId);'); // v0.9.0 IP2: data は base に 1 回
     expect(rs).toContain('resultBodyLines(r, hardV)');
     expect(readFileSync('src/ui/result-body.ts', 'utf8')).toContain('convoyResultLine(r.convoy, hardV ? r.objectiveDone : undefined)');
   });

@@ -323,11 +323,11 @@ describe('cleared の Result と得点（帰投と同じに数える）', () => 
     expect(all).toContain('cleared');
     expect(all.filter(endCountsAsReturn)).toEqual(['returned', 'cleared']);
   });
-  it('見出し「任務終了 — 敵艦隊なし（制空権下・帰投不要）」に夜明け後・ハード・史実が付く。帰投は「不要」、夜明けの行は「前に敵艦隊なし」', () => {
+  it('見出し「任務達成 — 敵艦隊なし（制空権下・帰投不要）」に夜明け後・ハード・史実が付く。帰投は「不要」、夜明けの行は「前に敵艦隊なし」', () => {
     const before = { reached: false, caughtOutside: false, daylightS: 0 };
     const caught = { reached: true, caughtOutside: true, daylightS: 41.6 };
-    expect(resultHeadingJa('cleared', resultDawnSuffixS(true, before), false, false)).toBe('任務終了 — 敵艦隊なし（制空権下・帰投不要）');
-    expect(resultHeadingJa('cleared', resultDawnSuffixS(true, caught), true, true)).toBe('任務終了 — 敵艦隊なし（制空権下・帰投不要）（夜明け後 42 秒）（ハード）（史実）');
+    expect(resultHeadingJa(true, 'cleared', resultDawnSuffixS(true, before), false, false)).toBe('任務達成 — 敵艦隊なし（制空権下・帰投不要）');
+    expect(resultHeadingJa(true, 'cleared', resultDawnSuffixS(true, caught), true, true)).toBe('任務達成 — 敵艦隊なし（制空権下・帰投不要）（夜明け後 42 秒）（ハード）（史実）');
     expect([resultReturnJa('cleared', true), resultReturnJa('returned', true), resultReturnJa('destroyed', false)]).toEqual(['不要', 'あり', 'なし']);
     const d = { ...createDawnResult(), timeLeftAtEndS: 60.2 };
     expect(dawnResultLine(d, true, true)).toBe('夜明け: 前に敵艦隊なし（残り 61 秒）');

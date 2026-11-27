@@ -92,7 +92,7 @@ export const STORE_DESC_WRAP = 832;
 export const STORE_DESC_LINE_GAP = 8;
 /** 左下の一言（18 px・幅 STORE_DESC_WRAP で折り返し・下端 696）: どこで効くかと、保存の場所の既知の制約（Safari とホーム画面のアプリは別） */
 export const STORE_HINT_PX = 18;
-export const STORE_HINT_JA = 'Briefing で「装備: カスタム」を選ぶと装着中の品が効く（史実モードはデフォルトのまま）\n点と装備はこの端末のこのアプリだけに保存（Safari とホーム画面のアプリは別）';
+export const STORE_HINT_JA = 'Briefing で「装備: カスタム」を選ぶと装着中の品が効く（史実モードでも使える・印が付く）\n点と装備はこの端末のこのアプリだけに保存（Safari とホーム画面のアプリは別）';
 /** 右下の主ボタン（Briefing の「出撃」と同じ x・320 × 112）: 交換する → 3 秒の間「本当に交換」→ もう一度で交換（誤タップ対策）。交換済みは「外す」⇄「装着する」 */
 export const STORE_ACTION_PX = 32;
 export const STORE_CONFIRM_MS = 3000;
@@ -109,7 +109,7 @@ export const STORE_SAVE_FAILED_JA = '保存できなかった（プライベー�
 
 /**
  * Briefing の「装備: デフォルト／カスタム」（ユーザーの決め U1 の語）: 出撃（右下の主ボタン）の左 16 に 400 × 112（1280 で 520〜920・1560 で 800〜1200）。
- * 出すのはストアが開いていて、史実モードでなく、港の空襲の無い任務で、その任務に効く装着中の品が 1 つ以上ある時だけ（＝今の端末・ヘッドレスでは出ない）
+ * 出すのはストアが開いていて、港の空襲の無い任務で、その任務に効く装着中の品が 1 つ以上ある時だけ（＝今の端末・ヘッドレスでは出ない。v0.9.0 IP1 から史実モードでも出す）
  */
 export const BRIEF_LOADOUT_W = 400;
 export const BRIEF_LOADOUT_GAP = 16;
@@ -125,6 +125,10 @@ export const BRIEF_LOADOUT_DEFAULT_SUB_JA = '史実の初期装備 ・ タップ
 /** カスタムの 2 行目（効く品の短い名を「・」で。見積もりの幅がボタンの余白の内＝400 − 2 × 32 を超えたら入るだけ並べて「ほか n」） */
 export const BRIEF_LOADOUT_SUB_MAX_PX = 336;
 
-/** Mission の HUD の左上の印（カスタムの出撃だけ。史実モードとは同時に出ない）と Result の見出しの印 */
+/**
+ * Mission の HUD の左上の印（カスタムの出撃だけ）と Result の見出しの印。史実モードのカスタム（v0.9.0 IP1。ユーザーの言葉「史実でカスタムを使ったという表示と記録は必要です」）は
+ * 同じ所の 1 つの文「［史実・カスタム］」（史実の黄色。史実モードだけの「［史実］」は config/ui-config の HUD_HIST_BADGE_JA のまま）
+ */
 export const HUD_CUSTOM_BADGE_JA = '［カスタム］';
+export const HUD_HIST_CUSTOM_BADGE_JA = '［史実・カスタム］';
 export const RESULT_CUSTOM_TAG_JA = '（カスタム）';

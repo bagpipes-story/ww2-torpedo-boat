@@ -300,13 +300,14 @@ describe('Result の見出しと夜明けの行（spec §8.5）', () => {
     ...over,
   });
   it('見出し: 夜明け前の帰投・夜明けの後の帰投・空襲で沈没・ほかの終わり（ハード・史実は後ろ）', () => {
-    const head = (reason: Parameters<typeof resultHeadingJa>[0], returned: boolean, d: DawnResult, hard = false, hist = false): string => resultHeadingJa(reason, resultDawnSuffixS(returned, d), hard, hist);
-    expect(head('returned', true, res({ timeLeftAtEndS: 40 }))).toBe('任務終了 — 帰投した');
-    expect(head('returned', true, res({ reached: true, caughtOutside: false, daylightS: 3 }))).toBe('任務終了 — 帰投した');
-    expect(head('returned', true, res({ reached: true, caughtOutside: true, daylightS: 41.6 }))).toBe('任務終了 — 帰投した（夜明け後 42 秒）');
-    expect(head('air_strike', false, res({ reached: true, caughtOutside: true, daylightS: 63.2 }), true)).toBe('任務終了 — 夜明けの空襲で沈没（夜明け後 63 秒）（ハード）');
-    expect(head('adrift', false, res({ reached: true, caughtOutside: true, daylightS: 300.4 }), false, true)).toBe('任務終了 — 燃料切れで漂流（夜明け後 300 秒）（史実）');
-    expect(head('destroyed', false, res({ timeLeftAtEndS: 12 }))).toBe('任務終了 — 砲撃で沈没');
+    // 頭の語は達成（v0.9.0 IP2）: ここは帰投＝達成・ほかは未達の形で
+    const head = (reason: Parameters<typeof resultHeadingJa>[1], returned: boolean, d: DawnResult, hard = false, hist = false): string => resultHeadingJa(returned, reason, resultDawnSuffixS(returned, d), hard, hist);
+    expect(head('returned', true, res({ timeLeftAtEndS: 40 }))).toBe('任務達成 — 帰投した');
+    expect(head('returned', true, res({ reached: true, caughtOutside: false, daylightS: 3 }))).toBe('任務達成 — 帰投した');
+    expect(head('returned', true, res({ reached: true, caughtOutside: true, daylightS: 41.6 }))).toBe('任務達成 — 帰投した（夜明け後 42 秒）');
+    expect(head('air_strike', false, res({ reached: true, caughtOutside: true, daylightS: 63.2 }), true)).toBe('任務未達 — 夜明けの空襲で沈没（夜明け後 63 秒）（ハード）');
+    expect(head('adrift', false, res({ reached: true, caughtOutside: true, daylightS: 300.4 }), false, true)).toBe('任務未達 — 燃料切れで漂流（夜明け後 300 秒）（史実）');
+    expect(head('destroyed', false, res({ timeLeftAtEndS: 12 }))).toBe('任務未達 — 砲撃で沈没');
   });
   it('dawnResultLine: 敵の制空下（僚艇あり・なし）、味方の制空下、夜明け前の帰投、出さない場合', () => {
     const caught = { reached: true, caughtOutside: true, daylightS: 61.6, air: DAWN_AIR_ENEMY, labelJa: '昼の空は敵（日本の水上機）' };

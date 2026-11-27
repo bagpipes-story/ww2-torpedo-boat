@@ -39,15 +39,16 @@ const pt = (o: Partial<PtResult> = {}): PtResult => ({ enemyId: 'de_sboat_enemy'
 describe('見出し', () => {
   it('達成・未達で帰投・S ボートの掃射・触雷（spec の「触雷 — 沈没」は頭の線と 2 本にしない）。後ろの秒は「救助の後」', () => {
     const r = rr({ delivered: 32 });
-    expect(resultHeadingJa('returned', NaN, false, false, false, false, rescueReasonJa('returned', r, true, pt()))).toBe('任務終了 — 救助成功');
-    expect(resultHeadingJa('returned', 20.4, true, false, false, false, rescueReasonJa('returned', r, false, pt()))).toBe('任務終了 — 帰投（渡した 32 名 ・ 40 名に届かず）（救助の後 20 秒）（ハード）');
-    expect(resultHeadingJa('pt_fire', NaN, false, false, false, false, rescueReasonJa('pt_fire', r, false, pt()))).toBe('任務終了 — Sボートの掃射で沈没');
-    expect(resultHeadingJa('mine', NaN, false, false, false, false, rescueReasonJa('mine', r, false, pt()))).toBe('任務終了 — 触雷で沈没');
-    expect(resultHeadingJa('shore_battery', NaN, false, true, false, false, rescueReasonJa('shore_battery', r, false, pt()))).toBe('任務終了 — 沿岸砲で沈没（史実）');
+    expect(resultHeadingJa(true, 'returned', NaN, false, false, false, false, rescueReasonJa('returned', r, true, pt()))).toBe('任務達成 — 救助成功');
+    expect(resultHeadingJa(false, 'returned', 20.4, true, false, false, false, rescueReasonJa('returned', r, false, pt()))).toBe('任務未達 — 帰投（渡した 32 名 ・ 40 名に届かず）（救助の後 20 秒）（ハード）');
+    expect(resultHeadingJa(false, 'pt_fire', NaN, false, false, false, false, rescueReasonJa('pt_fire', r, false, pt()))).toBe('任務未達 — Sボートの掃射で沈没');
+    expect(resultHeadingJa(false, 'mine', NaN, false, false, false, false, rescueReasonJa('mine', r, false, pt()))).toBe('任務未達 — 触雷で沈没');
+    expect(resultHeadingJa(false, 'shore_battery', NaN, false, true, false, false, rescueReasonJa('shore_battery', r, false, pt()))).toBe('任務未達 — 沿岸砲で沈没（史実）');
     const m = { reason: 'returned' as const, returned: true, objectiveDone: true, pt: pt(), dawn: { reached: true, caughtOutside: true, daylightS: 12.2 } as DawnResult, sortie: { historical: true } };
-    expect(rescueHeadingJa(m, r, true)).toBe('任務終了 — 救助成功（救助の後 12 秒）（ハード）（史実）');
+    expect(rescueHeadingJa(m, r, true)).toBe('任務達成 — 救助成功（救助の後 12 秒）（ハード）（史実）');
+    expect(rescueHeadingJa({ ...m, objectiveDone: false }, r, false)).toBe('任務未達 — 帰投（渡した 32 名 ・ 40 名に届かず）（救助の後 12 秒）（史実）'); // 帰投しても 40 名に届かなければ未達（v0.9.0 IP2）
     // 救助の無い任務は今のまま
-    expect(resultHeadingJa('pt_fire', 20.4, false, false)).toBe('任務終了 — PTの掃射で沈没（夜明け後 20 秒）');
+    expect(resultHeadingJa(false, 'pt_fire', 20.4, false, false)).toBe('任務未達 — PTの掃射で沈没（夜明け後 20 秒）');
   });
 });
 

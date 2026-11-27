@@ -137,7 +137,7 @@ describe('jp_02 の Result（spec §D.5）', () => {
   });
   it('終了の見出し: 夜の爆撃は「敵機の爆撃で沈没」（bombed）、夜明けの 4 機は「夜明けの空襲で沈没」（air_strike）', () => {
     expect(REASON_LABEL.bombed).toBe('敵機の爆撃で沈没');
-    expect(resultHeadingJa('bombed', NaN, false, false)).toBe('任務終了 — 敵機の爆撃で沈没');
-    expect(resultHeadingJa('air_strike', 12, false, false)).toBe('任務終了 — 夜明けの空襲で沈没（夜明け後 12 秒）');
+    expect(resultHeadingJa(false, 'bombed', NaN, false, false)).toBe('任務未達 — 敵機の爆撃で沈没');
+    expect(resultHeadingJa(false, 'air_strike', 12, false, false)).toBe('任務未達 — 夜明けの空襲で沈没（夜明け後 12 秒）');
   });
 });

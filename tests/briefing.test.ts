@@ -339,7 +339,7 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番�
       const rec = getBriefingRecord(gameData, 'us_06', hard);
       texts.push(rec.titleJa, rec.place, rec.objective, rec.success, rec.noteJa, ...rowsOf(hard).map((r) => r.text));
     }
-    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, ANCHOR_HINT_JA, bowOnLineJa(5, true), resultHeadingJa('rammed', NaN, true, false, false, true));
+    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, ANCHOR_HINT_JA, bowOnLineJa(5, true), resultHeadingJa(false, 'rammed', NaN, true, false, false, true));
     texts.push(anchorResultLineJa({ nameJa: '卯月', sunk: true, underwayS: 85, reason: 2, heldShots: 4, heldHits: 2, backdropS: 48 }));
     const t = { anchor: {}, transportEnabled: true, transportSunk: false, shipsSunk: 0, shipsTotal: 1, torpedoesLeft: 2, dawn: { forceJa: '日本の艦', retireJa: '東' } } as never;
     texts.push(anchorWithdrawJa(t, 'x'), anchorWithdrawJa({ ...(t as object), shipsSunk: 1 } as never, 'x'));
@@ -405,7 +405,7 @@ describe('us_05 の Briefing（v0.8.2 S4）と画面の文の人名・PT の番�
     }
     const r0 = { stage: 2, seenAtS: 148, sentAtS: 170, relayedAtS: 210, trackedS: 12, identifyJa: '戦艦', relayJa: '隣の分隊', total: 8, bbHits: 3, caHits: 1, ddHits: 0, bbSunk: 1, caSunk: 0, ddSunk: 0, detonations: 1, gone: 6, shipKills: [] };
     for (const stage of [0, 1, 2, 3, 4]) texts.push(reconReportLineJa({ ...r0, stage }));
-    texts.push(reconFleetLineJa(r0), resultHeadingJa('rammed', NaN, true, false, false, true), resultShipsJa({ shipsTotal: 7, shipsSunk: 1, transportEnabled: false, transportSunk: false, dawn: { shipsWithdrawn: 0, transportWithdrawn: false }, recon: r0 }));
+    texts.push(reconFleetLineJa(r0), resultHeadingJa(false, 'rammed', NaN, true, false, false, true), resultShipsJa({ shipsTotal: 7, shipsSunk: 1, transportEnabled: false, transportSunk: false, dawn: { shipsWithdrawn: 0, transportWithdrawn: false }, recon: r0 }));
     texts.push(reconSeenLineJa('戦艦', 20), reconSentLineJa('戦艦', 2, '東へ 18 ノット'), reconRadioLineJa('西', '隣の分隊'), RECON_RELAYED_JA, reconCapHitLineJa('重巡', 2), RECON_BOOM_JA, '接触が東（スリガオ海峡）へ消えた', '報告済み ・ 帰投せよ  800 m');
     for (const s of texts) {
       for (const name of PERSON_DENYLIST) expect(s).not.toContain(name);

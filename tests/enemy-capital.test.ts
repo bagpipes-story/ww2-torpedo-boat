@@ -28,7 +28,10 @@ describe('今の記録と data は main 0176202 のまま（新しい記録・�
   // 今の値は us_07 と us_05 を除き us_06 の order を 6 に戻した sha（main 38acd73 の data で同じ式が同じ値。main 0176202 の式の値 669f69e0… は 38acd73 でも同じだった）・mine は params を外した sha（0176202 の値のまま）
   it('missions_seed の us_05・us_07 以外の任務（us_06 の order は v0.8.5 で 7）・risk_events の radio_failure 以外の記録（mine は v0.8.5 の params の他）は 1 字も同じ。scoring.json は v0.8.2・v0.8.5 で 3 つずつ鍵を足しただけ（今の値は変えない）', () => {
     const ms = gameData.missionsSeed as unknown as Rec;
-    const missions = (ms['missions'] as Rec[]).filter((m) => m['id'] !== 'us_05' && m['id'] !== 'us_07').map((m) => (m['id'] === 'us_06' ? { ...m, order: 6 } : m));
+    // v0.9.0 IP2: us_02・jp_06 に Result の「達成の条件」の文 achieve_ja（とその source）を足した＝鍵 2 つだけ。それを外せば同じ
+    const ACHIEVE = (ms['missions'] as Rec[]).filter((m) => m['achieve_ja'] !== undefined).map((m) => m['id']);
+    expect(ACHIEVE).toEqual(['us_02', 'jp_06']);
+    const missions = (ms['missions'] as Rec[]).filter((m) => m['id'] !== 'us_05' && m['id'] !== 'us_07').map((m) => { const { achieve_ja: _a, achieve_ja_source: _s, ...rest } = m; return rest['id'] === 'us_06' ? { ...rest, order: 6 } : rest; });
     // v0.8.5 S5: jp_hard の source に解放の一覧の注（「。v0.8.0 からは上の unlock_mission_ids で…3 任務」）を足した＝文だけ。それを外せば同じ
     const S5_NOTE = '。v0.8.0 からは上の unlock_mission_ids で us_01〜us_03 に固定＝v0.8.5 で us_07 が遊べるようになっても 3 任務';
     const campaigns = (ms['campaigns'] as Rec[]).map((c) => (c['id'] === 'jp_hard' ? { ...c, source: String(c['source']).replace(S5_NOTE, '') } : c));

@@ -59,6 +59,23 @@ export function getBriefingRecord(data: GameData, missionId: string, hard: boole
   };
 }
 
+/**
+ * 達成の条件の文（v0.9.0 IP2。未達の Result の「達成の条件: …」）: Briefing の「成功」の文（ハードの文があればそれ）。「成功」が達成の規則（core/store の sortieAchieved＝
+ * 目的を果たして帰投）と食い違う任務だけ、missions_seed の任意の achieve_ja（us_02・jp_06: 「成功」は帰投だけを言うが、達成は撃沈して帰投）。任務が無ければ ''
+ */
+export function missionAchieveJa(data: GameData, missionId: string, hard: boolean = false): string {
+  const m = data.missionsSeed.missions.find((x) => x.id === missionId) as Record<string, unknown> | undefined;
+  if (!m) return '';
+  const a = m['achieve_ja'];
+  if (a !== undefined) {
+    if (typeof a !== 'string' || a.trim() === '') throw new Error(`${missionId}.achieve_ja は空でない文字列（Result の達成の条件）`);
+    return a;
+  }
+  const ht = hard ? readHardText((m['v0_1_prototype'] as Record<string, unknown> | undefined)?.['hard'], missionId) : null;
+  const s = m['success'];
+  return ht ? ht.success : typeof s === 'string' ? s : '';
+}
+
 /** 敵の名前（enemies.json の name_ja から資料の注記「（…）」を落とす） */
 export function enemyNameJa(data: GameData, id: string): string {
   const e = (data.enemies.enemies as readonly Record<string, unknown>[]).find((x) => x['id'] === id);

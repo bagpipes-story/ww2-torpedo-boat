@@ -113,7 +113,7 @@ export const DEBUG_UNLOCK_ALL = DEBUG_ENABLED && new URLSearchParams(window.loca
 /** ?debug&store=1（v0.9.0。ユーザーの決め U2）: ストアを開いたものとして扱う（13 任務の達成を待たずに iPhone で試す。保存は変えない＝支度金も配らない。?debug&unlock と同じ作法） */
 export const DEBUG_STORE_OPEN = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('store');
 /**
- * ?debug&custom=<品の id をコンマで区切る>（v0.9.0 S0。Briefing の切り替えは S1）: 持ち物・保存に関わらず、その品を装着したカスタムで出撃する（Mission の init。史実モードはデフォルトのまま）。
+ * ?debug&custom=<品の id をコンマで区切る>（v0.9.0 S0。Briefing の切り替えは S1）: 持ち物・保存に関わらず、その品を装着したカスタムで出撃する（Mission の create。史実モードでも効く＝v0.9.0 IP1）。
  * custom=all で表の全部。無ければ null（デフォルト）
  */
 function debugCustomItems(): string[] | null {
@@ -123,7 +123,7 @@ function debugCustomItems(): string[] | null {
   return v.split(',').filter((x) => x !== '');
 }
 export const DEBUG_CUSTOM_ITEMS = debugCustomItems();
-/** DEBUG_CUSTOM_ITEMS の「表の全部」の語 */
+/** DEBUG_CUSTOM_ITEMS の「表の全部」の語（?debug&achieved＝config/debug-achieved の「全部」も同じ語） */
 export const DEBUG_CUSTOM_ALL = 'all';
 /**
  * ?debug&points=N（v0.9.0 S1。iPhone で店を試す。例 ?debug&store=1&points=20000）: ストアの財布を N 点（0 以上の整数）の写しとして扱う（Boot の systems/store-storage の enableStoreMemory。

@@ -1,5 +1,5 @@
 // 出撃の装備「デフォルト／カスタム」（v0.9.0 S0。config/custom-loadout・config/store-data。spec-v0900 §4.1・§4.2・§6・§7）:
-// デフォルト（custom の鍵が無い・史実モード）の出撃の data は base そのもの（toBe）を 13 任務×ハードで。カスタムは自艇と任務の記録だけを写し（base を深く freeze しても投げない）、
+// デフォルト（custom の鍵が無い。史実モードでも）の出撃の data は base そのもの（toBe）を 13 任務×ハードで。v0.9.0 IP1: 史実モードのカスタムはカスタムと同じ data（史実かどうかで変わらない）。カスタムは自艇と任務の記録だけを写し（base を深く freeze しても投げない）、
 // 13 任務×ハード×（品 1 つずつ＋全部）の組み立てが投げない。効く品（任務ごと）・効き（数）・日本の艇に効かない・Boot の検査 V-S1〜V-S4 が壊れた data を止める。
 import { describe, expect, it } from 'vitest';
 import { gameData, getBoatTorpedoCount, getPrototypeMission, type GameData } from '../src/config/game-data';
@@ -32,12 +32,20 @@ describe('デフォルトは base そのもの（ビット同一の芯）', () =
     expect(getStoreCatalogue(gameData).openMissionIds).toEqual(MISSIONS);
     expect(ITEMS).toEqual(['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6']);
   });
-  it.each(VARIANTS)('$id hard=$hard: デフォルトの出撃（custom の鍵なし）は toBe・史実モードはカスタムの印があっても toBe', ({ id, hard }) => {
-    const s = directSortie(id, 1, 'none', hard, false);
-    expect('custom' in s).toBe(false);
-    expect(sortieGameData(gameData, s)).toBe(gameData);
-    expect(sortieGameData(gameData, custom(id, ITEMS, hard, true))).toBe(gameData);
-    expect(withCustomLoadout(directSortie(id, 1, 'none', hard, true), gameData, ITEMS).custom).toBeUndefined();
+  it.each(VARIANTS)('$id hard=$hard: デフォルトの出撃（custom の鍵なし）は史実モードでも toBe。史実モードのカスタムは史実オフのカスタムと同じ data・同じ印（v0.9.0 IP1）', ({ id, hard }) => {
+    for (const hist of [false, true]) {
+      const s = directSortie(id, 1, 'none', hard, hist);
+      expect('custom' in s).toBe(false);
+      expect(sortieGameData(gameData, s)).toBe(gameData);
+    }
+    const eff = effectiveStoreItems(gameData, id, ITEMS);
+    const h = withCustomLoadout(directSortie(id, 1, 'none', hard, true), gameData, ITEMS);
+    expect(h.custom?.items).toEqual(eff.length > 0 ? eff : undefined);
+    expect(h.historical).toBe(true);
+    // 同じ品なら史実モードかどうかで data は変わらない（覚えた物も同じ＝Mission と Hud が同じ物を読む）
+    const a = sortieGameData(gameData, custom(id, ITEMS, hard, false));
+    expect(sortieGameData(gameData, custom(id, ITEMS, hard, true))).toBe(a);
+    expect(a === gameData).toBe(eff.length === 0);
   });
   it('効く品の無い印（日本の艇）は base そのもの・withCustomLoadout は印を付けない', () => {
     for (const id of MISSIONS.filter((m) => m.startsWith('jp_'))) {

@@ -205,8 +205,8 @@ describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い�
     expect(difficultyJa(true, true)).toBe(' ・ 難易度 ハード'); // 他の任務は今までどおり
     expect(difficultyJa(true, false)).toBe(' ・ 難易度 ハード（この任務は同じ）');
     // Result の見出し（result-scene は hard && hasHardVariant を渡す）
-    expect(resultHeadingJa('returned', NaN, true && hasHardVariant(gameData, 'jp_05'), false)).toBe('任務終了 — 帰投した');
-    expect(resultHeadingJa('returned', NaN, true && hasHardVariant(gameData, 'us_02'), false)).toBe('任務終了 — 帰投した（ハード）');
+    expect(resultHeadingJa(true, 'returned', NaN, true && hasHardVariant(gameData, 'jp_05'), false)).toBe('任務達成 — 帰投した');
+    expect(resultHeadingJa(true, 'returned', NaN, true && hasHardVariant(gameData, 'us_02'), false)).toBe('任務達成 — 帰投した（ハード）');
     // Briefing の副題の幅（20 px・縮めない行）: いちばん長い形でも論理幅 1280 − 左右の余白の内
     const r = getBriefingRecord(gameData, 'jp_05');
     const sub = `${formatDateJa(r.date)} ・ ${r.place}${difficultyJa(true, false)} ・ 史実モード`; // 史実モードの句は config/menu-config の BRIEF_HISTORICAL_JA（DOM を読むので import しない）
@@ -215,9 +215,9 @@ describe('jp_05 のハード（v0.6.3 レビュー: ハードの違いが無い�
 });
 
 describe('jp_05 の終わりと得点（v0.6.3）', () => {
-  it('米PT の掃射で沈没は pt_fire（「任務終了 — PTの掃射で沈没」）。帰投と同じには数えない', () => {
+  it('米PT の掃射で沈没は pt_fire（「任務未達 — PTの掃射で沈没」）。帰投と同じには数えない', () => {
     expect(REASON_LABEL.pt_fire).toBe('PTの掃射で沈没');
-    expect(resultHeadingJa('pt_fire', NaN, false, false)).toBe('任務終了 — PTの掃射で沈没');
+    expect(resultHeadingJa(false, 'pt_fire', NaN, false, false)).toBe('任務未達 — PTの掃射で沈没');
     expect(endCountsAsReturn('pt_fire')).toBe(false);
   });
   it('patrol_and_evade: 達成 300（帰投）・回避 300（一度も見つからず夜明け前）。見つからずに帰投 > 見つかって転舵でかわして帰投 > 夜明けまで隠れて帰投 > 沈没', () => {

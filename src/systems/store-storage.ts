@@ -1,12 +1,13 @@
 // ストアの保存（v0.9.0。spec-v0900 §4.5）: localStorage の鍵 2 つ。night-hunters.store（財布・持ち物・装着・装備の選び・支度金を配ったか。1 つの JSON）と
-// night-hunters.achieved（達成した任務の id の JSON 配列。ユーザーの決め U2。帰投の記録 night-hunters.cleared とは別。ノーマル・ハードのどちらでも 1）。
+// night-hunters.achieved（達成の記録。ユーザーの決め U2。帰投の記録 night-hunters.cleared とは別。v0.9.0 IP1 から任務ごとに「どの形で達成したか」のビット＝core/achieved-record。
+// S0・S1 のビルドが書いた id の JSON 配列も読める＝その id はノーマル・史実オフ・デフォルトの達成）。
 // 書くのは任務の終わり（Mission の endMission で 1 回）とストアの画面の交換・装着の時だけ（update では触らない。§7）。読めない・書けない（プライベートブラウズ・容量・無効）時は
 // 既定（0 点・持ち物なし・デフォルト）のまま／覚えないだけで、例外を外へ出さない（progress-storage・kpi-storage と同じ作法）。
 // iOS の注意: Safari とホーム画面のアプリ（PWA）は保存場所が別＝点も別。?debug&store=1 で開いたとみなすのは systems/sortie-loadout の storeIsOpen（保存は変えない）。
 // window を読まない（config/game-config を import しない＝tests が node で読める）。
 import type { GameData } from '../config/game-data';
 import { getStoreCatalogue, storeItemById } from '../config/store-data';
-import { parseIdList, serializeIdList } from '../core/campaign';
+import { ACH_BIT_PLAIN, achievedIdSet, addAchieved, parseAchievedRecord, serializeAchievedRecord, type AchievedRecord } from '../core/achieved-record';
 import { creditSortie, equippedItemIds, parseStoreState, purchaseItem, serializeStoreState, setItemEquipped, storeOpenStatus, type LoadoutMode, type PurchaseRefusal, type StoreState } from '../core/store';
 
 const STORE_KEY = 'night-hunters.store';
@@ -67,16 +68,20 @@ function saveStoreState(s: StoreState): boolean {
   return setItem(STORE_KEY, serializeStoreState(s));
 }
 
-export function achievedMissionIds(): Set<string> {
-  return new Set(parseIdList(getItem(ACHIEVED_KEY)));
+/** 保存した達成の記録（任務の id → 達成した形のビットの和。v0.9.0 IP1。S0・S1 の id の配列も読む） */
+export function achievedRecord(): AchievedRecord {
+  return parseAchievedRecord(getItem(ACHIEVED_KEY));
 }
 
-/** 任務を達成した（Mission の endMission で 1 回だけ。同じ任務は 1 回だけ数える） */
-function recordAchieved(missionId: string): void {
-  const ids = parseIdList(getItem(ACHIEVED_KEY));
-  if (ids.includes(missionId)) return;
-  ids.push(missionId);
-  setItem(ACHIEVED_KEY, serializeIdList(ids));
+/** どれかの形で達成した任務の id（ストアを開く条件） */
+export function achievedMissionIds(): Set<string> {
+  return achievedIdSet(achievedRecord());
+}
+
+/** 任務を達成した（Mission の endMission で 1 回だけ）: その形のビットを足す。新しいビットが立った時だけ書く（S0・S1 の配列はこの時に新しい形へ書き直る） */
+function recordAchieved(missionId: string, bit: number): void {
+  const rec = achievedRecord();
+  if (addAchieved(rec, missionId, bit)) setItem(ACHIEVED_KEY, serializeAchievedRecord(rec));
 }
 
 /** 保存の達成で開いているか（?debug&store を見ない＝支度金を配るか決める）と、達成の数 */
@@ -96,10 +101,11 @@ export interface StoreSortieRecord {
 
 /**
  * 任務の終わりに 1 回だけ（Mission の endMission。ended の印で二重に来ない＝Result の作り直しでは呼ばない）: 達成なら達成の記録に足し、点を足し、
- * 保存の達成で開いていてまだ配っていなければ支度金を足す（1 回の setItem）。points は倍率込み（core/store の sortieAccrual）
+ * 保存の達成で開いていてまだ配っていなければ支度金を足す（1 回の setItem）。points は倍率込み（core/store の sortieAccrual）。
+ * variantBit は達成した形のビット（core/achieved-record の achievedVariantBit。省けばノーマル・史実オフ・デフォルト）
  */
-export function recordStoreSortie(data: GameData, missionId: string, achieved: boolean, points: number): StoreSortieRecord {
-  if (achieved) recordAchieved(missionId);
+export function recordStoreSortie(data: GameData, missionId: string, achieved: boolean, points: number, variantBit: number = ACH_BIT_PLAIN): StoreSortieRecord {
+  if (achieved) recordAchieved(missionId, variantBit);
   const cat = getStoreCatalogue(data);
   const before = loadStoreState(data);
   const { state, granted } = creditSortie(before, points, storedStoreStatus(data).open, cat.grantPoints);
