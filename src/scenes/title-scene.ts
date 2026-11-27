@@ -3,6 +3,7 @@
 // v0.6.7: 任務が 4 つ以上のタブ（日本。v0.8.0 から米PT も）は 2 列の格子（ui/title-grid。spec-v067 §D.6）。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない（§7）。任務を選ぶと出撃の seed を決めて Briefing へ。
 // v0.7.2 S1: メニューの曲を頼む（同じ場面の頼み直し＝タブの作り直し・Briefing から戻るは何もしない）。右上は［曲］［音］の 2 つ（「曲」は「音」と別に覚える）。
+// v0.9.0 S1: 左上に「ストア」（13 任務を達成した端末か ?debug&store=1 だけ。閉じている端末には何も出さない＝Title は v0.8.5 と同じ）。開いて初めての Title で支度金を 1 回配る。
 import Phaser from 'phaser';
 import { DEBUG_UNLOCK_ALL, DEPTH, GAME_HEIGHT, GAME_WIDTH, REGISTRY_KEY_CAMPAIGN, REGISTRY_KEY_DATA, REGISTRY_KEY_HARD, REGISTRY_KEY_HISTORICAL, REGISTRY_KEY_PENDING_SORTIE, RENDER_SCALE, SCENE_KEYS, sortieSeed } from '../config/game-config';
 import { getCampaigns, getMenuEntries, unlockPrereqIds } from '../config/campaign-data';
@@ -65,6 +66,10 @@ import { clearedMissionIds, leadMarkerEnabled, markCampaignUnlocked, migrateLega
 import { sfxMusic } from '../systems/sfx-bus';
 import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '../systems/sfx-settings';
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
+import { TITLE_STORE_JA, TITLE_STORE_PX, TITLE_STORE_RECT, TITLE_STORE_SUB_PX } from '../config/store-layout-config';
+import { grantStoreOpening, loadStoreState } from '../systems/store-storage';
+import { storeIsOpen } from '../systems/sortie-loadout';
+import { formatPoints } from '../ui/store-texts';
 import { titleGridOn, titleGridSubJa, titleRowLook, titleRowRect } from '../ui/title-grid';
 
 export class TitleScene extends Phaser.Scene {
@@ -79,6 +84,8 @@ export class TitleScene extends Phaser.Scene {
   /** 音のオン／オフ（v0.7.1 S1。右上。localStorage に覚える）と、その左の曲のオン／オフ（v0.7.2 S1。別の鍵に覚える） */
   private soundBtn?: MenuButton;
   private musicBtn?: MenuButton;
+  /** 左上の「ストア」（v0.9.0 S1。開いている端末だけ） */
+  private storeBtn?: MenuButton;
   /** 二重遷移の防止（同じフレームで 2 度 scene.start すると 2 つ起動する） */
   private leaving = false;
 
@@ -189,8 +196,21 @@ export class TitleScene extends Phaser.Scene {
       setMusicEnabled(!musicEnabled());
       this.musicBtn?.setTitle(musicTitle());
     });
+    // ストア（v0.9.0 S1）: 開いている端末だけ左上に（右上の「曲」「音」と左右対称の 200 × 80）。2 行目は財布の点。支度金は保存の達成で開いた端末に 1 回だけ（?debug&store では配らない）
+    if (storeIsOpen(data)) {
+      grantStoreOpening(data);
+      const r = TITLE_STORE_RECT;
+      const sub = `${formatPoints(loadStoreState(data).points)} 点`;
+      this.storeBtn = new MenuButton(this, { ...r, title: TITLE_STORE_JA, titlePx: TITLE_STORE_PX, sub, subPx: TITLE_STORE_SUB_PX, align: 'center' }, () => {
+        if (this.leaving) return;
+        this.leaving = true;
+        this.scene.start(SCENE_KEYS.store);
+      });
+    }
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.storeBtn?.destroy();
+      this.storeBtn = undefined;
       for (const r of this.rows) r.destroy();
       this.rows = [];
       for (const t of this.tabs) t.destroy();

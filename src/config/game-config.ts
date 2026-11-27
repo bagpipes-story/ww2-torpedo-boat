@@ -125,6 +125,18 @@ function debugCustomItems(): string[] | null {
 export const DEBUG_CUSTOM_ITEMS = debugCustomItems();
 /** DEBUG_CUSTOM_ITEMS の「表の全部」の語 */
 export const DEBUG_CUSTOM_ALL = 'all';
+/**
+ * ?debug&points=N（v0.9.0 S1。iPhone で店を試す。例 ?debug&store=1&points=20000）: ストアの財布を N 点（0 以上の整数）の写しとして扱う（Boot の systems/store-storage の enableStoreMemory。
+ * ページを閉じるまで、交換・装着・装備の選び・任務の終わりの点は写しだけに書き、localStorage の財布は変えない）。無ければ NaN
+ */
+function debugStorePoints(): number {
+  if (!DEBUG_ENABLED) return NaN;
+  const v = new URLSearchParams(window.location.search).get('points');
+  if (v === null || v === '') return NaN;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 0 ? n : NaN;
+}
+export const DEBUG_STORE_POINTS = debugStorePoints();
 /** ?debug&shiphit=N: 駆逐艦・輸送船の船体の当たり判定の倍率（v0.4.8。data の world.ship_hit_scale の代わり。1 = v0.4.7 までの実寸、2 = 絵と同じ。実機で比べる・再生の比較用）。無ければ NaN（data の値） */
 export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
@@ -218,6 +230,8 @@ export const SCENE_KEYS = {
   soundLab: 'SoundLab',
   /** 曲の試聴の場（v0.7.2 S1。?sfxlab の時だけ Boot から） */
   musicLab: 'MusicLab',
+  /** ストア（v0.9.0 S1。Title の左上の「ストア」から。13 任務の達成か ?debug&store=1 で開く） */
+  store: 'Store',
 } as const;
 
 /** 艇の絵の鍵（v0.6.0: 艇ごとに 1 枚。Boot が遊べる任務の自艇と僚艇の寸法から 1 回だけ作る。T-38 は Elco より小さい） */

@@ -112,7 +112,7 @@ describe('材料（reconResultPart）と得点・本文・見出し', () => {
     expect(resultShipsJa({ ...ships, recon: R0 })).toBe('艦隊: 撃沈 1/7');
     expect(resultShipsJa(ships)).toBe('駆逐艦: 撃沈 1/7');
     const rs = code('src/scenes/result-scene.ts');
-    expect(rs).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX');
+    expect(rs).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX'); // v0.9.0 S1: 後ろにカスタムの印（デフォルトは ''）
     expect(code('src/systems/mission-score.ts')).toContain('...(r.recon ? { shipKills: r.recon.shipKills } : {}),'); // v0.9.0: 得点の材料は systems/mission-score
     expect(rs).toContain('computeScore(missionScoreInput(r), scoringParams)');
     expect(rs).toContain("`${r.escort ? '達成' : r.recon ? '報告' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${r.recon ? ` ・ 撃沈 ${score.kills}` : ''}${evadePart}`");

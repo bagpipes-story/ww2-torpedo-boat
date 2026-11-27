@@ -154,3 +154,11 @@ export function setItemEquipped(s: StoreState, id: string, on: boolean): StoreSt
 export function equippedItemIds(s: StoreState): string[] {
   return s.owned.filter((x) => !s.off.includes(x));
 }
+
+/**
+ * Briefing の「装備: デフォルト／カスタム」を出すか（v0.9.0 S1。ユーザーの決め U1）: ストアが開いていて、史実モードでなく（史実モードはデフォルトに固定）、
+ * 港の空襲の 2 択の無い任務で（同じ帯を使う。今の 13 任務に空襲は無い＝tests/store-layout）、その任務に効く装着中の品が 1 つ以上ある時だけ
+ */
+export function briefingLoadoutShown(o: { readonly open: boolean; readonly historical: boolean; readonly raid: boolean; readonly effectiveItems: number }): boolean {
+  return o.open && !o.historical && !o.raid && o.effectiveItems > 0;
+}

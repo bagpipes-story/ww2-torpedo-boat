@@ -9,6 +9,8 @@ import { hasHardVariant } from '../config/mission-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BODY_MAX_Y, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
 import { missionScoreInput } from '../systems/mission-score';
+import type { StoreSortieRecord } from '../systems/store-storage';
+import { resultCustomTagJa, storeResultPartJa } from '../ui/store-texts';
 import { evacScorePartJa, evacTimeLinesJa } from '../ui/evac-result';
 import type { DawnResult } from '../core/dawn-air';
 import {
@@ -134,6 +136,7 @@ export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 �
   patrol: PatrolResult | null; // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry の patrolResult）の記録。無い任務は null（本文の 2 行・得点の内訳に撃沈なし・頭の行なし）
   arms?: ArmsResult; // 兵装の新しい道（v0.6.8。systems/arms-telemetry の armsResultPart）: 艦への機銃・対空・狙う艦の無い魚雷を使った夜だけ（本文の後ろに 1 行。点は無い）
   landing?: LandingResult; // 揚陸と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry の landingResultPart）: 揚陸の任務だけ（本文の頭の 3 行・状況の行の頭・揚陸 300 点）
+  store?: StoreSortieRecord; // ストアの点（v0.9.0 S1。ストアが開いている端末だけ Mission の endMission が入れる＝得点の行の後ろ「 ・ ストア +M（計 T 点）」）
   evac?: EvacResult; // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: 退避の任務だけ（本文の頭の 4 行・見出しの理由・時の行・残った艇の点）
 }
 
@@ -176,7 +179,7 @@ export class ResultScene extends Phaser.Scene {
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
     const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
-    line(r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // 救助の任務（v0.8.5 S4。ui/rescue-result）
+    line((r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // 救助の任務（v0.8.5 S4。ui/rescue-result）・カスタムの印（v0.9.0 S1。デフォルトは ''）
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {
@@ -188,7 +191,7 @@ export class ResultScene extends Phaser.Scene {
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
     // 材料は systems/mission-score（v0.9.0 で抜き出し。ストアの点は Mission の endMission が同じ式で 1 回だけ足す＝ここでは計算して出すだけ）
     const score = computeScore(missionScoreInput(r), scoringParams);
-    line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    line(`スコア ${score.total}${r.store ? storeResultPartJa(r.store) : ''}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // ストアの点（v0.9.0 S1。開いている端末だけ）
     // 回避（v0.4.4）は type に点がある任務（要人脱出・米PT の哨戒）だけ出す。夜明けに輪の外だった帰投（v0.6.1）は「帰投 630（夜明け後 ×0.9）」、夜明けだけが理由で回避が 0 なら「回避 0（夜明け後）」
     const evadePart = resultEvadePartJa(scoringParams.evadeByType[r.missionType], score.evade, r);
     const transportPart = r.transportEnabled ? ` ・ 輸送船 ${score.kills}` : '';

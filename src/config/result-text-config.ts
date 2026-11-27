@@ -7,3 +7,5 @@ export const HUD_COLOR_KPI = '#e8d48a';
 export const RESULT_HISTORICAL_KPI_JA = '史実モード: 通算の命中率には数えない（通算はノーマルの調整の根拠）';
 /** Result: 米PT以外のキャンペーンの魚雷も通算に数えない（v0.6.0。hit_rate_model.kpi_measurement.campaigns） */
 export const RESULT_CAMPAIGN_KPI_JA = 'この任務の魚雷は通算の命中率に数えない（通算は米PTの調整の根拠）';
+/** Result: カスタムの装備の出撃の魚雷も通算に数えない（v0.9.0。mission-scene の KPI の条件 !sortie.custom） */
+export const RESULT_CUSTOM_KPI_JA = 'カスタムの装備: 通算の命中率には数えない（通算はデフォルトの調整の根拠）';

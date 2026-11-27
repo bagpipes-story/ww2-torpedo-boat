@@ -90,7 +90,7 @@ describe('本文の 4 行', () => {
   });
   it('scenes/result-scene の配線: 見出しの言い換え・状況の行の頭・救助の時間の行・得点の「（救助の後 ×0.9）」', () => {
     const rs = code('src/scenes/result-scene.ts');
-    expect(rs).toContain('line(r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(');
+    expect(rs).toContain('line((r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa('); // v0.9.0 S1: 見出しの後ろにカスタムの印（ui/store-texts の resultCustomTagJa。デフォルトは ''）
     expect(rs).toContain(': r.rescue ? rescueHeadJa(r.rescue) : r.escort ?');
     expect(rs).toContain('[r.rescue ? rescueTimeLineJa(r.dawn, r.returned) : dawnResultLine(r.dawn, r.returned, r.reason === \'cleared\')]');
     expect(rs).toContain("r.evac ? '空襲後' : r.rescue ? RESCUE_AFTER_JA : '夜明け後'");

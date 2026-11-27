@@ -294,7 +294,7 @@ export class MissionScene extends Phaser.Scene {
     recordSortie();
     // 帰投で終えた任務（v0.6.0。キャンペーンの解放の条件）: 帰投したとき（敵艦隊なし＝cleared も。v0.6.2 実機 1 回目）だけ、任務ごとに 1 回
     if (result.returned) recordClear(this.sortie.missionId);
-    recordSortieStore(result, base); // 達成とストアの点（v0.9.0）: ここで 1 回だけ（Result の作り直しで二重に足さない。systems/sortie-loadout）
+    recordSortieStore(result, base); // 達成とストアの点（v0.9.0）: ここで 1 回だけ（Result の作り直しで二重に足さない。開いている端末だけ result.store に。systems/sortie-loadout）
     this.scene.start(SCENE_KEYS.result, result);
   }
 }

@@ -12,7 +12,25 @@ import { creditSortie, equippedItemIds, parseStoreState, purchaseItem, serialize
 const STORE_KEY = 'night-hunters.store';
 const ACHIEVED_KEY = 'night-hunters.achieved';
 
+/**
+ * ?debug&points=N（v0.9.0 S1）の時だけの財布の置き場: null なら localStorage。文字列ならページを閉じるまでの写し（点は N・持ち物と装着と選びは保存の物から始める）で、
+ * 店・Briefing・任務の終わりの点はみなここを読み書きし、localStorage の night-hunters.store は書かない（達成の鍵はいつもどおり）
+ */
+let memoryStore: string | null = null;
+
+/** Boot が 1 回（?debug&points=N）: 財布を N 点の写しにする（保存は変えない） */
+export function enableStoreMemory(data: GameData, points: number): void {
+  memoryStore = null;
+  memoryStore = serializeStoreState({ ...loadStoreState(data), points: Math.max(0, Math.floor(points)) });
+}
+
+/** tests: 写しをやめる */
+export function clearStoreMemory(): void {
+  memoryStore = null;
+}
+
 function getItem(key: string): string | null {
+  if (key === STORE_KEY && memoryStore !== null) return memoryStore;
   try {
     return globalThis.localStorage?.getItem(key) ?? null;
   } catch {
@@ -22,6 +40,10 @@ function getItem(key: string): string | null {
 
 /** 書けたら true（localStorage が無い・投げた → false） */
 function setItem(key: string, value: string): boolean {
+  if (key === STORE_KEY && memoryStore !== null) {
+    memoryStore = value;
+    return true;
+  }
   try {
     const s = globalThis.localStorage;
     if (!s) return false;
@@ -83,6 +105,18 @@ export function recordStoreSortie(data: GameData, missionId: string, achieved: b
   const { state, granted } = creditSortie(before, points, storedStoreStatus(data).open, cat.grantPoints);
   const saved = saveStoreState(state);
   return { credited: state.points - before.points - granted, granted, total: state.points, saved };
+}
+
+/**
+ * 開店の支度金（v0.9.0 S1。Title の create）: 保存の達成で開いていて（?debug&store だけでは配らない）まだ配っていなければ、grant_points を足して配った印を書く（1 回の setItem）。
+ * 配った点を返す（配らなければ 0）。任務の終わりの creditSortie と同じ印なので二重に配らない
+ */
+export function grantStoreOpening(data: GameData): number {
+  if (!storedStoreStatus(data).open) return 0;
+  const before = loadStoreState(data);
+  if (before.granted) return 0;
+  const { state, granted } = creditSortie(before, 0, true, getStoreCatalogue(data).grantPoints);
+  return saveStoreState(state) ? granted : 0;
 }
 
 /** 交換（ストアの画面。S1）: 成り立てば保存する（点を引くのと持ち物に足すのを 1 回の setItem で） */

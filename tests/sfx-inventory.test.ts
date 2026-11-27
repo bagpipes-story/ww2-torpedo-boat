@@ -180,8 +180,8 @@ describe('音を足しても絵の鍵は今のまま（v0.7.0 の main 3a9e7aa�
     expect(rows.length).toBe(53);
     expect(h).toBe(TEXTURE_KEYS_FNV);
   });
-  it('シーンの並びは Boot・Title・Briefing・Mission・Hud・Result・Pause・SoundLab・MusicLab（v0.7.2 S1。?sfxlab の時だけ Boot から曲の試聴の場へ＝ふだんの URL は Title・?debug は Mission）', () => {
-    expect(readFileSync('src/config/phaser-config.ts', 'utf8')).toContain('  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene, MusicLabScene],');
+  it('シーンの並びは Boot・Title・Briefing・Mission・Hud・Result・Pause・SoundLab・MusicLab・Store（v0.7.2 S1。?sfxlab の時だけ Boot から曲の試聴の場へ＝ふだんの URL は Title・?debug は Mission。v0.9.0 S1 でストアを最後に足した＝Title の左上から）', () => {
+    expect(readFileSync('src/config/phaser-config.ts', 'utf8')).toContain('  scene: [BootScene, TitleScene, BriefingScene, MissionScene, HudScene, ResultScene, PauseScene, SoundLabScene, MusicLabScene, StoreScene],');
     const boot = readFileSync('src/scenes/boot-scene.ts', 'utf8');
     expect(boot).toContain('    if (SFX_LAB_ENABLED) this.scene.start(SCENE_KEYS.musicLab); //');
     expect(boot).not.toContain('SCENE_KEYS.soundLab');

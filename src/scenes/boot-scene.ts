@@ -8,6 +8,7 @@ import {
   DEBUG_HISTORICAL,
   DEBUG_MISSION_ID,
   DEBUG_RAID_OVERRIDE,
+  DEBUG_STORE_POINTS,
   PROTOTYPE_MISSION_ID,
   REGISTRY_KEY_DATA,
   SFX_LAB_ENABLED,
@@ -22,6 +23,7 @@ import { hasHardVariant } from '../config/mission-data';
 import { createInputState } from '../core/input-state';
 import { directSortie } from '../core/sortie';
 import { migrateLegacyUnlocks } from '../systems/progress-storage';
+import { enableStoreMemory } from '../systems/store-storage';
 import { createSfx } from '../systems/sfx-boot';
 import {
   generateDebugRingTexture,
@@ -190,6 +192,7 @@ export class BootScene extends Phaser.Scene {
     validateRescueMissions(gameData);
     validateMinefieldMissions(gameData);
     validateStore(gameData); // ストア（v0.9.0。data/store.json）: 品の表と貯め方の V-S1〜V-S4（全任務の組み立ては tests/custom-loadout。壊れていれば Boot で止まる）
+    if (Number.isFinite(DEBUG_STORE_POINTS)) enableStoreMemory(gameData, DEBUG_STORE_POINTS); // ?debug&points=N（v0.9.0 S1）: 財布を N 点の写しに（localStorage の財布は変えない）
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 
