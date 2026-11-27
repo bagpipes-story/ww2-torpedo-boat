@@ -19,7 +19,8 @@ import {
 import { effectiveFuelAllotmentGal, getBoatRecord, getGameData, getPrototypeMission } from '../config/game-data';
 import type { InputState } from '../core/input-state';
 import type { SpreadConfig } from '../core/salvo';
-import { isSortie } from '../core/sortie';
+import { isSortie, type Sortie } from '../core/sortie';
+import { sortieGameData } from '../config/custom-loadout';
 import { HUD_COLOR_KPI, HUD_FONT_DEBUG_PX, HUD_HIST_BADGE_JA, HUD_HIST_BADGE_X, hudTextStyle } from '../config/ui-config';
 import { ControlToggleButtons } from '../systems/control-toggle-buttons';
 import { KeyboardInput } from '../systems/keyboard-input';
@@ -67,6 +68,8 @@ export class HudScene extends Phaser.Scene {
   private hard = false;
   /** 史実モード（v0.5.2。出撃から） */
   private historical = false;
+  /** Mission が launch で渡した出撃（v0.9.0。カスタムの data を同じ物で引く） */
+  private sortie: Sortie | null = null;
 
   constructor() {
     super(SCENE_KEYS.hud);
@@ -76,13 +79,15 @@ export class HudScene extends Phaser.Scene {
     this.missionId = isSortie(data) ? data.missionId : PROTOTYPE_MISSION_ID;
     this.hard = isSortie(data) ? data.hard : false;
     this.historical = isSortie(data) ? data.historical : false;
+    this.sortie = isSortie(data) ? data : null;
   }
 
   create(): void {
     // 論理座標 GAME_WIDTH×720 を canvas（GAME_WIDTH×RENDER_SCALE）に合わせる
     this.cameras.main.setZoom(RENDER_SCALE).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
 
-    const data = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const base = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const data = this.sortie ? sortieGameData(base, this.sortie) : base; // Mission と同じ出撃の data（v0.9.0。デフォルトは base そのもの・カスタムは Mission が作った写しを覚えた物）
     const input = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     this.telemetry = this.registry.get(REGISTRY_KEY_TELEMETRY) as BoatTelemetry;
     // 1 行目に割当と夜明けを出す（?debug&fuel=…&dawn=… の上書きが効いているかを実機で確かめられる）

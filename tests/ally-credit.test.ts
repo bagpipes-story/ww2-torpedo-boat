@@ -102,8 +102,8 @@ describe('手柄（卯月は core だけが書く。PtSquadron.onFate は卯月�
     passing(b, 1300, false);
     stepUntil(b, () => b.a.sunk === 1);
     expect([ptResult(teleWorld(b, true))!.sunk, ptResult(teleWorld(b, false))!.sunk, b.q.sunk]).toEqual([1, 1, 1]);
-    const rs = code('scenes/result-scene.ts');
-    expect(rs).toContain('kills: h ? h.sunk : r.pt ? r.pt.sunk :');
+    expect(code('scenes/result-scene.ts')).toContain('computeScore(missionScoreInput(r), scoringParams)'); // v0.9.0: 材料は systems/mission-score
+    expect(code('systems/mission-score.ts')).toContain('kills: h ? h.sunk : r.pt ? r.pt.sunk :');
   });
 });
 

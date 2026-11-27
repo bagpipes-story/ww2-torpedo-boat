@@ -99,7 +99,8 @@ describe('配線（ソース）', () => {
   const read = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
   it('Result は退避の任務だけ evacBoats を computeScore へ・得点の行の項は evacScorePartJa・達成は evac の枝が先', () => {
     const rs = read('scenes/result-scene.ts');
-    expect(rs).toContain('...(r.evac ? { evacBoats: evacScoredBoats(r.evac) } : {})');
+    expect(read('systems/mission-score.ts')).toContain('...(r.evac ? { evacBoats: evacScoredBoats(r.evac) } : {})'); // v0.9.0: 得点の材料は systems/mission-score
+    expect(rs).toContain('computeScore(missionScoreInput(r), scoringParams)');
     expect(rs).toContain('const objPart = r.evac ? evacScorePartJa(r.evac, score.objective, score.deliveries, scoringParams.evacBoatPoints) : h ?');
     const mo = read('systems/mission-objective.ts');
     expect(mo.indexOf('if (w.evac) return endCountsAsReturn(reason) && evacSurvivors(w.evac.sq) >= w.evac.plan.raid.survivorQuota;')).toBeLessThan(mo.indexOf('if (w.landing) return'));

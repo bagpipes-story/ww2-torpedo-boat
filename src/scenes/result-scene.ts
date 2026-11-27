@@ -8,7 +8,7 @@ import { getGameData, getScoringParams } from '../config/game-data';
 import { hasHardVariant } from '../config/mission-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BODY_MAX_Y, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
 import { computeScore } from '../core/scoring';
-import { evacScoredBoats } from '../core/evac-result';
+import { missionScoreInput } from '../systems/mission-score';
 import { evacScorePartJa, evacTimeLinesJa } from '../ui/evac-result';
 import type { DawnResult } from '../core/dawn-air';
 import {
@@ -32,7 +32,6 @@ import { sfxMusic, sfxResultBell } from '../systems/sfx-bus';
 import { MUSIC_CTX_MENU, MUSIC_FADE } from '../config/sfx-music-config';
 import { resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
 import { convoyHeadJa } from '../ui/convoy-lines';
-import { LD_DONE } from '../core/landing';
 import { landingHeadJa } from '../ui/landing-result';
 import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa } from '../ui/pt-lines';
@@ -45,9 +44,6 @@ import { resultBodyLines, resultFitLiftPx } from '../ui/result-body';
 
 export type { MissionEndReason } from '../core/mission-flow';
 export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
-
-/** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
-const TRANSPORT_ENEMY_ID = 'ijn_transport';
 
 export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 のレーダーと列の通過の鍵（ui/result-types。ある任務だけ）
   reason: MissionEndReason;
@@ -190,13 +186,8 @@ export class ResultScene extends Phaser.Scene {
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
     const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
-    const score = computeScore(
-      // 撃破: 大発（砲）・13mm で沈めた米PT（v0.6.3 実機 1 回目。撃退は点なし）か輸送船（魚雷。v0.4.7）。米PT は隊の数（隼艇 v0.6.6・卯月 v0.6.10 S5b が沈めた PT も入る）
-      // 上陸（v0.6.4。味方の大発の輸送隊。scoring.json の convoy.points_per_arrival）は帰投の有無に関わらず上陸した隻数ぶん
-      // 揚陸（v0.6.9。jp_04。scoring.json の landing.points_complete）は帰投の有無・その後の沈没に関わらず揚陸完了なら。揚陸の無い任務は鍵ごと無い
-      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside, arrivals: r.convoy ? r.convoy.arrived : 0, ...(r.landing ? { landed: r.landing.phase === LD_DONE } : {}), ...(r.evac ? { evacBoats: evacScoredBoats(r.evac) } : {}), ...(r.rescue ? { rescued: r.rescue.delivered } : {}), ...(r.recon ? { shipKills: r.recon.shipKills } : {}) },
-      scoringParams,
-    );
+    // 材料は systems/mission-score（v0.9.0 で抜き出し。ストアの点は Mission の endMission が同じ式で 1 回だけ足す＝ここでは計算して出すだけ）
+    const score = computeScore(missionScoreInput(r), scoringParams);
     line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
     // 回避（v0.4.4）は type に点がある任務（要人脱出・米PT の哨戒）だけ出す。夜明けに輪の外だった帰投（v0.6.1）は「帰投 630（夜明け後 ×0.9）」、夜明けだけが理由で回避が 0 なら「回避 0（夜明け後）」
     const evadePart = resultEvadePartJa(scoringParams.evadeByType[r.missionType], score.evade, r);

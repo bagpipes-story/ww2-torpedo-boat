@@ -32,7 +32,8 @@
 // v0.8.5 S2（spec-v0850 §5 の門 4）: SET=us07 で us_07（D-Day・生存者救助。救助・機雷原・210 mm の砲台・S ボート）のノーマル・ハード × seed 1・2 を 320 秒（救助の時間 300 秒の後まで。all には入れない。
 //   S2 は A＝B＝今の木で決定性とページのエラー・S2 の後は A を S2 の commit のビルドに）。写しに救助（s.rs: 乗せている・渡した・砲撃で失った・他艦が拾った・群の残り）・機雷（見えた・爆発）・
 //   フィッチの砲火（退いた数）・沿岸砲（撃った・命中）を足す（無い任務は鍵ごと無い＝今の写しのまま）。
-// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|us07|hist|histsmoke|smokeoff] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
+// v0.9.0 S0: SET=custom で 13 任務 × ノーマル・ハード × seed 1 を両方の側に &custom=all（ストアの品を全部）で 120 秒（A＝B＝今の木＝決定性とページのエラー。all には入れない）。
+// 実行: A=<site A> B=<site B> [CTRLUI=0] [INPUT=primary|both|none] [SET=all|base|dawn20|nodawn|ptrun|result|jp04|jp04base|jp03|us04|us06|us05|us07|hist|histsmoke|smokeoff|custom] [CAM=1] [NORADAR=1] [RADARUI=1] [ANCHORUI=1] [RECONUI=1] [FILTERTEST=1] [JOBS=3] node scripts/headless/ab-replay.mjs
 import { fileURLToPath } from 'node:url';
 import { FRAME_MS, chromium, envNum, openGame, pool, serve } from './lib.mjs';
 import { anchorPair } from './anchor-filter.mjs';
@@ -186,6 +187,8 @@ export function abCases(set, input) {
     histsmoke: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, historical: true, smoke: true, secs: envNum('SECS', 200), set: 'histsm' })),
     // 同じ煙幕の台本を史実モードのオフで（v0.8.4）: 乱射は作らない＝基準と同じはず
     smokeoff: () => [1, 2].map((seed) => ({ ...base, input: 'none', mission: 'us_02', hard: false, seed, nodawn: true, smoke: true, secs: envNum('SECS', 200), set: 'smkoff' })),
+    // カスタムの装備（v0.9.0 S0。両方の側に &custom=all＝ストアの品を全部。A＝B＝今の木で決定性とページのエラー 0）: 13 任務 × ノーマル・ハード × seed 1
+    custom: () => ['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07', 'jp_01', 'jp_02', 'jp_03', 'jp_04', 'jp_05', 'jp_06'].flatMap((mission) => [false, true].map((hard) => ({ ...base, mission, hard, seed: 1, custom: 'all', secs: envNum('SECS', 120), set: 'custom' }))),
   };
   if (process.env.MISSION) {
     return [{ ...base, mission: process.env.MISSION, hard: process.env.HARD === '1', seed: envNum('SEED', 1), dawn: envNum('DAWN', 0), nodawn: process.env.NODAWN === '1', ptrun: process.env.PTRUN === '1', result: process.env.RESULT === '1', noally: process.env.NOALLY === '1', secs: envNum('SECS', 90), set: 'one' }];
@@ -194,7 +197,7 @@ export function abCases(set, input) {
 }
 
 export function query(c, side) {
-  return `mission=${c.mission}&seed=${c.seed}${c.historical ? '&historical' : ''}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}${c.noplane && side === 'B' ? '&noplane' : ''}`;
+  return `mission=${c.mission}&seed=${c.seed}${c.custom ? `&custom=${c.custom}` : ''}${c.historical ? '&historical' : ''}${c.hard ? '&hard' : ''}${c.dawn ? `&dawn=${c.dawn}` : ''}${c.nodawn ? '&nostrike' : ''}${c.noally && side === 'B' ? '&noally' : ''}${c.noradar && side === 'B' ? '&noradar' : ''}${c.noplane && side === 'B' ? '&noplane' : ''}`;
 }
 
 /** S4 の濾しの設定（RADARUI は B・NORADAR は A が出し側。どちらでもなければ null＝今のまま） */

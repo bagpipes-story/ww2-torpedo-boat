@@ -32,6 +32,15 @@ export interface Sortie {
   hard: boolean;
   /** 史実モード（v0.5.2。hit_rate_model.historical_mode: 敵の見張り・回避と見つかる距離を強め、不発を増やし、見越し点マーカーを出さない） */
   historical: boolean;
+  /**
+   * カスタムの装備で出た（v0.9.0。ユーザーの決め U1。config/custom-loadout）: その任務で効くストアの品の id。デフォルトの出撃は鍵ごと無い
+   * （今までの Sortie と同じ物＝isSortie・再生の写し・Result の材料が変わらない）。史実モードの出撃には付けない
+   */
+  custom?: SortieCustom;
+}
+
+export interface SortieCustom {
+  readonly items: readonly string[];
 }
 
 /** 出撃時の状態（world-setup が data の値に当てる） */
@@ -105,7 +114,15 @@ function isMissionId(v: unknown): v is string {
   return typeof v === 'string' && v.length > 0;
 }
 
-/** missionId は空でない文字列、seed は 0〜0xffffffff の整数、raid・stayHit・hard・historical は boolean、choice は 0/1/2 */
+/** custom（v0.9.0）は無いか、items が空でない・空でない文字列の配列 */
+function isSortieCustom(v: unknown): boolean {
+  if (v === undefined) return true;
+  if (typeof v !== 'object' || v === null) return false;
+  const items = (v as Record<string, unknown>)['items'];
+  return Array.isArray(items) && items.length > 0 && items.every((x) => typeof x === 'string' && x !== '');
+}
+
+/** missionId は空でない文字列、seed は 0〜0xffffffff の整数、raid・stayHit・hard・historical は boolean、choice は 0/1/2、custom は無いか品の id の配列（v0.9.0） */
 export function isSortie(v: unknown): v is Sortie {
   if (typeof v !== 'object' || v === null) return false;
   const r = v as Record<string, unknown>;
@@ -116,7 +133,8 @@ export function isSortie(v: unknown): v is Sortie {
     typeof r['stayHit'] === 'boolean' &&
     typeof r['hard'] === 'boolean' &&
     typeof r['historical'] === 'boolean' &&
-    (r['choice'] === RAID_NONE || r['choice'] === RAID_DISPERSE || r['choice'] === RAID_STAY)
+    (r['choice'] === RAID_NONE || r['choice'] === RAID_DISPERSE || r['choice'] === RAID_STAY) &&
+    isSortieCustom(r['custom'])
   );
 }
 

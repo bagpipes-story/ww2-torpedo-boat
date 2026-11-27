@@ -110,6 +110,21 @@ export const DEBUG_HISTORICAL = DEBUG_ENABLED && new URLSearchParams(window.loca
 export const DEBUG_SORTIES = debugNumber('sorties');
 /** ?debug&unlock: すべてのキャンペーンを開いたものとして扱う（v0.6.0。保存は変えない。Safari とホーム画面のアプリは保存が別なので、日本側を Safari で試すとき用） */
 export const DEBUG_UNLOCK_ALL = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('unlock');
+/** ?debug&store=1（v0.9.0。ユーザーの決め U2）: ストアを開いたものとして扱う（13 任務の達成を待たずに iPhone で試す。保存は変えない＝支度金も配らない。?debug&unlock と同じ作法） */
+export const DEBUG_STORE_OPEN = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('store');
+/**
+ * ?debug&custom=<品の id をコンマで区切る>（v0.9.0 S0。Briefing の切り替えは S1）: 持ち物・保存に関わらず、その品を装着したカスタムで出撃する（Mission の init。史実モードはデフォルトのまま）。
+ * custom=all で表の全部。無ければ null（デフォルト）
+ */
+function debugCustomItems(): string[] | null {
+  if (!DEBUG_ENABLED) return null;
+  const v = new URLSearchParams(window.location.search).get('custom');
+  if (v === null) return null;
+  return v.split(',').filter((x) => x !== '');
+}
+export const DEBUG_CUSTOM_ITEMS = debugCustomItems();
+/** DEBUG_CUSTOM_ITEMS の「表の全部」の語 */
+export const DEBUG_CUSTOM_ALL = 'all';
 /** ?debug&shiphit=N: 駆逐艦・輸送船の船体の当たり判定の倍率（v0.4.8。data の world.ship_hit_scale の代わり。1 = v0.4.7 までの実寸、2 = 絵と同じ。実機で比べる・再生の比較用）。無ければ NaN（data の値） */
 export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
