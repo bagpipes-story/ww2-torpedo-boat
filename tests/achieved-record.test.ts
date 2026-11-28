@@ -3,6 +3,7 @@
 // 形のビット・保存の文字列の読み書き・S0／S1 の id の配列の読み替え・壊れた値・印の材料（カスタムでだけ）・ストアを開く条件は今までどおり・1 回の書き込み。
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gameData } from '../src/config/game-data';
+import { hasHardVariant } from '../src/config/mission-data';
 import { getStoreCatalogue } from '../src/config/store-data';
 import {
   ACH_BIT_PLAIN,
@@ -16,6 +17,8 @@ import {
   historicalDefaultCount,
   historicalDefaultTrophy,
   MASK_HIST_DEFAULT,
+  BIT_HARD_HIST_DEFAULT,
+  trophyMask,
   achievedVariantBit,
   addAchieved,
   parseAchievedRecord,
@@ -79,34 +82,48 @@ describe('足す・数える', () => {
   });
 });
 
-describe('史実 × デフォルトの達成（v0.9.0 IP3。トロフィーとご褒美の材料）', () => {
+describe('頑張った証の形（v0.9.0 IP3・IP4。トロフィーとご褒美の材料。IP4 のユーザーの言葉 2026-11-28「達成条件をハード×史実 × デフォルトにしてください」）', () => {
   const P = bit(false, false, false), H = bit(true, false, false), S = bit(false, true, false), HS = bit(true, true, false);
   const C = bit(false, false, true), HC = bit(true, false, true), SC = bit(false, true, true), HSC = bit(true, true, true);
-  it('トロフィーは史実モード × デフォルトの装備の形（4・8）だけ。ハードの史実 × デフォルトなら hard', () => {
-    expect(MASK_HIST_DEFAULT).toBe(S | HS);
-    expect(historicalDefaultTrophy(0)).toBeNull();
-    expect(historicalDefaultTrophy(S)).toEqual({ hard: false });
-    expect(historicalDefaultTrophy(HS)).toEqual({ hard: true });
-    expect(historicalDefaultTrophy(S | HS | P)).toEqual({ hard: true });
-    // ノーマル・ハードの史実オフ・カスタムの形（史実でカスタムも）はトロフィーなし
-    for (const m of [P, H, C, HC, SC, HSC, P | H | C | HC | SC | HSC]) expect(historicalDefaultTrophy(m), String(m)).toBeNull();
-    for (const bad of [256, 1.5, -1, NaN]) expect(historicalDefaultTrophy(bad), String(bad)).toBeNull();
-    // 255 通りの全部: トロフィーは (m & 12) が立つ時だけ
-    for (let m = 1; m <= 255; m++) expect(historicalDefaultTrophy(m) !== null, String(m)).toBe((m & 12) !== 0);
+  const hv = (id: string): boolean => hasHardVariant(gameData, id);
+  it('ハードの違いのある任務: トロフィーはハード・史実・デフォルト（8）だけ（語はハード）。ノーマルの史実 × デフォルト（4）だけでは出ない', () => {
+    expect(BIT_HARD_HIST_DEFAULT).toBe(HS);
+    expect(trophyMask(true)).toBe(HS);
+    expect(historicalDefaultTrophy(0, true)).toBeNull();
+    expect(historicalDefaultTrophy(S, true)).toBeNull(); // IP3 では出た
+    expect(historicalDefaultTrophy(HS, true)).toEqual({ hard: true });
+    expect(historicalDefaultTrophy(S | HS | P, true)).toEqual({ hard: true });
+    for (const m of [P, H, S, C, HC, SC, HSC, P | H | S | C | HC | SC | HSC]) expect(historicalDefaultTrophy(m, true), String(m)).toBeNull();
+    for (const bad of [256, 1.5, -1, NaN]) expect(historicalDefaultTrophy(bad, true), String(bad)).toBeNull();
+    for (let m = 1; m <= 255; m++) expect(historicalDefaultTrophy(m, true) !== null, String(m)).toBe((m & HS) !== 0);
   });
-  it('数と全部（ご褒美の条件）: 13 任務がみな史実 × デフォルト。S0／S1 の配列の記録（ビット 1）とカスタムの史実では満たさない。任務が空なら偽', () => {
+  it('ハードの違いの無い任務（jp_02・jp_05。設計の既定）: 史実・デフォルト（4）で出る（語はハードなし）。8 も同じ世界の形として数える', () => {
+    expect(['jp_02', 'jp_05'].map(hv)).toEqual([false, false]);
+    expect(getStoreCatalogue(gameData).openMissionIds.filter((id) => !hv(id))).toEqual(['jp_02', 'jp_05']);
+    expect(MASK_HIST_DEFAULT).toBe(S | HS);
+    expect(trophyMask(false)).toBe(S | HS);
+    expect(historicalDefaultTrophy(S, false)).toEqual({ hard: false });
+    expect(historicalDefaultTrophy(HS, false)).toEqual({ hard: false });
+    for (const m of [P, H, C, HC, SC, HSC]) expect(historicalDefaultTrophy(m, false), String(m)).toBeNull();
+    for (let m = 1; m <= 255; m++) expect(historicalDefaultTrophy(m, false) !== null, String(m)).toBe((m & 12) !== 0);
+  });
+  it('数と全部（ご褒美の条件）: 11 任務はハード・史実・デフォルト、jp_02・jp_05 は史実・デフォルト。ノーマルの史実だけ・カスタムの史実・S0／S1 の配列では満たさない。任務が空なら偽', () => {
     const open = getStoreCatalogue(gameData).openMissionIds;
     const rec = parseAchievedRecord(null);
-    open.forEach((id, i) => addAchieved(rec, id, i % 2 === 0 ? S : HS));
-    expect(historicalDefaultCount(rec, open)).toBe(13);
-    expect(historicalDefaultAll(rec, open)).toBe(true);
-    expect(historicalDefaultAll(rec, [])).toBe(false);
-    rec.set(open[5]!, P | H | SC | HSC); // 1 つだけ史実はカスタムでだけ
-    expect(historicalDefaultCount(rec, open)).toBe(12);
-    expect(historicalDefaultAll(rec, open)).toBe(false);
+    for (const id of open) addAchieved(rec, id, hv(id) ? HS : S);
+    expect(historicalDefaultCount(rec, open, hv)).toBe(13);
+    expect(historicalDefaultAll(rec, open, hv)).toBe(true);
+    expect(historicalDefaultAll(rec, [], hv)).toBe(false);
+    rec.set('us_05', P | H | S | SC | HSC); // 1 つだけハードの史実はカスタムでだけ（ノーマルの史実 × デフォルトはある）
+    expect(historicalDefaultCount(rec, open, hv)).toBe(12);
+    expect(historicalDefaultAll(rec, open, hv)).toBe(false);
+    const normalHist = parseAchievedRecord(null); // IP3 の条件（ノーマルの史実 × デフォルト）だけ → jp_02・jp_05 の 2 つ
+    for (const id of open) addAchieved(normalHist, id, S);
+    expect(historicalDefaultCount(normalHist, open, hv)).toBe(2);
+    expect(historicalDefaultAll(normalHist, open, hv)).toBe(false);
     const legacy = parseAchievedRecord(JSON.stringify(open)); // S0・S1 の配列
-    expect(historicalDefaultCount(legacy, open)).toBe(0);
-    expect(historicalDefaultAll(legacy, open)).toBe(false);
+    expect(historicalDefaultCount(legacy, open, hv)).toBe(0);
+    expect(historicalDefaultAll(legacy, open, hv)).toBe(false);
   });
 });
 

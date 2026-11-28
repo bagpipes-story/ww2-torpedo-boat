@@ -47,7 +47,7 @@ export type StoreCardTone = 'price' | 'short' | 'on' | 'off';
 
 /**
  * 格子の 1 枚の右の状態: 持っていなければ値段（足りなければ short）、持っていれば「装着中」／「外している」。
- * ご褒美（v0.9.0 IP3）はまだ持っていなければ値段の代わりに進み「n/13」（progress。史実 × デフォルトで達成した任務の数）
+ * ご褒美（v0.9.0 IP3）はまだ持っていなければ値段の代わりに進み「n/13」（progress。ハード × 史実 × デフォルト＝IP4 で達成した任務の数）
  */
 export function storeCardState(s: StoreState, item: StoreItem, progress: { readonly done: number; readonly total: number } = { done: 0, total: 0 }): { text: string; tone: StoreCardTone } {
   if (s.owned.includes(item.id)) return s.off.includes(item.id) ? { text: STORE_UNEQUIPPED_JA, tone: 'off' } : { text: STORE_EQUIPPED_JA, tone: 'on' };
@@ -55,7 +55,7 @@ export function storeCardState(s: StoreState, item: StoreItem, progress: { reado
   return { text: `${formatPoints(item.price)} 点`, tone: s.points >= item.price ? 'price' : 'short' };
 }
 
-/** 格子の 1 枚の 2 行目: 品の効きの短い文。ご褒美（v0.9.0 IP3）は値段の代わりの札「ご褒美（史実・デフォルトで全13任務を達成）」（効きは選んだ時の説明に出る） */
+/** 格子の 1 枚の 2 行目: 品の効きの短い文。ご褒美（v0.9.0 IP3）は値段の代わりの札「ご褒美（ハード史実デフォルト全13任務達成）」（IP4）（効きは選んだ時の説明に出る） */
 export function storeCardSubJa(data: GameData, item: StoreItem): string {
   return item.reward ? storeRewardJa(getStoreCatalogue(data).openMissionIds.length) : storeEffectJa(data, item);
 }

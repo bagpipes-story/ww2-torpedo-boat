@@ -115,7 +115,7 @@ export class StoreScene extends Phaser.Scene {
           ...r,
           title: it.nameJa,
           titlePx: STORE_CARD_TITLE_PX,
-          sub: storeCardSubJa(data, it), // ご褒美（v0.9.0 IP3）は「ご褒美（史実・デフォルトで全13任務を達成）」
+          sub: storeCardSubJa(data, it), // ご褒美（v0.9.0 IP3）は「ご褒美（ハード史実デフォルト全13任務達成）」（IP4）
           subPx: STORE_CARD_SUB_PX,
           ...(compact ? { padY: STORE_CARD_COMPACT_PAD_Y } : {}),
           right: st.text,
@@ -185,7 +185,7 @@ export class StoreScene extends Phaser.Scene {
       return;
     }
     if (it.reward) {
-      // まだ渡していないご褒美（v0.9.0 IP3）: 交換できない。進み「史実デフォルト n/13」
+      // まだ渡していないご褒美（v0.9.0 IP3）: 交換できない。進み「ハード史実デフォルト n/13」（IP4）
       a.setTitle(STORE_REWARD_ACTION_JA);
       a.setSub(storeRewardProgressJa(this.progress.done, this.progress.total));
       a.setEnabled(false);

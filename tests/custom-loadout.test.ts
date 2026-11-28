@@ -182,7 +182,7 @@ describe('Boot の検査（validateStore の V-S1〜V-S4）', () => {
     ['V-S1', 'ご褒美に値段がある', (s: Rec) => (items(s)[4]!['price'] = 100)],
     ['V-S1', 'ご褒美に reward_rule が無い', (s: Rec) => delete items(s)[4]!['reward_rule']],
     ['V-S1', 'ご褒美の reward_rule が表に無い', (s: Rec) => (items(s)[4]!['reward_rule'] = 'all_hard')],
-    ['V-S1', '交換の品に reward_rule がある', (s: Rec) => (items(s)[0]!['reward_rule'] = 'historical_default_all')],
+    ['V-S1', '交換の品に reward_rule がある', (s: Rec) => (items(s)[0]!['reward_rule'] = 'hard_historical_default_all')],
     ['V-S1', '交換の品に値段が無い', (s: Rec) => delete items(s)[0]!['price']],
     ['V-S1', '乗員の効きが 0', (s: Rec) => ((items(s)[4]!['effect'] as Rec)['reload_s'] = 0)],
     ['V-S1', '乗員の効きの鍵が欠ける', (s: Rec) => delete (items(s)[4]!['effect'] as Rec)['extinguish_hold_s']],

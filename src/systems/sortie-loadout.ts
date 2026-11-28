@@ -5,7 +5,7 @@ import { DEBUG_ACHIEVED } from '../config/debug-achieved';
 import { DEBUG_CUSTOM_ALL, DEBUG_CUSTOM_ITEMS, DEBUG_STORE_OPEN, DEBUG_STORE_POINTS } from '../config/game-config';
 import type { GameData } from '../config/game-data';
 import { effectiveStoreItems, withCustomLoadout } from '../config/custom-loadout';
-import { hasHardVariant } from '../config/mission-data';
+import { hardVariantOf, hasHardVariant } from '../config/mission-data';
 import { getStoreCatalogue } from '../config/store-data';
 import { achievedVariantBit, addAchieved, historicalDefaultAll, historicalDefaultCount, historicalDefaultTrophy, type AchievedRecord } from '../core/achieved-record';
 import type { Sortie } from '../core/sortie';
@@ -50,24 +50,27 @@ export function shownAchievedRecord(data: GameData): AchievedRecord {
   return rec;
 }
 
-/** Briefing のトロフィー（v0.9.0 IP3。create で 1 回）: その任務を史実 × デフォルトで達成していれば { hard }（ハードの史実 × デフォルトでも）、無ければ null */
+/**
+ * Briefing のトロフィー（v0.9.0 IP3。create で 1 回）: その任務をハード × 史実 × デフォルトで達成していれば { hard: true }（v0.9.0 IP4。語「ハード・史実で達成」）、
+ * ハードの違いの無い任務（jp_02・jp_05）は史実 × デフォルトで { hard: false }（語「史実で達成」）。無ければ null
+ */
 export function briefingTrophy(data: GameData, missionId: string): { readonly hard: boolean } | null {
-  return historicalDefaultTrophy(shownAchievedRecord(data).get(missionId) ?? 0);
+  return historicalDefaultTrophy(shownAchievedRecord(data).get(missionId) ?? 0, hasHardVariant(data, missionId));
 }
 
-/** ストアのご褒美の進み（v0.9.0 IP3。ストアの create で 1 回）: 史実 × デフォルトで達成した任務の数 / 13 */
+/** ストアのご褒美の進み（v0.9.0 IP3。ストアの create で 1 回）: トロフィーの形（IP4 からハード × 史実 × デフォルト）で達成した任務の数 / 13 */
 export function rewardProgress(data: GameData): { done: number; total: number } {
   const ids = getStoreCatalogue(data).openMissionIds;
-  return { done: historicalDefaultCount(shownAchievedRecord(data), ids), total: ids.length };
+  return { done: historicalDefaultCount(shownAchievedRecord(data), ids, hardVariantOf(data)), total: ids.length };
 }
 
 /**
- * Boot が 1 回: ?debug&points=N（v0.9.0 S1）と、?debug&achieved でご褒美の条件を満たした時（IP3。例 all:hist）は財布を写しにする（写しの持ち物にご褒美を装着して足す。
+ * Boot が 1 回: ?debug&points=N（v0.9.0 S1）と、?debug&achieved でご褒美の条件を満たした時（IP3。IP4 から例 all:hardhist）は財布を写しにする（写しの持ち物にご褒美を装着して足す。
  * localStorage の財布は変えない＝ご褒美を保存に書かない）。どちらでもなければ何もしない
  */
 export function debugStoreMemory(data: GameData): void {
   const cat = getStoreCatalogue(data);
-  const grant = DEBUG_ACHIEVED !== null && historicalDefaultAll(shownAchievedRecord(data), cat.openMissionIds) ? cat.items.filter((x) => x.reward).map((x) => x.id) : [];
+  const grant = DEBUG_ACHIEVED !== null && historicalDefaultAll(shownAchievedRecord(data), cat.openMissionIds, hardVariantOf(data)) ? cat.items.filter((x) => x.reward).map((x) => x.id) : [];
   const points = Number.isFinite(DEBUG_STORE_POINTS) ? DEBUG_STORE_POINTS : null;
   if (points !== null || grant.length > 0) enableStoreMemory(data, points, grant);
 }

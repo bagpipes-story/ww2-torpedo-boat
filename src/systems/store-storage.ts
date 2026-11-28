@@ -8,6 +8,7 @@
 // window を読まない（config/game-config を import しない＝tests が node で読める）。
 import type { GameData } from '../config/game-data';
 import { getStoreCatalogue, storeItemById } from '../config/store-data';
+import { hardVariantOf } from '../config/mission-data';
 import { ACH_BIT_PLAIN, achievedIdSet, addAchieved, historicalDefaultAll, parseAchievedRecord, serializeAchievedRecord, type AchievedRecord } from '../core/achieved-record';
 import { creditSortie, equippedItemIds, grantRewards, parseStoreState, purchaseItem, serializeStoreState, setItemEquipped, storeOpenStatus, type LoadoutMode, type PurchaseRefusal, type StoreState } from '../core/store';
 
@@ -21,7 +22,7 @@ const ACHIEVED_KEY = 'night-hunters.achieved';
 let memoryStore: string | null = null;
 
 /**
- * Boot が 1 回（?debug&points=N・v0.9.0 IP3 の ?debug&achieved=all:hist）: 財布を写しにする（保存は変えない）。points が null なら点は保存の物のまま。
+ * Boot が 1 回（?debug&points=N・v0.9.0 IP3 の ?debug&achieved。IP4 から all:hardhist）: 財布を写しにする（保存は変えない）。points が null なら点は保存の物のまま。
  * grant（ご褒美の id）は写しの持ち物に足して装着する（?debug&achieved でご褒美の条件を満たした時。localStorage には書かない）
  */
 export function enableStoreMemory(data: GameData, points: number | null, grant: readonly string[] = []): void {
@@ -117,8 +118,8 @@ export function recordStoreSortie(data: GameData, missionId: string, achieved: b
   const cat = getStoreCatalogue(data);
   const before = loadStoreState(data);
   const { state: credited, granted } = creditSortie(before, points, storedStoreStatus(data).open, cat.grantPoints);
-  // ご褒美（v0.9.0 IP3）: 保存の記録で 13 任務がみな史実 × デフォルトの達成なら、まだ持っていないご褒美を持ち物に足して装着（点と同じ 1 回の setItem）
-  const { state, granted: rewards } = grantRewards(credited, cat.items, historicalDefaultAll(achievedRecord(), cat.openMissionIds));
+  // ご褒美（v0.9.0 IP3）: 保存の記録で 13 任務がみなハード × 史実 × デフォルト（IP4。jp_02・jp_05 は史実 × デフォルト）の達成なら、まだ持っていないご褒美を持ち物に足して装着（点と同じ 1 回の setItem）
+  const { state, granted: rewards } = grantRewards(credited, cat.items, historicalDefaultAll(achievedRecord(), cat.openMissionIds, hardVariantOf(data)));
   const saved = saveStoreState(state);
   return { credited: state.points - before.points - granted, granted, total: state.points, saved, rewards };
 }

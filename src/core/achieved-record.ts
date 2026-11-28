@@ -3,7 +3,8 @@
 // 保存の鍵は S0・S1 と同じ night-hunters.achieved の 1 つ。形は { "v": 2, "m": { "us_02": 1, "us_05": 37 } }（値は 1〜255 のビットの和）。
 // S0・S1 のビルドが書いた形（任務の id の JSON 配列 ["us_02", …]）も読める: その id は「ノーマル・史実オフ・デフォルトで達成」（ビット 1）として扱う。
 // ストアを開く条件（core/store の storeOpenStatus）は今までどおり「どれかのビットが立っている任務」を数える（achievedIdSet）。
-// v0.9.0 IP3: Title の行の印は「✓ 達成」だけ（どれかのビット）。史実 × デフォルトのビット（MASK_HIST_DEFAULT）は Briefing のトロフィーとストアのご褒美「歴戦の乗員」の条件。
+// v0.9.0 IP3: Title の行の印は「✓ 達成」だけ（どれかのビット）。IP4 からハード × 史実 × デフォルトのビット（trophyMask。ハードの違いの無い jp_02・jp_05 は史実 × デフォルト）が
+// Title・Briefing のトロフィーとストアのご褒美「歴戦の乗員」の条件。記録の形は IP1 のまま（ビット 8 は IP1 から記録している＝読み替えは要らない）。
 
 export const ACHIEVED_RECORD_VERSION = 2;
 
@@ -81,29 +82,35 @@ export function achievedCount(rec: AchievedRecord, ids: readonly string[]): numb
 }
 
 /**
- * 史実 × デフォルトの装備で達成した形（v0.9.0 IP3。ユーザーの言葉 2026-11-27「史実　デフォルトで達成したシナリオには出撃前の説明画面にトロフィーが表示されたり、
- * 全シナリオ史実デフォルトでクリアして場合のみ、ご褒美追加装備がもらえるなど、頑張った証が分かるようになればいいな」）: ノーマル・史実・デフォルト（4）と ハード・史実・デフォルト（8）。
- * S0・S1 の id の配列（ビット 1）とカスタムの形はここに入らない＝前の記録とカスタムの装備ではトロフィーもご褒美も出ない
+ * 頑張った証の形（v0.9.0 IP3 で史実 × デフォルト。IP4 でハード × 史実 × デフォルトに。ユーザーの言葉 2026-11-28「画面はうまくできてるんだけど達成条件をハード×史実 × デフォルトにしてください」）:
+ * ハードの違いのある任務はハード・史実・デフォルト（8）だけ。ハードの違いの無い任務（jp_02・jp_05。ハードはノーマルと同じ世界なのでハードでも hard 偽で記録される）は
+ * 史実・デフォルト（4。設計の既定。8 も同じ世界の形として数える＝?debug&achieved=all:hardhist でも立つ）。
+ * S0・S1 の id の配列（ビット 1）・ノーマルの史実（4。ハードの違いのある任務）・カスタムの形はここに入らない＝前の記録とカスタムの装備ではトロフィーもご褒美も出ない
  */
 export const MASK_HIST_DEFAULT = 0x0c;
-const BIT_HARD_HIST_DEFAULT = 0x08;
+export const BIT_HARD_HIST_DEFAULT = 0x08;
 
-/** Briefing のトロフィー（史実 × デフォルトで達成していなければ null。hard はハードの史実 × デフォルトでも達成した＝「（ハード）」） */
-export function historicalDefaultTrophy(mask: number): { readonly hard: boolean } | null {
-  const m = validMask(mask) ? mask : 0;
-  return (m & MASK_HIST_DEFAULT) === 0 ? null : { hard: (m & BIT_HARD_HIST_DEFAULT) !== 0 };
+/** その任務のトロフィーの形のビットの和（hardVariant＝その任務にハードの違いがあるか。config/mission-data の hasHardVariant を systems・ui が渡す） */
+export function trophyMask(hardVariant: boolean): number {
+  return hardVariant ? BIT_HARD_HIST_DEFAULT : MASK_HIST_DEFAULT;
 }
 
-/** ids のうち史実 × デフォルトで達成した任務の数（ストアのご褒美の進み「史実デフォルト n/13」） */
-export function historicalDefaultCount(rec: AchievedRecord, ids: readonly string[]): number {
+/** Briefing・Title のトロフィー（その形で達成していなければ null。hard は語「ハード・史実で達成」にする＝ハードの違いのある任務） */
+export function historicalDefaultTrophy(mask: number, hardVariant: boolean): { readonly hard: boolean } | null {
+  const m = validMask(mask) ? mask : 0;
+  return (m & trophyMask(hardVariant)) === 0 ? null : { hard: hardVariant };
+}
+
+/** ids のうちトロフィーの形で達成した任務の数（ストアのご褒美の進み「ハード史実デフォルト n/13」）。hardVariant は任務の id → ハードの違いがあるか */
+export function historicalDefaultCount(rec: AchievedRecord, ids: readonly string[], hardVariant: (id: string) => boolean): number {
   let n = 0;
-  for (const id of ids) if (historicalDefaultTrophy(rec.get(id) ?? 0)) n++;
+  for (const id of ids) if (historicalDefaultTrophy(rec.get(id) ?? 0, hardVariant(id))) n++;
   return n;
 }
 
-/** ご褒美の条件（ids＝ストアを開く条件の 13 任務がみな史実 × デフォルトで達成。ids が空なら偽） */
-export function historicalDefaultAll(rec: AchievedRecord, ids: readonly string[]): boolean {
-  return ids.length > 0 && historicalDefaultCount(rec, ids) === ids.length;
+/** ご褒美の条件（ids＝ストアを開く条件の 13 任務がみなトロフィーの形で達成。ids が空なら偽） */
+export function historicalDefaultAll(rec: AchievedRecord, ids: readonly string[], hardVariant: (id: string) => boolean): boolean {
+  return ids.length > 0 && historicalDefaultCount(rec, ids, hardVariant) === ids.length;
 }
 
 /** ?debug&achieved の語の後ろの形（config/debug-achieved。v0.9.0 IP3）→ 形のビット（カスタムの形は置かない＝印は「✓ 達成」で同じ・トロフィーとご褒美には数えない） */

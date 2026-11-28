@@ -191,7 +191,7 @@ export class BootScene extends Phaser.Scene {
     validateRescueMissions(gameData);
     validateMinefieldMissions(gameData);
     validateStore(gameData); // ストア（v0.9.0。data/store.json）: 品の表と貯め方の V-S1〜V-S4（全任務の組み立ては tests/custom-loadout。壊れていれば Boot で止まる）
-    debugStoreMemory(gameData); // ?debug&points=N（v0.9.0 S1）・?debug&achieved=all:hist（IP3）: 財布を写しに（N 点・ご褒美を持つ。localStorage の財布は変えない）
+    debugStoreMemory(gameData); // ?debug&points=N（v0.9.0 S1）・?debug&achieved=all:hardhist（IP3・IP4）: 財布を写しに（N 点・ご褒美を持つ。localStorage の財布は変えない）
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 

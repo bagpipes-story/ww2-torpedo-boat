@@ -1,4 +1,4 @@
-// 頑張った証（v0.9.0 IP3。ユーザーの言葉 2026-11-27「史実　デフォルトで達成したシナリオには出撃前の説明画面にトロフィーが表示されたり、全シナリオ史実デフォルトでクリアして場合のみ、
+// 頑張った証（v0.9.0 IP3。IP4 から条件はハード × 史実 × デフォルト＝ユーザーの言葉 2026-11-28「画面はうまくできてるんだけど達成条件をハード×史実 × デフォルトにしてください」。ユーザーの言葉 2026-11-27「史実　デフォルトで達成したシナリオには出撃前の説明画面にトロフィーが表示されたり、全シナリオ史実デフォルトでクリアして場合のみ、
 // ご褒美追加装備がもらえるなど、頑張った証が分かるようになればいいな」）の見せ方の定数: トロフィーの絵（コードで描く金の杯。assets/trophy-art）・Briefing の置き方と語・
 // Result のご褒美の 1 行・ストアのご褒美の札の語。ゲームの強さの値ではない（ご褒美の効きは data/store.json）。何も import しない（tests が node で読める）。
 
@@ -13,19 +13,20 @@ export const TROPHY_OUTLINE = 0x2e2108;
 export const TROPHY_TEXT_COLOR = '#f0cd63';
 
 /**
- * Briefing のトロフィー（史実 × デフォルトで達成した任務だけ。ほかは何も作らない＝今と同じ画素）: 任務名の行（題 40 px）の右、「← 任務一覧」の左 BRIEF_TROPHY_RIGHT_GAP に右揃え。
- * 左に杯（BRIEF_TROPHY_PX の正方形）、右に「史実で達成」（ハードの史実 × デフォルトでも達成していれば「史実で達成（ハード）」）。縦は題の行の中央
+ * Briefing のトロフィー（頑張った証の形で達成した任務だけ。ほかは何も作らない＝今と同じ画素）: 任務名の行（題 40 px）の右、「← 任務一覧」の左 BRIEF_TROPHY_RIGHT_GAP に右揃え。
+ * 左に杯（BRIEF_TROPHY_PX の正方形）、右に「ハード・史実で達成」（v0.9.0 IP4。ユーザーの言葉 2026-11-28「達成条件をハード×史実 × デフォルトにしてください」）。
+ * ハードの違いの無い任務（jp_02・jp_05）は史実 × デフォルトで「史実で達成」（設計の既定）。縦は題の行の中央
  */
 export const BRIEF_TROPHY_PX = 40;
 export const BRIEF_TROPHY_LABEL_PX = 22;
 export const BRIEF_TROPHY_GAP_X = 8;
 export const BRIEF_TROPHY_RIGHT_GAP = 24;
 export const BRIEF_TROPHY_JA = '史実で達成';
-export const BRIEF_TROPHY_HARD_JA = '（ハード）';
+export const BRIEF_TROPHY_HARD_JA = 'ハード・史実で達成';
 
-/** Briefing のトロフィーの文 */
+/** Briefing のトロフィーの文（hard＝その任務にハードの違いがある＝ハード × 史実 × デフォルトで達成した） */
 export function briefTrophyJa(hard: boolean): string {
-  return `${BRIEF_TROPHY_JA}${hard ? BRIEF_TROPHY_HARD_JA : ''}`;
+  return hard ? BRIEF_TROPHY_HARD_JA : BRIEF_TROPHY_JA;
 }
 
 /** 字の幅の見積もり（半角 0.602 em・全角 1 em。ui/store-texts の estimateTextPx と同じ式） */
@@ -52,11 +53,11 @@ export function rewardResultJa(names: readonly string[]): string {
   return `ご褒美: ${names.join('・')} を手に入れた`;
 }
 
-/** ストアのご褒美の札（値段の代わり）と、まだの時の進み（主ボタンの 2 行目） */
+/** ストアのご褒美の札（値段の代わり）と、まだの時の進み（主ボタンの 2 行目）。v0.9.0 IP4 からハード × 史実 × デフォルト（jp_02・jp_05 は史実 × デフォルト） */
 export function storeRewardJa(total: number): string {
-  return `ご褒美（史実・デフォルトで全${total}任務を達成）`;
+  return `ご褒美（ハード史実デフォルト全${total}任務達成）`;
 }
 export function storeRewardProgressJa(done: number, total: number): string {
-  return `史実デフォルト ${done}/${total}`;
+  return `ハード史実デフォルト ${done}/${total}`;
 }
 export const STORE_REWARD_ACTION_JA = 'ご褒美';

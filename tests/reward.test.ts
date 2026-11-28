@@ -1,8 +1,9 @@
 // 頑張った証（v0.9.0 IP3。ユーザーの言葉 2026-11-27「史実　デフォルトで達成したシナリオには出撃前の説明画面にトロフィーが表示されたり、全シナリオ史実デフォルトでクリアして場合のみ、
-// ご褒美追加装備がもらえるなど、頑張った証が分かるようになればいいな」・ご褒美は「歴戦の乗員（推奨）」）:
-// - ご褒美を渡す規則（core/store の grantRewards・systems/store-storage の recordStoreSortie）: 13 任務がみな史実 × デフォルトの達成になった任務の終わりに 1 回だけ・装着して渡す・
-//   財布は 1 回の setItem・S0／S1 の配列の記録とカスタムの史実では渡さない・交換できない
-// - ストアの札（ui/store-texts）: まだなら値段の代わりに進み n/13・2 行目は「ご褒美（史実・デフォルトで全13任務を達成）」・渡した後は装着中／外している
+// ご褒美追加装備がもらえるなど、頑張った証が分かるようになればいいな」・ご褒美は「歴戦の乗員（推奨）」）。IP4 から条件はハード × 史実 × デフォルト（ユーザーの言葉 2026-11-28
+// 「画面はうまくできてるんだけど達成条件をハード×史実 × デフォルトにしてください」。ハードの違いの無い jp_02・jp_05 は史実 × デフォルト＝設計の既定）:
+// - ご褒美を渡す規則（core/store の grantRewards・systems/store-storage の recordStoreSortie）: 13 任務がみなその形の達成になった任務の終わりに 1 回だけ・装着して渡す・
+//   財布は 1 回の setItem・S0／S1 の配列の記録・ノーマルの史実だけ・カスタムの史実では渡さない・交換できない
+// - ストアの札（ui/store-texts）: まだなら値段の代わりに進み n/13・2 行目は「ご褒美（ハード史実デフォルト全13任務達成）」・渡した後は装着中／外している
 // - Briefing のトロフィーの置き方（config/trophy-config）: 1280〜1584 で 13 任務の題・1 行目・「← 任務一覧」・行・装備の切り替え・出撃に重ならない
 // - ?debug&achieved の形（config/debug-achieved の parseDebugAchieved）と写しの財布（localStorage に書かない）
 // - Result の 1 行と配線
@@ -55,6 +56,8 @@ const ACH = 'night-hunters.achieved';
 const STORE = 'night-hunters.store';
 /** 13 任務のうち skip 以外を mask で達成した記録 */
 const recordOf = (mask: number, skip: string | null): string => serializeAchievedRecord(new Map(OPEN.filter((id) => id !== skip).map((id) => [id, mask])));
+/** IP4 の頑張った証の形: ハードの違いのある任務は HS、jp_02・jp_05 は S（skip 以外） */
+const trophyRecordOf = (skip: string | null): string => serializeAchievedRecord(new Map(OPEN.filter((id) => id !== skip).map((id) => [id, hasHardVariant(gameData, id) ? HS : S])));
 
 describe('ご褒美の品（data/store.json の crew_veteran）', () => {
   it('ご褒美（reward）・値段なし・米の 3 艇・効きは弾倉交換 2.0 秒と消火 0.6 秒。交換はできない', () => {
@@ -76,8 +79,8 @@ describe('ご褒美の品（data/store.json の crew_veteran）', () => {
 });
 
 describe('ご褒美を渡す（任務の終わり。systems/store-storage の recordStoreSortie）', () => {
-  it('13 任務目を史実 × デフォルトで達成した出撃で 1 回だけ渡し、装着する（財布は 1 回の setItem）。次の出撃では渡さない', () => {
-    ls.map.set(ACH, recordOf(S, 'jp_05'));
+  it('13 任務目（ハードの違いの無い jp_05）を史実 × デフォルトで達成した出撃で 1 回だけ渡し、装着する（財布は 1 回の setItem）。次の出撃では渡さない', () => {
+    ls.map.set(ACH, trophyRecordOf('jp_05'));
     ls.map.set(STORE, serializeStoreState({ ...emptyStoreState(), points: 10, granted: true }));
     const r0 = recordStoreSortie(gameData, 'jp_05', true, 100, bit(false, false, false)); // 史実オフで達成 → まだ
     expect(r0.rewards).toEqual([]);
@@ -89,9 +92,10 @@ describe('ご褒美を渡す（任務の終わり。systems/store-storage の re
     expect(recordStoreSortie(gameData, 'us_02', true, 0, S).rewards).toEqual([]);
     expect(loadStoreState(gameData).owned).toEqual(['crew_veteran']);
   });
-  it('ハードの史実 × デフォルトも数える。未達・カスタムの史実・S0／S1 の配列の記録では渡さない', () => {
-    ls.map.set(ACH, recordOf(HS, 'us_03'));
-    expect(recordStoreSortie(gameData, 'us_03', false, 0, S).rewards).toEqual([]); // 未達
+  it('ハードの違いのある任務はハード × 史実 × デフォルトだけ数える（v0.9.0 IP4）。未達・ノーマルの史実・カスタムの史実・S0／S1 の配列の記録では渡さない', () => {
+    ls.map.set(ACH, trophyRecordOf('us_03'));
+    expect(recordStoreSortie(gameData, 'us_03', false, 0, HS).rewards).toEqual([]); // 未達
+    expect(recordStoreSortie(gameData, 'us_03', true, 0, S).rewards).toEqual([]); // ノーマルの史実 × デフォルト（IP3 では渡した）
     expect(recordStoreSortie(gameData, 'us_03', true, 0, SC).rewards).toEqual([]); // 史実でもカスタム
     expect(recordStoreSortie(gameData, 'us_03', true, 0, P).rewards).toEqual([]); // 史実オフ
     expect(recordStoreSortie(gameData, 'us_03', true, 0, HS).rewards).toEqual(['crew_veteran']);
@@ -100,8 +104,16 @@ describe('ご褒美を渡す（任務の終わり。systems/store-storage の re
     for (const id of OPEN) expect(recordStoreSortie(gameData, id, true, 0, P).rewards, id).toEqual([]);
     expect(loadStoreState(gameData).owned).toEqual([]);
   });
-  it('前のビルドが表に無い品として落としていても、条件のままなら次の任務の終わりで戻る（持ち物＝渡した印）', () => {
+  it('IP3 の条件（13 任務をみなノーマルの史実 × デフォルト）だけの記録では渡さない（jp_02・jp_05 の 2 つだけ数える）', () => {
     ls.map.set(ACH, recordOf(S, null));
+    ls.map.set(STORE, serializeStoreState({ ...emptyStoreState(), granted: true }));
+    expect(recordStoreSortie(gameData, 'us_01', true, 0, S).rewards).toEqual([]);
+    expect(recordStoreSortie(gameData, 'jp_02', true, 0, HS).rewards).toEqual([]); // jp_02 のハードは記録されない形だが同じ世界として数える＝まだ 2/13
+    ls.map.set(ACH, recordOf(HS, null)); // 13 任務をみなハード・史実・デフォルト（jp_02・jp_05 も 8 で数える）
+    expect(recordStoreSortie(gameData, 'us_01', false, 0).rewards).toEqual(['crew_veteran']);
+  });
+  it('前のビルドが表に無い品として落としていても、条件のままなら次の任務の終わりで戻る（持ち物＝渡した印）', () => {
+    ls.map.set(ACH, trophyRecordOf(null));
     ls.map.set(STORE, serializeStoreState({ ...emptyStoreState(), granted: true }));
     expect(recordStoreSortie(gameData, 'us_01', false, 0).rewards).toEqual(['crew_veteran']);
   });
@@ -113,15 +125,21 @@ describe('ご褒美を渡す（任務の終わり。systems/store-storage の re
 });
 
 describe('ストアの札（ui/store-texts）', () => {
-  it('まだ: 右は進み n/13（short の色）・2 行目は札。渡した後: 装着中／外している（2 行目は札のまま）。主ボタンの 2 行目は「史実デフォルト n/13」', () => {
+  it('まだ: 右は進み n/13（short の色）・2 行目は札。渡した後: 装着中／外している（2 行目は札のまま）。主ボタンの 2 行目は「ハード史実デフォルト n/13」', () => {
     const s = { ...emptyStoreState(), points: 1e6 };
     expect(storeCardState(s, CREW, { done: 4, total: 13 })).toEqual({ text: '4/13', tone: 'short' });
     expect(storeCardState({ ...s, owned: ['crew_veteran'] }, CREW, { done: 13, total: 13 })).toEqual({ text: '装着中', tone: 'on' });
     expect(storeCardState({ ...s, owned: ['crew_veteran'], off: ['crew_veteran'] }, CREW)).toEqual({ text: '外している', tone: 'off' });
-    expect(storeCardSubJa(gameData, CREW)).toBe('ご褒美（史実・デフォルトで全13任務を達成）');
-    expect(storeRewardJa(13)).toBe('ご褒美（史実・デフォルトで全13任務を達成）');
+    expect(storeCardSubJa(gameData, CREW)).toBe('ご褒美（ハード史実デフォルト全13任務達成）');
+    expect(storeRewardJa(13)).toBe('ご褒美（ハード史実デフォルト全13任務達成）');
     expect(storeCardSubJa(gameData, storeItemById(cat, 'fuel_tank')!)).toBe('燃料の割当 ×1.25');
-    expect(storeRewardProgressJa(4, 13)).toBe('史実デフォルト 4/13');
+    expect(storeRewardProgressJa(4, 13)).toBe('ハード史実デフォルト 4/13');
+  });
+  it('幅（論理 px の見積もり）: 進み「ハード史実デフォルト 13/13」は主ボタン（320）の余白の内（札の幅は tests/store-layout）', () => {
+    const menuNum = (name: string): number => Number(new RegExp(`export const ${name} = (\\d+);`).exec(src('config/menu-config.ts'))![1]); // DOM を読む config なのでソースから
+    const [MENU_PAD_X, MENU_SUB_PX] = [menuNum('MENU_PAD_X'), menuNum('MENU_SUB_PX')];
+    expect([MENU_PAD_X, MENU_SUB_PX]).toEqual([32, 18]);
+    expect(textWidthPx(storeRewardProgressJa(13, 13), MENU_SUB_PX) + 2 * MENU_PAD_X).toBeLessThanOrEqual(storeActionRect(1280).w);
   });
 });
 
@@ -173,8 +191,8 @@ describe('Briefing のトロフィーの置き方（config/trophy-config）', ()
       }
     }
   });
-  it('文: 「史実で達成」・ハードでも達成していれば「史実で達成（ハード）」。Result の 1 行', () => {
-    expect([briefTrophyJa(false), briefTrophyJa(true)]).toEqual(['史実で達成', '史実で達成（ハード）']);
+  it('文: ハードの違いのある任務は「ハード・史実で達成」（v0.9.0 IP4）・jp_02／jp_05 は「史実で達成」。Result の 1 行', () => {
+    expect([briefTrophyJa(false), briefTrophyJa(true)]).toEqual(['史実で達成', 'ハード・史実で達成']);
     expect(rewardResultJa(['歴戦の乗員'])).toBe('ご褒美: 歴戦の乗員 を手に入れた');
   });
 });

@@ -12,10 +12,11 @@ const ITEM_KEYS = ['id', 'kind', 'name_ja', 'short_ja', 'desc_ja', 'boats', 'exc
 const ITEM_OPTIONAL_KEYS = ['boat_condition', 'shared_ok'] as const;
 /**
  * v0.9 で置ける品の種類と、種類ごとに要る鍵（ally は v0.10 の殴り込みの味方の予約＝今は置かない）: equipment は price（点で交換）、reward（v0.9.0 IP3 のご褒美）は
- * price を持たず reward_rule（渡す条件。今は historical_default_all＝ストアを開く条件の任務をみな史実モード × デフォルトの装備で達成）
+ * price を持たず reward_rule（渡す条件。今は hard_historical_default_all＝ストアを開く条件の任務をみなハード × 史実モード × デフォルトの装備で達成。v0.9.0 IP4 で
+ * historical_default_all から。ハードの違いの無い jp_02・jp_05 は史実 × デフォルト＝core/achieved-record の trophyMask）
  */
 const ITEM_KIND_KEYS = { equipment: 'price', reward: 'reward_rule' } as const;
-const REWARD_RULES = ['historical_default_all'] as const;
+const REWARD_RULES = ['hard_historical_default_all'] as const;
 
 /** 効きの形ごとの鍵（effect の中。kind を除く）と、触る data の鍵（V-S3・V-S4。boat. は自艇の記録、mission. は任務の記録） */
 export const STORE_EFFECT_SPEC: Readonly<Record<StoreEffectKind, { readonly keys: readonly string[]; readonly touches: readonly string[] }>> = {

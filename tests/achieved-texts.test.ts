@@ -24,7 +24,7 @@ import { gameData } from '../src/config/game-data';
 import { hasHardVariant } from '../src/config/mission-data';
 import { HUD_CUSTOM_BADGE_JA, HUD_HIST_CUSTOM_BADGE_JA, RESULT_CUSTOM_TAG_JA } from '../src/config/store-layout-config';
 import { TITLE_ROW_STATUS_PX } from '../src/config/title-layout-config';
-import { MASK_HIST_DEFAULT, achievedVariantBit } from '../src/core/achieved-record';
+import { BIT_HARD_HIST_DEFAULT, MASK_HIST_DEFAULT, achievedVariantBit } from '../src/core/achieved-record';
 import { sortieAchieved } from '../src/core/store';
 import { achievedMarkJa, titleMarkLayout } from '../src/ui/achieved-texts';
 import { REASON_LABEL, RESULT_HISTORICAL_TAG_JA, resultConditionJa, resultHeadingJa } from '../src/ui/result-heading';
@@ -69,9 +69,10 @@ describe('Title の行の印の置き方（titleMarkLayout。本当の 13 行）
     return es.map((e, i) => ({ e, i, n: es.length, look, title: textWidthPx(e.title, look.titlePx) }));
   };
   it('達成していない行は何も置かない（null）＝保存が空の端末の行は今のまま', () => {
-    expect(titleMarkLayout(0, 600, 100)).toBeNull();
+    expect(titleMarkLayout(0, true, 600, 100)).toBeNull();
+    expect(titleMarkLayout(0, false, 600, 100)).toBeNull();
   });
-  it('どの任務・どの論理幅でも: 「✓ 達成」は縮めずに入り、史実 × デフォルトの行はトロフィーも縮めずに入る（題の右端から 16 空き・行の右 − 32）。ほかの形にはトロフィーなし', () => {
+  it('どの任務・どの論理幅でも: 「✓ 達成」は縮めずに入り、頑張った証の行（IP4: ハードの違いのある任務はハード × 史実 × デフォルト・jp_02／jp_05 は史実 × デフォルト）はトロフィーも縮めずに入る（題の右端から 16 空き・行の右 − 32）。ほかの形にはトロフィーなし', () => {
     let cases = 0;
     let narrowest = Infinity;
     for (const campaign of ['us_pt', 'jp_hard']) {
@@ -79,14 +80,15 @@ describe('Title の行の印の置き方（titleMarkLayout。本当の 13 行）
         for (const r of rows(campaign)) {
           const rect = titleRowRect(r.i, r.n, w);
           const titleRight = rect.x + MENU_PAD_X + r.title;
+          const hv = hasHardVariant(gameData, r.e.id);
           for (let m = 1; m <= 255; m++) {
-            const l = titleMarkLayout(m, rect.x + rect.w, titleRight)!;
+            const l = titleMarkLayout(m, hv, rect.x + rect.w, titleRight)!;
             cases++;
             expect(l.text).toBe('✓ 達成');
             expect(l.maxW).toBeCloseTo(rect.x + rect.w - TITLE_ACHIEVED_PAD_X - titleRight - TITLE_ACHIEVED_GAP, 6);
             const need = textWidthPx(l.text, TITLE_ACHIEVED_PX) + (l.trophy ? TITLE_TROPHY_GAP + TITLE_TROPHY_PX : 0);
             expect(need, `${r.e.id} ${m} w ${w}`).toBeLessThanOrEqual(l.maxW);
-            expect(l.trophy, `${r.e.id} ${m}`).toBe((m & MASK_HIST_DEFAULT) !== 0);
+            expect(l.trophy, `${r.e.id} ${m}`).toBe((m & (hv ? BIT_HARD_HIST_DEFAULT : MASK_HIST_DEFAULT)) !== 0);
             narrowest = Math.min(narrowest, l.maxW);
           }
         }
@@ -98,12 +100,13 @@ describe('Title の行の印の置き方（titleMarkLayout。本当の 13 行）
   it('入らない行はトロフィーを出さない（文は作る時に縮める）。幅が負でも投げない', () => {
     const w = textWidthPx('✓ 達成', TITLE_ACHIEVED_PX);
     // 行の右 1000 − 32 − 16 − 題の右端 → 幅の上限
-    expect(titleMarkLayout(HS, 1000, 1000 - 48 - w - 10)).toMatchObject({ text: '✓ 達成', trophy: false });
-    expect(titleMarkLayout(HS, 1000, 1000 - 48 - w - TITLE_TROPHY_GAP - TITLE_TROPHY_PX - 0.5)).toMatchObject({ trophy: true });
-    expect(titleMarkLayout(S | P, 1000, 600)).toMatchObject({ trophy: true });
-    expect(titleMarkLayout(HSC | P, 1000, 600)).toMatchObject({ trophy: false }); // ハードの史実でもカスタム
-    expect(titleMarkLayout(SC | HC | C | P | H, 1000, 600)).toMatchObject({ trophy: false }); // 史実はカスタムでだけ＝トロフィーなし
-    expect(titleMarkLayout(P, 100, 400)).toMatchObject({ text: '✓ 達成', maxW: 0, trophy: false });
+    expect(titleMarkLayout(HS, true, 1000, 1000 - 48 - w - 10)).toMatchObject({ text: '✓ 達成', trophy: false });
+    expect(titleMarkLayout(HS, true, 1000, 1000 - 48 - w - TITLE_TROPHY_GAP - TITLE_TROPHY_PX - 0.5)).toMatchObject({ trophy: true });
+    expect(titleMarkLayout(S | P, true, 1000, 600)).toMatchObject({ trophy: false }); // IP4: ハードの違いのある任務はノーマルの史実だけでは出ない
+    expect(titleMarkLayout(S | P, false, 1000, 600)).toMatchObject({ trophy: true }); // jp_02・jp_05 は史実 × デフォルト
+    expect(titleMarkLayout(HSC | P, true, 1000, 600)).toMatchObject({ trophy: false }); // ハードの史実でもカスタム
+    expect(titleMarkLayout(SC | HC | C | P | H, false, 1000, 600)).toMatchObject({ trophy: false }); // 史実はカスタムでだけ＝トロフィーなし
+    expect(titleMarkLayout(P, true, 100, 400)).toMatchObject({ text: '✓ 達成', maxW: 0, trophy: false });
   });
   it('縦: 印は状態の文「出撃準備 →」（行の中央・24 px）の上に収まり、トロフィー（18 px）も行の上端の内（詰めた行 76・今の行 96）', () => {
     for (const n of [6, 7]) {
@@ -176,7 +179,7 @@ describe('配線（ソース）', () => {
   it('Title: 行ごとに印（達成していなければ何も作らない）・開いているタブの 2 行目に達成の数。記録は保存 ＋ ?debug&achieved（保存は変えない）', () => {
     const ts = src('scenes/title-scene.ts');
     expect(ts).toContain('const achieved = shownAchievedRecord(data);');
-    expect(ts).toContain('addTitleAchievedMark(this, row, r, titleCompactOn(n), achieved.get(e.id) ?? 0);');
+    expect(ts).toContain('addTitleAchievedMark(this, row, r, titleCompactOn(n), achieved.get(e.id) ?? 0, hasHardVariant(data, e.id));');
     expect(ts).toContain('titleTabAchievedJa(c.id === selected.id ? TITLE_TAB_SELECTED_SUB_JA : TITLE_TAB_SUB_JA, achievedCount(achieved, ids), ids.length)');
     expect(ts.split('\n').length).toBeLessThanOrEqual(301);
     const ta = src('ui/title-achieved.ts');

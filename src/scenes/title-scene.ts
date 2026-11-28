@@ -71,6 +71,7 @@ import { musicEnabled, setMusicEnabled, setSoundEnabled, soundEnabled } from '..
 import { MenuButton, addBuildLabel } from '../ui/menu-ui';
 import { TITLE_STORE_JA, TITLE_STORE_PX, TITLE_STORE_RECT, TITLE_STORE_SUB_PX } from '../config/store-layout-config';
 import { grantStoreOpening, loadStoreState } from '../systems/store-storage';
+import { hasHardVariant } from '../config/mission-data';
 import { shownAchievedRecord, storeIsOpen } from '../systems/sortie-loadout';
 import { addTitleAchievedMark } from '../ui/title-achieved';
 import { formatPoints } from '../ui/store-texts';
@@ -152,7 +153,7 @@ export class TitleScene extends Phaser.Scene {
       );
       row.setEnabled(e.playable);
       this.rows.push(row);
-      addTitleAchievedMark(this, row, r, titleCompactOn(n), achieved.get(e.id) ?? 0); // 達成の印（v0.9.0 IP2・IP3「✓ 達成」と史実 × デフォルトのトロフィー。達成していない行は何も作らない）
+      addTitleAchievedMark(this, row, r, titleCompactOn(n), achieved.get(e.id) ?? 0, hasHardVariant(data, e.id)); // 達成の印（v0.9.0 IP2・IP3「✓ 達成」と IP4 のハード × 史実 × デフォルトのトロフィー。達成していない行は何も作らない）
     });
     this.add.text(cx, TITLE_HINT_Y, TITLE_HINT_BY_CAMPAIGN_JA[selected.id] ?? TITLE_HINT_JA, hudTextStyle(TITLE_HINT_PX, HUD_COLOR)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
     // 難易度（v0.4.5）: タップで ノーマル ⇄ ハード。registry に持ち回る（Briefing → Mission → Result の「もう一度」まで同じ難易度）
