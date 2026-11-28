@@ -14,7 +14,8 @@ import { missionScoreInput } from '../systems/mission-score';
 import type { StoreSortieRecord } from '../systems/store-storage';
 import { resultCustomTagJa, storeResultPartJa } from '../ui/store-texts';
 import { getStoreCatalogue, storeItemById } from '../config/store-data';
-import { TROPHY_TEXT_COLOR, rewardResultJa } from '../config/trophy-config';
+import { RESULT_TROPHY_LABEL_PX, TROPHY_TEXT_COLOR, rewardResultJa } from '../config/trophy-config';
+import { addResultTrophyCup, resultTrophyJa } from '../ui/result-trophy';
 import { evacScorePartJa, evacTimeLinesJa } from '../ui/evac-result';
 import type { DawnResult } from '../core/dawn-air';
 import {
@@ -177,11 +178,12 @@ export class ResultScene extends Phaser.Scene {
     // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）
     const maxW = GAME_WIDTH - 2 * HUD_MARGIN;
     const texts: Phaser.GameObjects.Text[] = []; // 作った行（最後にボタンの上へ収める。v0.6.8 レビュー ux-result-height-arms）
-    const line = (text: string, size: number, color?: string): void => {
+    const line = (text: string, size: number, color?: string): Phaser.GameObjects.Text => {
       const tx = this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
       if (tx.width > maxW) tx.setScale(maxW / tx.width);
       texts.push(tx);
       y += size + RESULT_LINE_GAP;
+      return tx;
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
     const base = getGameData(this.registry, REGISTRY_KEY_DATA);
@@ -191,6 +193,8 @@ export class ResultScene extends Phaser.Scene {
     line((r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(achieved, r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX, achieved ? HOME_COLOR_TEXT : HUD_COLOR_WARN); // 救助の任務（v0.8.5 S4。ui/rescue-result）・カスタムの印（v0.9.0 S1。デフォルトは ''）
     const cond = achieved ? '' : resultConditionJa(missionAchieveJa(base, r.sortie.missionId, hardV));
     if (cond) line(cond, HUD_FONT_HEADING_PX);
+    const trophyJa = resultTrophyJa(achieved, r.sortie, hasHardVariant(base, r.sortie.missionId)); // 頑張った証の形で達成した出撃だけ杯と 1 行（v0.9.0 IP5。ui/result-trophy）
+    const trophyText = trophyJa ? line(trophyJa, RESULT_TROPHY_LABEL_PX, TROPHY_TEXT_COLOR) : null;
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {
@@ -259,6 +263,7 @@ export class ResultScene extends Phaser.Scene {
     const last = texts[texts.length - 1]!;
     const lastBottom = last.y + last.displayHeight;
     for (let i = 1; i < texts.length; i++) texts[i]!.y -= resultFitLiftPx(i, texts.length, lastBottom, RESULT_BODY_MAX_Y);
+    if (trophyText) addResultTrophyCup(this, trophyText); // 持ち上げた後の字の横に杯（v0.9.0 IP5）
     this.add
       .text(cx, GAME_HEIGHT - RESULT_SEED_Y, `seed ${r.seed}`, hudTextStyle(HUD_FONT_HEADING_PX))
       .setOrigin(0.5, 1)

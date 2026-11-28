@@ -14,17 +14,18 @@ export const TROPHY_TEXT_COLOR = '#f0cd63';
 
 /**
  * Briefing のトロフィー（頑張った証の形で達成した任務だけ。ほかは何も作らない＝今と同じ画素）: 任務名の行（題 40 px）の右、「← 任務一覧」の左 BRIEF_TROPHY_RIGHT_GAP に右揃え。
- * 左に杯（BRIEF_TROPHY_PX の正方形）、右に「ハード・史実で達成」（v0.9.0 IP4。ユーザーの言葉 2026-11-28「達成条件をハード×史実 × デフォルトにしてください」）。
- * ハードの違いの無い任務（jp_02・jp_05）は史実 × デフォルトで「史実で達成」（設計の既定）。縦は題の行の中央
+ * 左に杯（BRIEF_TROPHY_PX の正方形）、右に「ハード・史実・装備デフォルトで達成」（v0.9.0 IP5。ユーザーの言葉 2026-11-28「「ハード・史実・装備デフォルトで達成」と表示されるようにしてください。
+ * （任務終了時の画面も同じ）」。IP4 は「ハード・史実で達成」）。ハードの違いの無い任務（jp_02・jp_05）は史実 × デフォルトで「史実・装備デフォルトで達成」（設計の既定＝語をそろえた）。
+ * 縦は題の行の中央。1280 で一番長い題（「スリガオ海峡・最初の接触」・「多号作戦・オルモック湾へ」の 480 px）の右端と杯の間は 26 px（tests/reward）
  */
 export const BRIEF_TROPHY_PX = 40;
 export const BRIEF_TROPHY_LABEL_PX = 22;
 export const BRIEF_TROPHY_GAP_X = 8;
 export const BRIEF_TROPHY_RIGHT_GAP = 24;
-export const BRIEF_TROPHY_JA = '史実で達成';
-export const BRIEF_TROPHY_HARD_JA = 'ハード・史実で達成';
+export const BRIEF_TROPHY_JA = '史実・装備デフォルトで達成';
+export const BRIEF_TROPHY_HARD_JA = 'ハード・史実・装備デフォルトで達成';
 
-/** Briefing のトロフィーの文（hard＝その任務にハードの違いがある＝ハード × 史実 × デフォルトで達成した） */
+/** Briefing と Result のトロフィーの文（hard＝その任務にハードの違いがある＝ハード × 史実 × デフォルトで達成した） */
 export function briefTrophyJa(hard: boolean): string {
   return hard ? BRIEF_TROPHY_HARD_JA : BRIEF_TROPHY_JA;
 }
@@ -46,6 +47,20 @@ export function briefTrophyLayout(backX: number, titleY: number, titlePx: number
   const iconX = labelX - BRIEF_TROPHY_GAP_X - BRIEF_TROPHY_PX;
   const cy = titleY + titlePx / 2;
   return { left: iconX, right, top: cy - BRIEF_TROPHY_PX / 2, bottom: cy + BRIEF_TROPHY_PX / 2, iconX, iconY: cy - BRIEF_TROPHY_PX / 2, labelX, cy };
+}
+
+/**
+ * Result の杯（v0.9.0 IP5。ユーザーの言葉「（任務終了時の画面も同じ）」）: この出撃が頑張った証の形で達成した時だけ（core/achieved-record の sortieTrophy）、見出しのすぐ下に
+ * Briefing と同じ文（RESULT_TROPHY_LABEL_PX・TROPHY_TEXT_COLOR）を 1 行。杯（RESULT_TROPHY_PX）は字の左に RESULT_TROPHY_GAP_X、杯と字の組を画面の中央にそろえる
+ */
+export const RESULT_TROPHY_PX = 30;
+export const RESULT_TROPHY_LABEL_PX = 22;
+export const RESULT_TROPHY_GAP_X = 8;
+
+/** Result の杯の置き場（論理 px）: cx は行の中央、textW は字の幅。字の中央 textCx（原点 0.5 の x）と杯の左端 iconX */
+export function resultTrophyLayout(cx: number, textW: number): { textCx: number; iconX: number } {
+  const textCx = cx + (RESULT_TROPHY_PX + RESULT_TROPHY_GAP_X) / 2;
+  return { textCx, iconX: textCx - textW / 2 - RESULT_TROPHY_GAP_X - RESULT_TROPHY_PX };
 }
 
 /** Result の 1 行（ご褒美を渡した出撃だけ。names はご褒美の名） */

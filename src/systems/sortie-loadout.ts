@@ -51,8 +51,8 @@ export function shownAchievedRecord(data: GameData): AchievedRecord {
 }
 
 /**
- * Briefing のトロフィー（v0.9.0 IP3。create で 1 回）: その任務をハード × 史実 × デフォルトで達成していれば { hard: true }（v0.9.0 IP4。語「ハード・史実で達成」）、
- * ハードの違いの無い任務（jp_02・jp_05）は史実 × デフォルトで { hard: false }（語「史実で達成」）。無ければ null
+ * Briefing のトロフィー（v0.9.0 IP3。create で 1 回）: その任務をハード × 史実 × デフォルトで達成していれば { hard: true }（v0.9.0 IP4。語は IP5 から「ハード・史実・装備デフォルトで達成」）、
+ * ハードの違いの無い任務（jp_02・jp_05）は史実 × デフォルトで { hard: false }（語「史実・装備デフォルトで達成」）。無ければ null
  */
 export function briefingTrophy(data: GameData, missionId: string): { readonly hard: boolean } | null {
   return historicalDefaultTrophy(shownAchievedRecord(data).get(missionId) ?? 0, hasHardVariant(data, missionId));

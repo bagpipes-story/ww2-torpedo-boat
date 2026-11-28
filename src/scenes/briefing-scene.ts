@@ -1,7 +1,7 @@
 // Briefing: 任務の 6 行（目的・成功・月・敵・危険・条件）と史実の 1 行、出撃前の港内空襲の 2 択、「出撃」（docs/02 §4・§6.8、v0.4.0）。
 // 数値は world-setup で Mission と同じに組む（?debug の上書き込み）。空襲は create で 1 回だけ振り（seed+4）、選んだ Sortie を Mission に渡す。
 // 静的な画面: 物体は create で 1 回だけ作り、update は持たない。変わるのは選択の 1 回だけ（§7）。
-// v0.9.0 IP3: 史実モード × デフォルトで達成した任務だけ、任務名の右にトロフィー「史実で達成」（ui/briefing-trophy）。
+// v0.9.0 IP3: 史実モード × デフォルトで達成した任務だけ、任務名の右にトロフィー（ui/briefing-trophy。IP5 から語は「ハード・史実・装備デフォルトで達成」）。
 // v0.9.0 S1: 出撃の左に「装備: デフォルト／カスタム」（ストアが開いていて効く装着中の品がある時だけ。ui/briefing-loadout。IP1 から史実モードでも）。カスタムなら出撃に custom の印を付け、数値の行もその data で組む。
 import Phaser from 'phaser';
 import {

@@ -95,10 +95,19 @@ export function trophyMask(hardVariant: boolean): number {
   return hardVariant ? BIT_HARD_HIST_DEFAULT : MASK_HIST_DEFAULT;
 }
 
-/** Briefing・Title のトロフィー（その形で達成していなければ null。hard は語「ハード・史実で達成」にする＝ハードの違いのある任務） */
+/** Briefing・Title のトロフィー（その形で達成していなければ null。hard は語「ハード・史実・装備デフォルトで達成」にする＝ハードの違いのある任務） */
 export function historicalDefaultTrophy(mask: number, hardVariant: boolean): { readonly hard: boolean } | null {
   const m = validMask(mask) ? mask : 0;
   return (m & trophyMask(hardVariant)) === 0 ? null : { hard: hardVariant };
+}
+
+/**
+ * Result の杯（v0.9.0 IP5）: この出撃が達成（core/store の sortieAchieved）で、その形がトロフィーの形なら Briefing と同じ { hard }。ほかは null。
+ * 形は記録と同じ（systems/sortie-loadout の recordSortieStore）: ハードはハードの違いのある任務だけ（jp_02・jp_05 のハードは hard 偽＝史実 × デフォルトで杯）
+ */
+export function sortieTrophy(achieved: boolean, o: { readonly hard: boolean; readonly historical: boolean; readonly custom: boolean }, hardVariant: boolean): { readonly hard: boolean } | null {
+  if (!achieved) return null;
+  return historicalDefaultTrophy(achievedVariantBit({ hard: o.hard && hardVariant, historical: o.historical, custom: o.custom }), hardVariant);
 }
 
 /** ids のうちトロフィーの形で達成した任務の数（ストアのご褒美の進み「ハード史実デフォルト n/13」）。hardVariant は任務の id → ハードの違いがあるか */

@@ -191,8 +191,8 @@ describe('Briefing のトロフィーの置き方（config/trophy-config）', ()
       }
     }
   });
-  it('文: ハードの違いのある任務は「ハード・史実で達成」（v0.9.0 IP4）・jp_02／jp_05 は「史実で達成」。Result の 1 行', () => {
-    expect([briefTrophyJa(false), briefTrophyJa(true)]).toEqual(['史実で達成', 'ハード・史実で達成']);
+  it('文: ハードの違いのある任務は「ハード・史実・装備デフォルトで達成」（v0.9.0 IP5。IP4 は「ハード・史実で達成」）・jp_02／jp_05 は「史実・装備デフォルトで達成」。Result の 1 行', () => {
+    expect([briefTrophyJa(false), briefTrophyJa(true)]).toEqual(['史実・装備デフォルトで達成', 'ハード・史実・装備デフォルトで達成']);
     expect(rewardResultJa(['歴戦の乗員'])).toBe('ご褒美: 歴戦の乗員 を手に入れた');
   });
 });
