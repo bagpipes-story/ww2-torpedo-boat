@@ -141,7 +141,7 @@ describe('任務一覧と Briefing の文（docs/02 §4、v0.4.0）', () => {
     expect(rec.noteJa).toBe('PT-37・40（諸説）が駆逐艦照月に命中し爆沈。PT-44喪失。照月の残骸は2025年7月に発見。');
     expect(briefingRows(rec, briefingNumbers(buildWorldSetup(gameData, 'us_02')), nameOf, labelOf)).toEqual([
       { label: '目的', text: '夜間に補給に来る駆逐艦を雷撃し、生還する' },
-      { label: '成功', text: '帰投（敵艦隊がいなくなれば不要）。命中はボーナス（帰投地点は北東の青い輪）' }, // v0.6.2 実機 1 回目: fleet_gone_clears
+      { label: '成功', text: '駆逐艦を撃沈して帰投（ハードは2隻とも）。敵艦隊がいなくなれば帰投は不要（帰投地点は北東の青い輪）' }, // v0.6.2 実機 1 回目: fleet_gone_clears。v0.9.0 IP3: 達成の条件の文に
       { label: '月', text: '半月 ・ 見える 1500 m ・ 見つかる 巡航 2000 m／静音 1000 m' },
       { label: '敵', text: '駆逐艦 ×1、輸送船 ×1（北西から）' },
       { label: '危険', text: '暴風、敵艦艇の砲撃・衝突、敵航空機、座礁、友軍誤射' },
@@ -213,7 +213,14 @@ describe('us_04 の Briefing（v0.8.0 S4）とほかの任務の文のバイト�
   it('ほかの 11 任務（us_05 のほか。ノーマル・ハード × 史実モード × seed 4 つ）の日付・場所・題・6 行・史実は main 0176202 と同じ（sha256）', () => {
     expect(OTHER_BRIEFING_IDS.length).toBe(11);
     expect([...OTHER_BRIEFING_IDS].sort()).toEqual([...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')].filter((id) => id !== 'us_05' && id !== 'us_07').sort()); // v0.8.5 S5: us_07 は新しい任務（文は tests/rescue-result）
-    const j = otherBriefingsJson();
+    // v0.9.0 IP3: us_02・jp_06 の「成功」を達成の条件の文にした（missions_seed の success）＝その 2 つの文だけ前の文に戻せば同じ
+    const IP3 = [
+      ['駆逐艦を撃沈して帰投（ハードは2隻とも）。敵艦隊がいなくなれば帰投は不要', '帰投（敵艦隊がいなくなれば不要）。命中はボーナス'],
+      ['米駆逐艦を1隻撃沈して帰投。ハードは2隻のうち1隻で達成', '帰投。命中はボーナス（米駆逐艦の撃沈は大きな点）'],
+    ] as const;
+    const now = otherBriefingsJson();
+    for (const [n] of IP3) expect(now.split(n).length - 1, n).toBeGreaterThanOrEqual(16); // ノーマル・ハード × 史実 × seed 4 つ
+    const j = IP3.reduce((acc, [n, o]) => acc.split(n).join(o), now);
     expect(j.length).toBe(105341);
     expect(createHash('sha256').update(j).digest('hex')).toBe(OTHER_SHA);
   });
@@ -339,7 +346,7 @@ describe('us_06 の Briefing（v0.8.1 S4）と画面の文の人名・PT の番�
       const rec = getBriefingRecord(gameData, 'us_06', hard);
       texts.push(rec.titleJa, rec.place, rec.objective, rec.success, rec.noteJa, ...rowsOf(hard).map((r) => r.text));
     }
-    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, ANCHOR_HINT_JA, bowOnLineJa(5, true), resultHeadingJa('rammed', NaN, true, false, false, true));
+    texts.push(anchorBackdropLineJa(7), ANCHOR_UNDERWAY_JA, ANCHOR_HINT_JA, bowOnLineJa(5, true), resultHeadingJa(false, 'rammed', NaN, true, false, false, true));
     texts.push(anchorResultLineJa({ nameJa: '卯月', sunk: true, underwayS: 85, reason: 2, heldShots: 4, heldHits: 2, backdropS: 48 }));
     const t = { anchor: {}, transportEnabled: true, transportSunk: false, shipsSunk: 0, shipsTotal: 1, torpedoesLeft: 2, dawn: { forceJa: '日本の艦', retireJa: '東' } } as never;
     texts.push(anchorWithdrawJa(t, 'x'), anchorWithdrawJa({ ...(t as object), shipsSunk: 1 } as never, 'x'));
@@ -405,7 +412,7 @@ describe('us_05 の Briefing（v0.8.2 S4）と画面の文の人名・PT の番�
     }
     const r0 = { stage: 2, seenAtS: 148, sentAtS: 170, relayedAtS: 210, trackedS: 12, identifyJa: '戦艦', relayJa: '隣の分隊', total: 8, bbHits: 3, caHits: 1, ddHits: 0, bbSunk: 1, caSunk: 0, ddSunk: 0, detonations: 1, gone: 6, shipKills: [] };
     for (const stage of [0, 1, 2, 3, 4]) texts.push(reconReportLineJa({ ...r0, stage }));
-    texts.push(reconFleetLineJa(r0), resultHeadingJa('rammed', NaN, true, false, false, true), resultShipsJa({ shipsTotal: 7, shipsSunk: 1, transportEnabled: false, transportSunk: false, dawn: { shipsWithdrawn: 0, transportWithdrawn: false }, recon: r0 }));
+    texts.push(reconFleetLineJa(r0), resultHeadingJa(false, 'rammed', NaN, true, false, false, true), resultShipsJa({ shipsTotal: 7, shipsSunk: 1, transportEnabled: false, transportSunk: false, dawn: { shipsWithdrawn: 0, transportWithdrawn: false }, recon: r0 }));
     texts.push(reconSeenLineJa('戦艦', 20), reconSentLineJa('戦艦', 2, '東へ 18 ノット'), reconRadioLineJa('西', '隣の分隊'), RECON_RELAYED_JA, reconCapHitLineJa('重巡', 2), RECON_BOOM_JA, '接触が東（スリガオ海峡）へ消えた', '報告済み ・ 帰投せよ  800 m');
     for (const s of texts) {
       for (const name of PERSON_DENYLIST) expect(s).not.toContain(name);

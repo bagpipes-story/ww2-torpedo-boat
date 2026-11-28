@@ -131,6 +131,14 @@ export class MenuButton {
     if (!Number.isNaN(this.centerY)) this.titleText.setY(this.titleY(text));
   }
 
+  /** 題と 2 行目の右端の x（left 揃えの行。Title の達成の印が左の文を避ける＝ui/title-achieved。v0.9.0 IP2。作る時に 1 回読むだけ） */
+  get titleRight(): number {
+    return this.titleText.x + this.titleText.width;
+  }
+  get subRight(): number {
+    return this.subText ? this.subText.x + this.subText.width : this.titleText.x;
+  }
+
   destroy(): void {
     this.scene.input.off(Phaser.Input.Events.POINTER_UP, this.onRelease, this);
     this.scene.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onRelease, this);

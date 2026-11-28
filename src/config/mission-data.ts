@@ -267,6 +267,11 @@ export function hasHardVariant(data: GameData, missionId: string): boolean {
   return proto?.['hard'] !== undefined;
 }
 
+/** 任務の id → ハードの違いがあるか（v0.9.0 IP4。頑張った証の条件 core/achieved-record の historicalDefaultCount・All に渡す。create と任務の終わりにだけ作る） */
+export function hardVariantOf(data: GameData): (missionId: string) => boolean {
+  return (missionId) => hasHardVariant(data, missionId);
+}
+
 // ---------- 任務一覧（v0.4.0）。Briefing の文（getBriefingRecord・enemyNameJa・riskLabelJa）は v0.6.3 から config/briefing-data.ts（ここから再 export すると循環になる） ----------
 
 /** Title の任務一覧（v0.6.0 から campaign-data.ts。キャンペーンを選べる。ここは今までの import のための再 export） */

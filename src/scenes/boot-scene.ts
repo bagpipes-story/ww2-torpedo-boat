@@ -22,6 +22,7 @@ import { hasHardVariant } from '../config/mission-data';
 import { createInputState } from '../core/input-state';
 import { directSortie } from '../core/sortie';
 import { migrateLegacyUnlocks } from '../systems/progress-storage';
+import { debugStoreMemory } from '../systems/sortie-loadout';
 import { createSfx } from '../systems/sfx-boot';
 import {
   generateDebugRingTexture,
@@ -73,6 +74,7 @@ import { validateLoadouts } from '../config/loadout-data';
 import { validateShoreGunsMissions } from '../config/shore-guns-mission-data';
 import { validateRescueMissions } from '../config/rescue-mission-data';
 import { validateMinefieldMissions } from '../config/minefield-mission-data';
+import { validateStore } from '../config/store-data';
 import { US_PT_BOAT_REF } from '../config/pt-config';
 import { COAST_MARKER_COLOR } from '../config/hunt-config';
 import { HOME_COLOR, STICK_DEAD_ZONE, TARGET_MARKER_COLOR, TARGET_MARKER_SIZE } from '../config/ui-config';
@@ -188,6 +190,8 @@ export class BootScene extends Phaser.Scene {
     validateShoreGunsMissions(gameData);
     validateRescueMissions(gameData);
     validateMinefieldMissions(gameData);
+    validateStore(gameData); // ストア（v0.9.0。data/store.json）: 品の表と貯め方の V-S1〜V-S4（全任務の組み立ては tests/custom-loadout。壊れていれば Boot で止まる）
+    debugStoreMemory(gameData); // ?debug&points=N（v0.9.0 S1）・?debug&achieved=all:hardhist（IP3・IP4）: 財布を写しに（N 点・ご褒美を持つ。localStorage の財布は変えない）
     createSfx(this.game); // 合成の効果音（v0.7.1 S1。再生の context が無い端末は何もしない＝音なしで続ける）
     if (DEBUG_ENABLED) generateDebugRingTexture(this);
 

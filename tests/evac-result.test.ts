@@ -179,17 +179,17 @@ describe('Result の文（ui/evac-result）', () => {
 
 describe('見出し（ui/result-heading の evac）', () => {
   it('jp_03: 帰投は「退避完了」、空襲の沈没は「空襲で沈没」、火災は「火災で沈没」、後ろの秒は「（空襲後 N 秒）」。ハード・史実の印はそのまま', () => {
-    expect(resultHeadingJa('returned', NaN, false, false, true)).toBe('任務終了 — 退避完了');
-    expect(resultHeadingJa('returned', 12.4, true, false, true)).toBe('任務終了 — 退避完了（空襲後 12 秒）（ハード）');
-    expect(resultHeadingJa('air_strike', 30, false, true, true)).toBe('任務終了 — 空襲で沈没（空襲後 30 秒）（史実）');
-    expect(resultHeadingJa('destroyed', NaN, false, false, true)).toBe('任務終了 — 火災で沈没');
-    expect(resultHeadingJa('adrift', 900, false, false, true)).toBe('任務終了 — 燃料切れで漂流（空襲後 900 秒）');
+    expect(resultHeadingJa(true, 'returned', NaN, false, false, true)).toBe('任務達成 — 退避完了');
+    expect(resultHeadingJa(true, 'returned', 12.4, true, false, true)).toBe('任務達成 — 退避完了（空襲後 12 秒）（ハード）');
+    expect(resultHeadingJa(false, 'air_strike', 30, false, true, true)).toBe('任務未達 — 空襲で沈没（空襲後 30 秒）（史実）');
+    expect(resultHeadingJa(false, 'destroyed', NaN, false, false, true)).toBe('任務未達 — 火災で沈没');
+    expect(resultHeadingJa(false, 'adrift', 900, false, false, true)).toBe('任務未達 — 燃料切れで漂流（空襲後 900 秒）');
   });
   it('ほかの任務（evac なし）は今の見出しのまま（全部の理由・夜明けの秒あり／なし）', () => {
     for (const reason of Object.keys(REASON_LABEL) as MissionEndReason[]) {
-      expect(resultHeadingJa(reason, NaN, false, false), reason).toBe(`任務終了 — ${REASON_LABEL[reason]}`);
-      expect(resultHeadingJa(reason, 12, true, true), reason).toBe(`任務終了 — ${REASON_LABEL[reason]}（夜明け後 12 秒）（ハード）（史実）`);
-      expect(resultHeadingJa(reason, 12, true, true, false), reason).toBe(resultHeadingJa(reason, 12, true, true));
+      expect(resultHeadingJa(false, reason, NaN, false, false), reason).toBe(`任務未達 — ${REASON_LABEL[reason]}`);
+      expect(resultHeadingJa(true, reason, 12, true, true), reason).toBe(`任務達成 — ${REASON_LABEL[reason]}（夜明け後 12 秒）（ハード）（史実）`);
+      expect(resultHeadingJa(false, reason, 12, true, true, false), reason).toBe(resultHeadingJa(false, reason, 12, true, true));
     }
     expect(Object.keys(EVAC_REASON_LABEL).sort()).toEqual(['air_strike', 'destroyed', 'returned']);
   });
@@ -215,7 +215,7 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
   });
   it('jp_03 の Result の文（見出しの全部の理由・本文・時の行の全部の形・得点の行）に「夜明け」が無い', () => {
     const texts: string[] = [];
-    for (const reason of Object.keys(REASON_LABEL) as MissionEndReason[]) for (const s of [NaN, 12]) texts.push(resultHeadingJa(reason, s, true, true, true));
+    for (const reason of Object.keys(REASON_LABEL) as MissionEndReason[]) for (const s of [NaN, 12]) for (const a of [true, false]) texts.push(resultHeadingJa(a, reason, s, true, true, true));
     for (const a of [true, false]) for (const l of resultBodyLines(body(E0, { objectiveDone: a }), false)) texts.push(l.text);
     for (const place of [EVR_NONE, EVR_HIDDEN, EVR_ENTERING, EVR_HAULING, EVR_OUTSIDE]) {
       for (const [reason, ret] of [['returned', true], ['air_strike', false], ['adrift', false]] as const) {
@@ -228,7 +228,8 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
   });
   it('本文の下端 ≤ 592（作るときの y の足し方＝result-scene の line(): 行ごとに字の大きさ ＋ 12、節の間 10。下端は最後の行の y ＋ 行の高さ（字の大きさ × 1.25 で多めに））', () => {
     // 行の多い形: 見出し・本文 4 行・兵装の 1 行・スコア・得点の行・状況の行・時の行・追撃の行・乗員の死傷の行（jp_03 に暴風・味方機・水上機・帰投地点までの行は無い）
-    const lines: [number, boolean][] = [[44, false]];
+    // v0.9.0 IP2: 未達の夜は見出しの下に「達成の条件: …」の 1 行（20 px）
+    const lines: [number, boolean][] = [[44, false], [20, false]];
     for (const l of resultBodyLines(body(E0, { arms: { blindTorpedoes: 1 } as never }), false)) lines.push([l.px, l.sectionAfter]);
     lines[lines.length - 1]![1] = true; // 本文の後の節の間
     lines.push([44, false], [20, true], [20, false], [20, false], [20, false], [20, false]);
@@ -239,14 +240,14 @@ describe('本文（ui/result-body の evac の枝）と「夜明け」なし', (
       y += px + 12 + (sec ? 10 : 0);
     }
     const bottom = lastTop + Math.ceil(20 * 1.25);
-    expect(lines.length).toBe(12);
+    expect(lines.length).toBe(13);
     expect(bottom).toBeLessThanOrEqual(BODY_MAX_Y);
-    expect(bottom).toBe(515);
+    expect(bottom).toBe(547);
     // 配線: 時の行は夜明けの行の代わり・帰投地点までの行は出さない・見出しは evac の印
     const rs = readFileSync(join(__dirname, '..', 'src', 'scenes', 'result-scene.ts'), 'utf8');
     expect(rs).toContain('...(r.evac ? evacTimeLinesJa(r.evac, r.dawn, r.reason, r.returned) : [r.rescue ? rescueTimeLineJa(r.dawn, r.returned) : dawnResultLine(r.dawn, r.returned, r.reason === \'cleared\')])'); // v0.8.5 S4: 救助の任務（us_07）は救助の時間の行
     expect(rs).toContain('if (!r.returned && !r.evac) {');
-    expect(rs).toContain('resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)'); // v0.8.1 S4: 止まった艦の任務の旗（体当たり →「敵艦と衝突した」＝ui/anchor-result）。v0.8.2 S4: 報告の任務（us_05）も
+    expect(rs).toContain('resultHeadingJa(achieved, r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)'); // v0.8.1 S4: 止まった艦の任務の旗（体当たり →「敵艦と衝突した」＝ui/anchor-result）。v0.8.2 S4: 報告の任務（us_05）も
     expect(rs).toContain(": r.patrol || r.evac ? '' : ships;");
   });
 });

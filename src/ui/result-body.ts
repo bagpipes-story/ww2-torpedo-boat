@@ -8,7 +8,7 @@
 // v0.8.2 S4: 報告の任務（us_05）の 2 行（ui/recon-result。レーダーの行の後）。v0.8.5 S4: 救助の任務（us_07）は米PT の枝の代わりに 4 行（ui/rescue-result）。
 // 返すのは行の並びだけで、y の足し方・画面の幅への縮め（line() の閉包）は scene に残す。Phaser も DOM を読む config も使わない（tests から型検査ごと読める）。
 import { HUD_COLOR_STRONG, HUD_FONT_HEADING_PX, HUD_FONT_STATUS_PX, HUD_FONT_STEP_PX } from '../config/hud-text-config';
-import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
+import { HUD_COLOR_KPI, RESULT_CAMPAIGN_KPI_JA, RESULT_CUSTOM_KPI_JA, RESULT_HISTORICAL_KPI_JA } from '../config/result-text-config';
 import type { BandSummary } from '../core/hit-rate';
 import { allyGunShare, allyResultLineJa } from './ally-result';
 import { armsResultLineJa } from './arms-lines';
@@ -51,7 +51,7 @@ export interface ResultBodySource {
   detections: number; returned: boolean; objectiveDone: boolean;
   shots: readonly unknown[]; capacity: number; hits: number; duds: number; misses: number; bands: readonly BandSummary[];
   kpi: { readonly byBand: readonly string[]; readonly legend: string } | null;
-  sortie: { readonly historical: boolean };
+  sortie: { readonly historical: boolean; readonly custom?: unknown };
 }
 
 /** 見出しの下の本文。hardV はハードの違いのある任務のハード（輸送隊の 1 行目にノルマの達成／未達。見出しの「（ハード）」と同じ条件。v0.6.6 レビュー ux:ux-7） */
@@ -126,6 +126,7 @@ export function resultBodyLines(r: ResultBodySource, hardV: boolean): ResultBody
     });
     if (kpi) line(kpi.legend, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     else if (r.sortie.historical) line(RESULT_HISTORICAL_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
+    else if (r.sortie.custom) line(RESULT_CUSTOM_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // カスタムの装備（v0.9.0 S1。デフォルトの出撃は今の行のまま）
     else line(RESULT_CAMPAIGN_KPI_JA, HUD_FONT_STATUS_PX, HUD_COLOR_KPI);
     if (r.radar) line(radarResultLineJa(r.radar), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // レーダー（v0.8.0 S4。us_04）: 最初の接触・目で見えない間に撃った魚雷
     if (r.strait) line(straitResultLineJa(r.strait), HUD_FONT_STATUS_PX, HUD_COLOR_KPI); // 列の通過（v0.8.0 S4。us_04）: 往路・復路・撃沈・揚陸の地

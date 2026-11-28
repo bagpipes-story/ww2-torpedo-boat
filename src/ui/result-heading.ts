@@ -1,4 +1,6 @@
-// Result の見出し（v0.6.1 で scenes/result-scene.ts から切り出し。v0.8.5 S4: 救助の任務の言い換えと「（救助の後 N 秒）」＝ui/rescue-result）: 終了理由の文と「任務終了 — …」の 1 行、得点の行の「回避 N」、艦の行（v0.6.2）。
+// Result の見出し（v0.6.1 で scenes/result-scene.ts から切り出し。v0.8.5 S4: 救助の任務の言い換えと「（救助の後 N 秒）」＝ui/rescue-result）: 終了理由の文と「任務達成 — …」「任務未達 — …」の 1 行、得点の行の「回避 N」、艦の行（v0.6.2）。
+// v0.9.0 IP2（ユーザーの言葉 2026-11-27「各シナリオとも、終了時、終了後にクリアしたのかどうかがよくわかりません。」）: 頭の語を成否で分けた（v0.8.5 までは成否に関わらず「任務終了」）。
+// 達成は core/store の sortieAchieved（目的を果たして帰投。ストアを開く条件・Title の印と同じ 1 つの規則）。理由の文・夜明けの尾・ハードと史実の印は 1 字も変えない。
 // v0.6.1: 夜明けは終了理由でなくなり（dawn を削除）、夜明けの後に終わった任務は見出しに「（夜明け後 N 秒）」を付ける。
 // v0.6.2 実機 1 回目: 制空権下で敵艦隊がいなくなって終えた任務（cleared）は「敵艦隊なし（制空権下・帰投不要）」。帰投と同じに数える（returned が true）。
 // v0.6.11 S6（jp_03。空襲下の退避＝昼の任務）: 帰投は「退避完了」、空襲の沈没は「空襲で沈没」、火災は「火災で沈没」（jp_03 に砲撃は無い＝座席へ入れた時の火災の理由の既定 destroyed）、
@@ -7,6 +9,7 @@
 import type { MissionEndReason } from '../core/mission-flow';
 import { ANCHOR_REASON_LABEL } from './anchor-result';
 import { RESCUE_AFTER_JA } from '../config/rescue-hud-config';
+import { RESULT_ACHIEVED_JA, RESULT_CONDITION_PREFIX_JA, RESULT_NOT_ACHIEVED_JA } from '../config/achieved-config';
 
 /** 史実モードの見出しの印（v0.6.1 で config/menu-config から移した。文は同じ） */
 export const RESULT_HISTORICAL_TAG_JA = '（史実）';
@@ -25,7 +28,7 @@ export const REASON_LABEL: Record<MissionEndReason, string> = {
   barge_fire: '大発の機銃で沈没',
   shore_battery: '沿岸砲で沈没',
   pt_fire: 'PTの掃射で沈没',
-  mine: '触雷で沈没', // v0.8.5 S1（us_07 の機雷原。spec-v0850 §8.3 の「触雷 — 沈没」は S4 で「任務終了 — 触雷で沈没」のまま＝頭の線と 2 本にしない。ui/rescue-result）
+  mine: '触雷で沈没', // v0.8.5 S1（us_07 の機雷原。spec-v0850 §8.3 の「触雷 — 沈没」は S4 で「任務終了 — 触雷で沈没」（v0.9.0 IP2 から「任務未達 — 」）のまま＝頭の線と 2 本にしない。ui/rescue-result）
 };
 
 /** 空襲下の退避（v0.6.11 S6。jp_03）の理由の言い換え（昼の任務に「夜明け」と言わない＝H6）。ここに無い理由は REASON_LABEL のまま */
@@ -48,15 +51,20 @@ export function resultDawnSuffixS(returned: boolean, d: { readonly reached: bool
   return !d.reached || (returned && !d.caughtOutside) ? NaN : d.daylightS;
 }
 
+/** 未達の Result の見出しの下の 1 行「達成の条件: …」（cond は config/briefing-data の missionAchieveJa＝Briefing の「成功」の文。空なら出さない＝''） */
+export function resultConditionJa(cond: string): string {
+  return cond === '' ? '' : `${RESULT_CONDITION_PREFIX_JA}${cond}`;
+}
+
 /**
- * 「任務終了 — 理由」の見出し。dawnSuffixS は夜明け後の秒（NaN なら付けない。付けるときは「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に。resultDawnSuffixS）。
+ * 「任務達成 — 理由」「任務未達 — 理由」の見出し（achieved は core/store の sortieAchieved。v0.9.0 IP2）。dawnSuffixS は夜明け後の秒（NaN なら付けない。付けるときは「（夜明け後 N 秒）」を理由の直後、ハード・史実の前に。resultDawnSuffixS）。
  * evac（v0.6.11 S6。空襲下の退避の任務）は理由を EVAC_REASON_LABEL で言い換え、後ろの秒は「（空襲後 N 秒）」
  */
-export function resultHeadingJa(reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false, anchor = false, rescueLabel: string | null = null): string {
+export function resultHeadingJa(achieved: boolean, reason: MissionEndReason, dawnSuffixS: number, hard: boolean, historical: boolean, evac = false, anchor = false, rescueLabel: string | null = null): string {
   const dawn = Number.isNaN(dawnSuffixS) ? '' : `（${evac ? '空襲後' : rescueLabel !== null ? RESCUE_AFTER_JA : '夜明け後'} ${Math.round(dawnSuffixS)} 秒）`;
   // 止まった艦の任務（v0.8.1 S4。ui/anchor-result）・救助の任務（v0.8.5 S4。ui/rescue-result の rescueReasonJa。'' は言い換えなし）
   const label = (rescueLabel ? rescueLabel : evac ? EVAC_REASON_LABEL[reason] : anchor ? ANCHOR_REASON_LABEL[reason] : undefined) ?? REASON_LABEL[reason];
-  return `任務終了 — ${label}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
+  return `${achieved ? RESULT_ACHIEVED_JA : RESULT_NOT_ACHIEVED_JA} — ${label}${dawn}${hard ? '（ハード）' : ''}${historical ? RESULT_HISTORICAL_TAG_JA : ''}`;
 }
 
 /**

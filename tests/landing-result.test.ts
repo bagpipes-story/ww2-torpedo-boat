@@ -189,7 +189,8 @@ describe('材料（systems/landing-telemetry の landingResultPart）と本文�
     const read = (f: string): string => readFileSync(join(__dirname, '..', 'src', f), 'utf8');
     expect(read('systems/mission-telemetry.ts')).toContain('...landingResultPart(w, reason),');
     const rs = read('scenes/result-scene.ts');
-    expect(rs).toContain('...(r.landing ? { landed: r.landing.phase === LD_DONE } : {})');
+    expect(read('systems/mission-score.ts')).toContain('...(r.landing ? { landed: r.landing.phase === LD_DONE } : {})'); // v0.9.0: 得点の材料は systems/mission-score
+    expect(rs).toContain('computeScore(missionScoreInput(r), scoringParams)');
     expect(rs).toContain("r.landing ? ` ・ 揚陸 ${score.deliveries}` : ''");
     expect(rs).toContain('r.landing ? landingHeadJa(r.landing, ptHeadJa(r.pt))');
   });

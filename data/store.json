@@ -1,0 +1,81 @@
+{
+  "$schema_note": "ストア（v0.9.0。spec-v0900 §4.2・§4.5）。任務の得点をストアの点として貯め、13 任務（open.campaigns の遊べる任務）をすべて達成した端末で開く店の品と貯め方。数値はすべて design（史実の値ではない）。品の効きは data の鍵を写して直す（config/custom-loadout の copy-on-write。base の data は書き換えない）。効きの形は effect.kind の 5 つだけ（config/store-data の V-S1）: mission_torpedo（任務の torpedo_type を替える）・boat_torpedo_count（艇の torpedoes.count）・boat_smoke（艇の smoke.duration_s・cooldown_s）・mission_fuel_factor（任務の v0_1_prototype.fuel_allotment_gal に掛ける）。boats は効く艇の id（任務の player_boat）、boat_condition は艇の記録が満たす条件（点で区切った鍵 → 値）、exclude_missions は効かない任務、shared_ok は自艇の記録を自艇以外も読む所（escort・evac・rescue_player_full）のうち、触ってよい物（V-S4）。日本の艇には品を置かない（ユーザーの決め Q2 の設計の既定＝弱者視点）。kind は equipment（点で交換）と reward（v0.9.0 IP3 のご褒美。price を持たず reward_rule の条件で渡す）（v0.10 の殴り込みの味方は ally の予約）。効きの形 boat_crew（v0.9.0 IP3）は艇の gun_battery.magazine.reload_s と damage.extinguish_hold_s。",
+  "version": "0.9.0",
+  "open": {
+    "campaigns": ["us_pt", "jp_hard"],
+    "grant_points": 3000,
+    "source": "design (ユーザーの決め U2・2026-11-26「13任務すべて達成」。campaigns の遊べる任務（playable_from と v0_1_prototype を持つ）を、ノーマルかハードのどちらかで 1 回ずつ達成（目的を果たして帰投）すると開く。達成は v0.9.0 から新しく保存する（night-hunters.achieved）。grant_points は開いた時に 1 回だけ配る支度金（設計の既定。spec-v0900 §4.5・Q1）)"
+  },
+  "accrual": {
+    "normal": 1.0,
+    "hard": 1.5,
+    "historical": 1.25,
+    "custom": 1.0,
+    "source": "design (spec-v0900 §4.5。足す点 = round(得点の合計 × 倍率)。ハードはハードの違いのある任務だけ（hasHardVariant。jp_02・jp_05 は 1.0）、史実モードは掛け合わせる、カスタムの出撃は 1.0（装備で得点が上がる分を倍にしない）。沈没・漂流の夜も得点ぶん足す。ストアが閉じている間も貯める。v0.9.0 IP1 から史実モードのカスタムもある＝historical × custom を掛け合わせる（1.25 × 1.0。値は変えない）)"
+  },
+  "items": [
+    {
+      "id": "fuel_tank",
+      "kind": "equipment",
+      "name_ja": "増設燃料タンク",
+      "short_ja": "燃料",
+      "desc_ja": "任務の燃料の割当を 1.25 倍にする（艇の満タンは超えない）。米の 3 艇（us_01〜us_07）",
+      "price": 3000,
+      "boats": ["us_elco77", "us_elco80", "us_higgins78"],
+      "exclude_missions": [],
+      "effect": { "kind": "mission_fuel_factor", "factor": 1.25 },
+      "source": "design (spec-v0900 §4.2。燃料の点は割当に対する残りの % なので少し上がる＝カスタムの印で区別)"
+    },
+    {
+      "id": "smoke_large",
+      "kind": "equipment",
+      "name_ja": "大型煙幕発生器",
+      "short_ja": "大型煙幕",
+      "desc_ja": "煙幕を 5 秒 → 8 秒張り、次まで 20 秒 → 15 秒。煙幕のある米の 3 艇",
+      "price": 4000,
+      "boats": ["us_elco77", "us_elco80", "us_higgins78"],
+      "boat_condition": { "smoke_generator": true },
+      "exclude_missions": [],
+      "effect": { "kind": "boat_smoke", "duration_s": 8, "cooldown_s": 15 },
+      "source": "design (spec-v0900 §4.2。v0.9.0 IP1（ユーザーの言葉 2026-11-27「史実モードでもカスタム装備使える仕様でいいです」）から史実モードでも使える＝煙幕への乱射（v0.8.4）の夜にも大型煙幕を張れる（乱射の規則と値は変えない。煙が 8 秒残るぶん乱射を受ける秒も延びうる）。us_01 の僚艇は同じ記録を読むが煙幕は読まない)"
+    },
+    {
+      "id": "torp_mk13",
+      "kind": "equipment",
+      "name_ja": "Mk 13 魚雷（架台）",
+      "short_ja": "Mk 13",
+      "desc_ja": "Mk 8 の任務（us_02・us_04）で Mk 13 を積む（33.5 kt・射程 5,760 m・不発 3%。今ある史実の記録のまま）。Elco 80・Higgins",
+      "price": 4000,
+      "boats": ["us_elco80", "us_higgins78"],
+      "boat_condition": { "torpedoes.type_late": "us_mk13" },
+      "exclude_missions": [],
+      "effect": { "kind": "mission_torpedo", "torpedo_id": "us_mk13" },
+      "source": "design (spec-v0900 §4.2。新しい魚雷の記録は作らない＝命中率の設計を変えない（§4.4）。Elco 77 は後期も Mk 8 管＝対象外。既に Mk 13 の任務では効かない)"
+    },
+    {
+      "id": "torp_rack6",
+      "kind": "equipment",
+      "name_ja": "魚雷架台 6 基",
+      "short_ja": "架台 6",
+      "desc_ja": "魚雷を 4 本 → 6 本積む。架台の Elco 80・Higgins（us_02〜us_07）",
+      "price": 8000,
+      "boats": ["us_elco80", "us_higgins78"],
+      "boat_condition": { "torpedoes.launch_late": "rack" },
+      "exclude_missions": [],
+      "effect": { "kind": "boat_torpedo_count", "count": 6 },
+      "source": "design (spec-v0900 §4.2。史実の根拠は無い。日本の艇は jp_03 の座席で 2 本を分け合う規則（CLAUDE.md §2）なので対象外)"
+    },
+    {
+      "id": "crew_veteran",
+      "kind": "reward",
+      "name_ja": "歴戦の乗員",
+      "short_ja": "歴戦の乗員",
+      "desc_ja": "乗員が熟練する。機銃の弾倉交換 3.2 秒 → 2.0 秒・消火の長押し 1 秒 → 0.6 秒（乗員が減った時の重さは今のまま）。どの米の艇にも付く",
+      "reward_rule": "hard_historical_default_all",
+      "boats": ["us_elco77", "us_elco80", "us_higgins78"],
+      "exclude_missions": [],
+      "effect": { "kind": "boat_crew", "reload_s": 2.0, "extinguish_hold_s": 0.6 },
+      "source": "design (v0.9.0 IP3。ユーザーの言葉 2026-11-27「全シナリオ史実デフォルトでクリアして場合のみ、ご褒美追加装備がもらえるなど、頑張った証が分かるようになればいいな」と問いの答え「歴戦の乗員（推奨）」。kind reward＝交換できず、reward_rule hard_historical_default_all（open の 13 任務をみなハード × 史実モード × デフォルトの装備で達成。v0.9.0 IP4 のユーザーの言葉 2026-11-28「画面はうまくできてるんだけど達成条件をハード×史実 × デフォルトにしてください」。IP3 は historical_default_all＝ノーマルでも可。ハードの違いの無い jp_02・jp_05 はハードがノーマルと同じ世界なので史実 × デフォルトで数える＝設計の既定）を満たした任務の終わりに持ち物に入り装着される。reload_s 2.0 はユーザーが選んだ案の値（3.2 → 2.0＝0.625 倍）。extinguish_hold_s 0.6 は同じ割合（1 × 0.625 を 0.1 秒に丸め）。乗員の減りの倍率 damage.crew_effects はそのまま（減れば今と同じ割合で遅くなる）。命中率の設計（正しく狙った 1 本 35〜45%）は魚雷と照準に触れないので変えない。us_01 の僚艇（escort）は同じ us_elco77 の記録の速さ・加速・旋回・寸法・HP だけを読み、us_07 の味方の艇は speed_max_kt だけを読む＝この 2 つの鍵は自艇だけに効く（V-S4）。使えばカスタム（印が付く・通算の命中率に数えない）)"
+    }
+  ]
+}

@@ -7,12 +7,21 @@ import { DEBUG_DIRECT_MISSION, DEBUG_RAID_OVERRIDE, DEPTH, GAME_HEIGHT, GAME_WID
 import { getGameData, getScoringParams } from '../config/game-data';
 import { hasHardVariant } from '../config/mission-data';
 import { MENU_PRIMARY_W, MENU_PRIMARY_X, RESULT_BODY_MAX_Y, RESULT_BUTTON_H, RESULT_BUTTON_PX, RESULT_BUTTON_Y, RESULT_LIST_JA, RESULT_LIST_X, RESULT_RETRY_JA, RESULT_RETRY_SUB_JA } from '../config/menu-config';
+import { missionAchieveJa } from '../config/briefing-data';
 import { computeScore } from '../core/scoring';
-import { evacScoredBoats } from '../core/evac-result';
+import { sortieAchieved } from '../core/store';
+import { missionScoreInput } from '../systems/mission-score';
+import type { StoreSortieRecord } from '../systems/store-storage';
+import { resultCustomTagJa, storeResultPartJa } from '../ui/store-texts';
+import { getStoreCatalogue, storeItemById } from '../config/store-data';
+import { RESULT_TROPHY_LABEL_PX, TROPHY_TEXT_COLOR, rewardResultJa } from '../config/trophy-config';
+import { addResultTrophyCup, resultTrophyJa } from '../ui/result-trophy';
 import { evacScorePartJa, evacTimeLinesJa } from '../ui/evac-result';
 import type { DawnResult } from '../core/dawn-air';
 import {
+  HOME_COLOR_TEXT,
   HUD_COLOR_STRONG,
+  HUD_COLOR_WARN,
   HUD_FONT_HEADING_PX,
   HUD_FONT_SPEED_PX,
   RESULT_INPUT_DELAY_MS,
@@ -30,9 +39,8 @@ import type { KpiResultLines } from '../systems/kpi-storage';
 import { escortResultLine, seaplaneResultLine } from '../ui/hud-lines';
 import { sfxMusic, sfxResultBell } from '../systems/sfx-bus';
 import { MUSIC_CTX_MENU, MUSIC_FADE } from '../config/sfx-music-config';
-import { resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
+import { resultConditionJa, resultDawnSuffixS, resultEvadePartJa, resultHeadPrefixJa, resultHeadingJa, resultReturnJa, resultShipsJa } from '../ui/result-heading';
 import { convoyHeadJa } from '../ui/convoy-lines';
-import { LD_DONE } from '../core/landing';
 import { landingHeadJa } from '../ui/landing-result';
 import { dawnResultLine } from '../ui/dawn-lines';
 import { ptHeadJa } from '../ui/pt-lines';
@@ -45,9 +53,6 @@ import { resultBodyLines, resultFitLiftPx } from '../ui/result-body';
 
 export type { MissionEndReason } from '../core/mission-flow';
 export type { BargeResult, ConvoyResult, EscortResult, PtResult } from '../ui/result-types'; // 任務ごとの記録の型（v0.6.3 で ui/result-types.ts へ。今までの import のため）
-
-/** 輸送船の enemies.json の id（scoring.json の kill.points_by_enemy のキー。v0.4.7） */
-const TRANSPORT_ENEMY_ID = 'ijn_transport';
 
 export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 のレーダーと列の通過の鍵（ui/result-types。ある任務だけ）
   reason: MissionEndReason;
@@ -138,6 +143,7 @@ export interface MissionResult extends StraitNightResult { // v0.8.0 S4: us_04 �
   patrol: PatrolResult | null; // 夜の哨戒機（v0.6.7。jp_02。systems/patrol-telemetry の patrolResult）の記録。無い任務は null（本文の 2 行・得点の内訳に撃沈なし・頭の行なし）
   arms?: ArmsResult; // 兵装の新しい道（v0.6.8。systems/arms-telemetry の armsResultPart）: 艦への機銃・対空・狙う艦の無い魚雷を使った夜だけ（本文の後ろに 1 行。点は無い）
   landing?: LandingResult; // 揚陸と米PT の雷撃（v0.6.9。jp_04。systems/landing-telemetry の landingResultPart）: 揚陸の任務だけ（本文の頭の 3 行・状況の行の頭・揚陸 300 点）
+  store?: StoreSortieRecord; // ストアの点（v0.9.0 S1。ストアが開いている端末だけ Mission の endMission が入れる＝得点の行の後ろ「 ・ ストア +M（計 T 点）」）
   evac?: EvacResult; // 空襲下の退避（v0.6.11 S6。jp_03。core/evac-result）: 退避の任務だけ（本文の頭の 4 行・見出しの理由・時の行・残った艇の点）
 }
 
@@ -172,15 +178,23 @@ export class ResultScene extends Phaser.Scene {
     // 行は画面の幅（左右に HUD_MARGIN）に収まらなければ作るときに 1 回だけ縮める（v0.6.1 レビュー: 夜明けの後の見出し・夜明けの行がはみ出した。毎フレームの処理は無い）
     const maxW = GAME_WIDTH - 2 * HUD_MARGIN;
     const texts: Phaser.GameObjects.Text[] = []; // 作った行（最後にボタンの上へ収める。v0.6.8 レビュー ux-result-height-arms）
-    const line = (text: string, size: number, color?: string): void => {
+    const line = (text: string, size: number, color?: string): Phaser.GameObjects.Text => {
       const tx = this.add.text(cx, y, text, hudTextStyle(size, color)).setOrigin(0.5, 0).setDepth(DEPTH.hud);
       if (tx.width > maxW) tx.setScale(maxW / tx.width);
       texts.push(tx);
       y += size + RESULT_LINE_GAP;
+      return tx;
     };
     // ハードの違いが無い任務（jp_05）は「（ハード）」を付けない（v0.6.3 レビュー）。ハードの輸送隊（jp_01）は 1 行目にノルマの達成／未達（v0.6.6 レビュー ux:ux-7）
-    const hardV = r.sortie.hard && hasHardVariant(getGameData(this.registry, REGISTRY_KEY_DATA), r.sortie.missionId);
-    line(r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // 救助の任務（v0.8.5 S4。ui/rescue-result）
+    const base = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const hardV = r.sortie.hard && hasHardVariant(base, r.sortie.missionId);
+    // 頭の語と色は達成（core/store の sortieAchieved。v0.9.0 IP2）: 「任務達成 — …」は味方の青、「任務未達 — …」は警告の色。未達はすぐ下に「達成の条件: …」（Briefing の「成功」の文）
+    const achieved = sortieAchieved(r);
+    line((r.rescue ? rescueHeadingJa(r, r.rescue, hardV) : resultHeadingJa(achieved, r.reason, resultDawnSuffixS(r.returned, r.dawn), hardV, r.sortie.historical, r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX, achieved ? HOME_COLOR_TEXT : HUD_COLOR_WARN); // 救助の任務（v0.8.5 S4。ui/rescue-result）・カスタムの印（v0.9.0 S1。デフォルトは ''）
+    const cond = achieved ? '' : resultConditionJa(missionAchieveJa(base, r.sortie.missionId, hardV));
+    if (cond) line(cond, HUD_FONT_HEADING_PX);
+    const trophyJa = resultTrophyJa(achieved, r.sortie, hasHardVariant(base, r.sortie.missionId)); // 頑張った証の形で達成した出撃だけ杯と 1 行（v0.9.0 IP5。ui/result-trophy）
+    const trophyText = trophyJa ? line(trophyJa, RESULT_TROPHY_LABEL_PX, TROPHY_TEXT_COLOR) : null;
     const h = r.hunt;
     // 本文（大発掃討 v0.4.2／米PT v0.6.3（輸送隊・隼艇・機関）／魚雷 v0.5.0）: 文・大きさ・色・節の間は ui/result-body（v0.6.7 S0 で移した）。y の足し方と縮めはここの line()
     for (const b of resultBodyLines(r, hardV)) {
@@ -189,15 +203,10 @@ export class ResultScene extends Phaser.Scene {
     }
     y += RESULT_SECTION_GAP;
     // スコア（docs/02 §6.9、data/scoring.json）。得点していない項目も 0 で出す（何が評価されるかを見せる）
-    const scoringParams = getScoringParams(getGameData(this.registry, REGISTRY_KEY_DATA));
-    const score = computeScore(
-      // 撃破: 大発（砲）・13mm で沈めた米PT（v0.6.3 実機 1 回目。撃退は点なし）か輸送船（魚雷。v0.4.7）。米PT は隊の数（隼艇 v0.6.6・卯月 v0.6.10 S5b が沈めた PT も入る）
-      // 上陸（v0.6.4。味方の大発の輸送隊。scoring.json の convoy.points_per_arrival）は帰投の有無に関わらず上陸した隻数ぶん
-      // 揚陸（v0.6.9。jp_04。scoring.json の landing.points_complete）は帰投の有無・その後の沈没に関わらず揚陸完了なら。揚陸の無い任務は鍵ごと無い
-      { returned: r.returned, objectiveDone: r.objectiveDone, missionType: r.missionType, bands: r.bands, kills: h ? h.sunk : r.pt ? r.pt.sunk : r.transportSunk ? 1 : 0, killEnemyId: h ? h.enemyId : r.pt ? r.pt.enemyId : r.transportEnabled ? TRANSPORT_ENEMY_ID : '', fuelLeftPct: r.fuelLeftPct, crewAlive: r.crewAlive, crewTotal: r.crewTotal, detections: r.detections, afterDawn: r.returned && r.dawn.caughtOutside, arrivals: r.convoy ? r.convoy.arrived : 0, ...(r.landing ? { landed: r.landing.phase === LD_DONE } : {}), ...(r.evac ? { evacBoats: evacScoredBoats(r.evac) } : {}), ...(r.rescue ? { rescued: r.rescue.delivered } : {}), ...(r.recon ? { shipKills: r.recon.shipKills } : {}) },
-      scoringParams,
-    );
-    line(`スコア ${score.total}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);
+    const scoringParams = getScoringParams(base);
+    // 材料は systems/mission-score（v0.9.0 で抜き出し。ストアの点は Mission の endMission が同じ式で 1 回だけ足す＝ここでは計算して出すだけ）
+    const score = computeScore(missionScoreInput(r), scoringParams);
+    line(`スコア ${score.total}${r.store ? storeResultPartJa(r.store) : ''}`, HUD_FONT_SPEED_PX, HUD_COLOR_STRONG); // ストアの点（v0.9.0 S1。開いている端末だけ）
     // 回避（v0.4.4）は type に点がある任務（要人脱出・米PT の哨戒）だけ出す。夜明けに輪の外だった帰投（v0.6.1）は「帰投 630（夜明け後 ×0.9）」、夜明けだけが理由で回避が 0 なら「回避 0（夜明け後）」
     const evadePart = resultEvadePartJa(scoringParams.evadeByType[r.missionType], score.evade, r);
     const transportPart = r.transportEnabled ? ` ・ 輸送船 ${score.kills}` : '';
@@ -207,6 +216,7 @@ export class ResultScene extends Phaser.Scene {
     const objPart = r.evac ? evacScorePartJa(r.evac, score.objective, score.deliveries, scoringParams.evacBoatPoints) : h ? `達成 ${score.objective} ・ 撃破 ${score.kills}` : r.pt ? `達成 ${score.objective}${convoyPart}${ptKillPart}${evadePart}` : r.patrol ? `達成 ${score.objective}${evadePart}` : `${r.escort ? '達成' : r.recon ? '報告' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${r.recon ? ` ・ 撃沈 ${score.kills}` : ''}${evadePart}`;
     const homeJa = r.evac ? '退避' : '帰投'; // jp_03 は「帰投」と言わない（v0.6.11 S8。Briefing・HUD は「壕か陰へ」「隠れた」）。点は同じ帰投の 700
     line(`${homeJa} ${score.survival}${r.returned && r.dawn.caughtOutside ? `（${r.evac ? '空襲後' : r.rescue ? RESCUE_AFTER_JA : '夜明け後'} ×${scoringParams.afterDawnFactor}）` : ''} ・ ${objPart} ・ 燃料 ${score.fuel} ・ 乗員 ${score.crew}`, HUD_FONT_HEADING_PX);
+    if (r.store && r.store.rewards.length > 0) line(rewardResultJa(r.store.rewards.map((id) => storeItemById(getStoreCatalogue(base), id)?.nameJa ?? id)), HUD_FONT_HEADING_PX, TROPHY_TEXT_COLOR); // ご褒美を渡した出撃だけ（v0.9.0 IP3）
     y += RESULT_SECTION_GAP;
     const firstLaunch = Number.isNaN(r.fuelAtFirstLaunchPct) ? '' : `（初発射時 ${r.fuelAtFirstLaunchPct}%）`;
     const ships = resultShipsJa(r); // 夜明けに退いた艦（v0.6.2）は「退いた」。1 隻の任務は駆逐艦の撃沈数で（輸送船が沈まなくても「撃沈」）
@@ -253,6 +263,7 @@ export class ResultScene extends Phaser.Scene {
     const last = texts[texts.length - 1]!;
     const lastBottom = last.y + last.displayHeight;
     for (let i = 1; i < texts.length; i++) texts[i]!.y -= resultFitLiftPx(i, texts.length, lastBottom, RESULT_BODY_MAX_Y);
+    if (trophyText) addResultTrophyCup(this, trophyText); // 持ち上げた後の字の横に杯（v0.9.0 IP5）
     this.add
       .text(cx, GAME_HEIGHT - RESULT_SEED_Y, `seed ${r.seed}`, hudTextStyle(HUD_FONT_HEADING_PX))
       .setOrigin(0.5, 1)

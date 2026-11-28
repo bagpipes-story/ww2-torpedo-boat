@@ -107,13 +107,14 @@ describe('材料（reconResultPart）と得点・本文・見出し', () => {
     expect(code('src/systems/recon-result-part.ts').replace(/^\/\/.*$/gm, '')).not.toMatch(/\.state\.x|\.state\.y|\.ai\b|aiParams|from 'phaser'|Math\.random/);
   });
   it('見出し・頭・得点の行（result-scene の 3 行）: 体当たりは「敵艦と衝突した」、頭は「艦隊: 撃沈 N/M」、得点は「報告 N ・ 命中 N ・ 撃沈 N」。報告の無い任務は今の文', () => {
-    expect(resultHeadingJa('rammed', NaN, false, false, false, true)).toBe('任務終了 — 敵艦と衝突した');
+    expect(resultHeadingJa(false, 'rammed', NaN, false, false, false, true)).toBe('任務未達 — 敵艦と衝突した');
     const ships = { shipsTotal: 7, shipsSunk: 1, transportEnabled: false, transportSunk: false, dawn: { shipsWithdrawn: 0, transportWithdrawn: false } };
     expect(resultShipsJa({ ...ships, recon: R0 })).toBe('艦隊: 撃沈 1/7');
     expect(resultShipsJa(ships)).toBe('駆逐艦: 撃沈 1/7');
     const rs = code('src/scenes/result-scene.ts');
-    expect(rs).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX');
-    expect(rs).toContain('...(r.recon ? { shipKills: r.recon.shipKills } : {}) },');
+    expect(rs).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX'); // v0.9.0 S1: 後ろにカスタムの印（デフォルトは ''）
+    expect(code('src/systems/mission-score.ts')).toContain('...(r.recon ? { shipKills: r.recon.shipKills } : {}),'); // v0.9.0: 得点の材料は systems/mission-score
+    expect(rs).toContain('computeScore(missionScoreInput(r), scoringParams)');
     expect(rs).toContain("`${r.escort ? '達成' : r.recon ? '報告' : '撃沈'} ${score.objective} ・ 命中 ${score.hits}${transportPart}${r.recon ? ` ・ 撃沈 ${score.kills}` : ''}${evadePart}`");
   });
 });

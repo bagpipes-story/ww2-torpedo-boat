@@ -7,6 +7,7 @@ import hitRateModel from '../../data/hit_rate_model.json';
 import riskEvents from '../../data/risk_events.json';
 import missionsSeed from '../../data/missions_seed.json';
 import scoring from '../../data/scoring.json';
+import store from '../../data/store.json';
 import { isBoatDataRecord, type BoatDataRecord } from '../core/boat-motion';
 import { fuelCurveFromData, isBoatFuelDataRecord, type FuelCurve } from '../core/fuel';
 import { friendlyParamsFromData, isFriendlyFireDataRecord, type FriendlyParams } from '../core/friendly';
@@ -38,6 +39,8 @@ export const gameData = {
   riskEvents,
   missionsSeed,
   scoring,
+  /** ストアの品の表と貯め方（v0.9.0。読み出しと検査は config/store-data） */
+  store,
 } as const;
 
 export type GameData = typeof gameData;

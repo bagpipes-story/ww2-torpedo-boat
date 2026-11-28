@@ -46,16 +46,17 @@ describe('文の形と幅（D-O4）', () => {
 
 describe('見出しの言い換え（L62）', () => {
   it('止まった艦の任務の体当たりは「敵艦と衝突した」（夜明け後・ハード・史実の尾は同じ）。ほかの理由とほかの任務は今の文', () => {
-    expect(resultHeadingJa('rammed', NaN, false, false, false, true)).toBe('任務終了 — 敵艦と衝突した');
-    expect(resultHeadingJa('rammed', 12.4, true, true, false, true)).toBe('任務終了 — 敵艦と衝突した（夜明け後 12 秒）（ハード）（史実）');
-    expect(resultHeadingJa('rammed', NaN, false, false)).toBe('任務終了 — 駆逐艦に体当たりされた');
+    expect(resultHeadingJa(false, 'rammed', NaN, false, false, false, true)).toBe('任務未達 — 敵艦と衝突した');
+    expect(resultHeadingJa(false, 'rammed', 12.4, true, true, false, true)).toBe('任務未達 — 敵艦と衝突した（夜明け後 12 秒）（ハード）（史実）');
+    expect(resultHeadingJa(false, 'rammed', NaN, false, false)).toBe('任務未達 — 駆逐艦に体当たりされた');
     expect(Object.keys(ANCHOR_REASON_LABEL)).toEqual(['rammed']);
     for (const r of Object.keys(REASON_LABEL) as MissionEndReason[]) {
-      expect(resultHeadingJa(r, NaN, false, false), r).toBe(`任務終了 — ${REASON_LABEL[r]}`);
-      if (r !== 'rammed') expect(resultHeadingJa(r, NaN, true, false, false, true), r).toBe(resultHeadingJa(r, NaN, true, false));
+      expect(resultHeadingJa(false, r, NaN, false, false), r).toBe(`任務未達 — ${REASON_LABEL[r]}`);
+      expect(resultHeadingJa(true, r, NaN, false, false), r).toBe(`任務達成 — ${REASON_LABEL[r]}`); // 頭の語は達成で分ける（v0.9.0 IP2）。理由の文は同じ
+      if (r !== 'rammed') expect(resultHeadingJa(false, r, NaN, true, false, false, true), r).toBe(resultHeadingJa(false, r, NaN, true, false));
     }
     expect(REASON_LABEL.rammed).toBe('駆逐艦に体当たりされた');
-    expect(code('src/scenes/result-scene.ts')).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined), HUD_FONT_SPEED_PX, HUD_COLOR_STRONG);'); // v0.8.2 S4: 報告の任務（us_05）も（列の艦はどれも船体に当たれば同じ理由）
+    expect(code('src/scenes/result-scene.ts')).toContain('r.evac !== undefined, r.anchor !== undefined || r.recon !== undefined)) + resultCustomTagJa(r.sortie), HUD_FONT_SPEED_PX, achieved ? HOME_COLOR_TEXT : HUD_COLOR_WARN);'); // v0.9.0 IP2: 見出しの色は達成（青）・未達（警告の色） // v0.8.2 S4: 報告の任務（us_05）も（列の艦はどれも船体に当たれば同じ理由）。v0.9.0 S1: 後ろにカスタムの印（デフォルトは ''）
   });
 });
 

@@ -15,7 +15,8 @@ import {
   SCENE_KEYS,
   sortieSeed,
 } from '../config/game-config';
-import { getAimAssistLevels, getGameData } from '../config/game-data';
+import { getAimAssistLevels, getGameData, type GameData } from '../config/game-data';
+import { sortieGameData } from '../config/custom-loadout';
 import { recordsHitKpi } from '../config/campaign-data';
 import {
   BOAT_HIT_SHAKE_INTENSITY,
@@ -42,13 +43,15 @@ import { leadMarkerEnabled, recordClear, recordSortie, sortiesDone } from '../sy
 import { buildMissionResult, createTelemetry, refreshTelemetry } from '../systems/mission-telemetry';
 import { MissionEnd } from '../systems/mission-end';
 import { MissionWorld, type WorldEvents } from '../systems/mission-world';
+import { recordSortieStore, sortieWithDebugCustom } from '../systems/sortie-loadout';
 
 export class MissionScene extends Phaser.Scene {
   private world!: MissionWorld;
   /** この出撃（Briefing か ?debug 直行の Boot・Result が渡す。v0.4.0） */
   private sortie!: Sortie;
-  /** 出撃時の火災（港内空襲の至近弾）が消えた実秒（Result の「出撃前」の行）。燃えている間 -1、火災なしで出撃なら NaN */
-  private startFireS = NaN;
+  /** この出撃の data（v0.9.0。config/custom-loadout の sortieGameData: デフォルトは registry の data そのもの・カスタムは品を当てた写し） */
+  private sortieData!: GameData;
+  private startFireS = NaN; // 出撃時の火災（港内空襲の至近弾）が消えた実秒（Result の「出撃前」の行）。燃えている間 -1、火災なしで出撃なら NaN
   private inputState!: InputState;
   private telemetry!: BoatTelemetry;
   private returnView?: ReturnPointView;
@@ -57,24 +60,19 @@ export class MissionScene extends Phaser.Scene {
   private zoomDefault = 1;
   private zoomMin = 1;
   private zoomMax = 1;
-  /** ピンチで決めたズーム（見張りを離すとここへ戻る） */
-  private zoomUser = 1;
+  private zoomUser = 1; // ピンチで決めたズーム（見張りを離すとここへ戻る）
   private zoom = 1;
   private timeScale = 1;
-  /** デバッグ時（?debug）だけの見越し点マーカーと距離の円 */
-  private leadMarker?: LeadMarker;
+  private leadMarker?: LeadMarker; // デバッグ時（?debug）だけの見越し点マーカーと距離の円
   private debugRanges?: DebugRanges;
-  /** 夜明けまでの実秒（= duration_s − 固定ステップで進んだ実秒） */
-  private timeLeftS = 0;
+  private timeLeftS = 0; // 夜明けまでの実秒（= duration_s − 固定ステップで進んだ実秒）
   private elapsedS = 0;
   /** 「帰投せよ」のビット（ラッチ）と、輪の中／燃料切れで止まっている間の待ち実秒 */
   private callFlags = 0;
   private waitS = 0;
-  /** 輪の縁までの距離 m（Result 用。毎フレーム更新） */
-  private ringEdgeM = 0;
+  private ringEdgeM = 0; // 輪の縁までの距離 m（Result 用。毎フレーム更新）
   private ended = false;
-  /** 終了判定と終わり際の魚雷待ち（systems/mission-end。出撃ごとに create で作る） */
-  private end!: MissionEnd;
+  private end!: MissionEnd; // 終了判定と終わり際の魚雷待ち（systems/mission-end。出撃ごとに create で作る）
 
   private readonly worldEvents: WorldEvents = {
     onTorpedoHit: (x, y, dud) => {
@@ -127,7 +125,9 @@ export class MissionScene extends Phaser.Scene {
   }
 
   create(): void {
-    const data = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const base = getGameData(this.registry, REGISTRY_KEY_DATA);
+    this.sortie = sortieWithDebugCustom(this.sortie, base); // ?debug&custom（v0.9.0 S0。無ければ同じ物）
+    const data = (this.sortieData = sortieGameData(base, this.sortie));
     const world = data.hitRateModel.world;
     this.inputState = this.registry.get(REGISTRY_KEY_INPUT) as InputState;
     startMissionInput(this.inputState); // 静音と倍速（v0.8.3）も切る
@@ -285,15 +285,16 @@ export class MissionScene extends Phaser.Scene {
     const w = this.world;
     // まだ走っている魚雷は外れとして記録し、Result の集計から漏れないようにする（帰投は最大 torpedo_settle_max_s、ほかは torpedo_end_settle_s 待った後）
     w.resolveRemainingAsMisses();
-    const data = getGameData(this.registry, REGISTRY_KEY_DATA);
-    const result = buildMissionResult(reason, w, data, this.elapsedS, this.ringEdgeM, this.startFireS);
+    const base = getGameData(this.registry, REGISTRY_KEY_DATA);
+    const result = buildMissionResult(reason, w, this.sortieData, this.elapsedS, this.ringEdgeM, this.startFireS);
     // 通算の命中率（v0.5.0）: 魚雷の任務だけ、ここで 1 回だけ足して保存する（Result の作り直しで二重に数えない）。史実モード（v0.5.2）と
-    // 米PT以外のキャンペーン（v0.6.0。hit_rate_model.kpi_measurement.campaigns）は数えない（通算はノーマルの米PTの調整の根拠）
-    if (w.destroyers && !this.sortie.historical && recordsHitKpi(data, this.sortie.missionId)) result.kpi = recordKpi(data, result.shots);
+    // 米PT以外のキャンペーン（v0.6.0。hit_rate_model.kpi_measurement.campaigns）・カスタムの装備（v0.9.0）は数えない（通算はデフォルトの米PTの調整の根拠）
+    if (w.destroyers && !this.sortie.historical && !this.sortie.custom && recordsHitKpi(base, this.sortie.missionId)) result.kpi = recordKpi(base, result.shots);
     // 終えた任務の回数（v0.5.2。見越し点マーカーの解放）: Result まで行った任務だけ、ここで 1 回だけ +1
     recordSortie();
     // 帰投で終えた任務（v0.6.0。キャンペーンの解放の条件）: 帰投したとき（敵艦隊なし＝cleared も。v0.6.2 実機 1 回目）だけ、任務ごとに 1 回
     if (result.returned) recordClear(this.sortie.missionId);
+    recordSortieStore(result, base); // 達成とストアの点（v0.9.0）: ここで 1 回だけ（Result の作り直しで二重に足さない。開いている端末だけ result.store に。systems/sortie-loadout）
     this.scene.start(SCENE_KEYS.result, result);
   }
 }

@@ -7,10 +7,11 @@
 //   4 行目（20 px・KPI の色）「この朝、史実ではSボートはユタ沖に来ていない（ゲームの想定）」
 //   v0.8.5 IP3: 1 行目の下（20 px）に「味方の艇 2 隻が拾った 12 名（自艇の渡したに数えない）」（拾った数が 0 なら出さない）。帰投で海に残った人は味方の艇が出ていれば「味方の艇に任せた」
 // 見出し: 達成「救助成功」・未達で帰投「帰投（渡した N 名 ・ 40 名に届かず）」・S ボートに沈められた「Sボートの掃射で沈没」。触雷は今の REASON_LABEL の「触雷で沈没」
-// （「任務終了 — 触雷で沈没」＝spec の「触雷 — 沈没」。頭の「任務終了 — 」が線を持つので 2 本にしない）。後ろの秒は「（救助の後 N 秒）」。Phaser・DOM を読まない。
+// （「任務未達 — 触雷で沈没」＝spec の「触雷 — 沈没」。頭の「任務未達 — 」が線を持つので 2 本にしない。頭の語は v0.9.0 IP2 から成否で分ける）。後ろの秒は「（救助の後 N 秒）」。Phaser・DOM を読まない。
 import { PT_NAME_DEFAULT_JA } from '../config/pt-config';
 import { RESCUE_SBOAT_ASSUMPTION_JA } from '../config/rescue-hud-config';
 import { resultDawnSuffixS, resultHeadingJa } from './result-heading';
+import { sortieAchieved } from '../core/store';
 import type { DawnResult } from '../core/dawn-air';
 import type { MissionEndReason } from '../core/mission-flow';
 import type { RescueResult } from '../core/rescue-telemetry';
@@ -30,7 +31,7 @@ export function rescueHeadingJa(
   r: RescueResult,
   hard: boolean,
 ): string {
-  return resultHeadingJa(m.reason, resultDawnSuffixS(m.returned, m.dawn), hard, m.sortie.historical, false, false, rescueReasonJa(m.reason, r, m.objectiveDone, m.pt));
+  return resultHeadingJa(sortieAchieved(m), m.reason, resultDawnSuffixS(m.returned, m.dawn), hard, m.sortie.historical, false, false, rescueReasonJa(m.reason, r, m.objectiveDone, m.pt));
 }
 
 /** 1 行目（生存者の行方）。returned は帰投と同じに数える終わり（救助の時間の前に帰れば、海に残った人は他艦に任せた＝史実でも他の駆逐艦が拾った） */

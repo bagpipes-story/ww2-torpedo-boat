@@ -110,6 +110,33 @@ export const DEBUG_HISTORICAL = DEBUG_ENABLED && new URLSearchParams(window.loca
 export const DEBUG_SORTIES = debugNumber('sorties');
 /** ?debug&unlock: すべてのキャンペーンを開いたものとして扱う（v0.6.0。保存は変えない。Safari とホーム画面のアプリは保存が別なので、日本側を Safari で試すとき用） */
 export const DEBUG_UNLOCK_ALL = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('unlock');
+/** ?debug&store=1（v0.9.0。ユーザーの決め U2）: ストアを開いたものとして扱う（13 任務の達成を待たずに iPhone で試す。保存は変えない＝支度金も配らない。?debug&unlock と同じ作法） */
+export const DEBUG_STORE_OPEN = DEBUG_ENABLED && new URLSearchParams(window.location.search).has('store');
+/**
+ * ?debug&custom=<品の id をコンマで区切る>（v0.9.0 S0。Briefing の切り替えは S1）: 持ち物・保存に関わらず、その品を装着したカスタムで出撃する（Mission の create。史実モードでも効く＝v0.9.0 IP1）。
+ * custom=all で表の全部。無ければ null（デフォルト）
+ */
+function debugCustomItems(): string[] | null {
+  if (!DEBUG_ENABLED) return null;
+  const v = new URLSearchParams(window.location.search).get('custom');
+  if (v === null) return null;
+  return v.split(',').filter((x) => x !== '');
+}
+export const DEBUG_CUSTOM_ITEMS = debugCustomItems();
+/** DEBUG_CUSTOM_ITEMS の「表の全部」の語（?debug&achieved＝config/debug-achieved の「全部」も同じ語） */
+export const DEBUG_CUSTOM_ALL = 'all';
+/**
+ * ?debug&points=N（v0.9.0 S1。iPhone で店を試す。例 ?debug&store=1&points=20000）: ストアの財布を N 点（0 以上の整数）の写しとして扱う（Boot の systems/store-storage の enableStoreMemory。
+ * ページを閉じるまで、交換・装着・装備の選び・任務の終わりの点は写しだけに書き、localStorage の財布は変えない）。無ければ NaN
+ */
+function debugStorePoints(): number {
+  if (!DEBUG_ENABLED) return NaN;
+  const v = new URLSearchParams(window.location.search).get('points');
+  if (v === null || v === '') return NaN;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 0 ? n : NaN;
+}
+export const DEBUG_STORE_POINTS = debugStorePoints();
 /** ?debug&shiphit=N: 駆逐艦・輸送船の船体の当たり判定の倍率（v0.4.8。data の world.ship_hit_scale の代わり。1 = v0.4.7 までの実寸、2 = 絵と同じ。実機で比べる・再生の比較用）。無ければ NaN（data の値） */
 export const DEBUG_SHIP_HIT_SCALE = debugNumber('shiphit');
 /** ?debug&nobattery: 沿岸砲なし（v0.4.3。v0.4.2 と同じ世界） */
@@ -203,6 +230,8 @@ export const SCENE_KEYS = {
   soundLab: 'SoundLab',
   /** 曲の試聴の場（v0.7.2 S1。?sfxlab の時だけ Boot から） */
   musicLab: 'MusicLab',
+  /** ストア（v0.9.0 S1。Title の左上の「ストア」から。13 任務の達成か ?debug&store=1 で開く） */
+  store: 'Store',
 } as const;
 
 /** 艇の絵の鍵（v0.6.0: 艇ごとに 1 枚。Boot が遊べる任務の自艇と僚艇の寸法から 1 回だけ作る。T-38 は Elco より小さい） */

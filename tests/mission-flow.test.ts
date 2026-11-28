@@ -137,12 +137,12 @@ describe('任務の流れ（docs/02 §6.7、v0.3.0）', () => {
     expect(resultDawnSuffixS(true, caught)).toBe(41.6);
     expect(resultDawnSuffixS(false, caught)).toBe(41.6);
     expect(resultDawnSuffixS(false, homeAtDawn)).toBe(0.02);
-    expect(resultHeadingJa('returned', resultDawnSuffixS(true, before), false, false)).toBe('任務終了 — 帰投した');
-    expect(resultHeadingJa('returned', resultDawnSuffixS(true, caught), false, false)).toBe('任務終了 — 帰投した（夜明け後 42 秒）');
-    expect(resultHeadingJa('air_strike', resultDawnSuffixS(false, caught), false, false)).toBe('任務終了 — 夜明けの空襲で沈没（夜明け後 42 秒）');
-    expect(resultHeadingJa('adrift', resultDawnSuffixS(false, caught), true, false)).toBe('任務終了 — 燃料切れで漂流（夜明け後 42 秒）（ハード）');
-    expect(resultHeadingJa('destroyed', NaN, true, false)).toBe('任務終了 — 砲撃で沈没（ハード）');
-    expect(resultHeadingJa('returned', 30.4, true, true)).toBe('任務終了 — 帰投した（夜明け後 30 秒）（ハード）（史実）');
+    expect(resultHeadingJa(true, 'returned', resultDawnSuffixS(true, before), false, false)).toBe('任務達成 — 帰投した');
+    expect(resultHeadingJa(true, 'returned', resultDawnSuffixS(true, caught), false, false)).toBe('任務達成 — 帰投した（夜明け後 42 秒）');
+    expect(resultHeadingJa(false, 'air_strike', resultDawnSuffixS(false, caught), false, false)).toBe('任務未達 — 夜明けの空襲で沈没（夜明け後 42 秒）');
+    expect(resultHeadingJa(false, 'adrift', resultDawnSuffixS(false, caught), true, false)).toBe('任務未達 — 燃料切れで漂流（夜明け後 42 秒）（ハード）');
+    expect(resultHeadingJa(false, 'destroyed', NaN, true, false)).toBe('任務未達 — 砲撃で沈没（ハード）');
+    expect(resultHeadingJa(true, 'returned', 30.4, true, true)).toBe('任務達成 — 帰投した（夜明け後 30 秒）（ハード）（史実）');
   });
   it('v0.6.1 Result の「回避 N」: 回避に点のある任務だけ。夜明けだけが理由の 0 は「回避 0（夜明け後）」、見つかった・届けていない・帰投していない 0 には付けない', () => {
     const r = (over: Partial<{ returned: boolean; objectiveDone: boolean; detections: number; caughtOutside: boolean }> = {}) => {
