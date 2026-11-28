@@ -1,9 +1,10 @@
 // ストアの品の表と貯め方（v0.9.0。data/store.json。spec-v0900 §4.2・§7）の読み出しと Boot の検査 V-S1〜V-S4。例外は鍵を名指す日本語（ほかの *-mission-data と同じ作法）。
-// V-S1 形（鍵・id の重複なし・値段は正の整数・効きの形は 5 つだけ・source は design。v0.9.0 IP3 から kind reward＝値段の代わりに reward_rule）・V-S2 名指した艇・任務・魚雷・キャンペーンが data にあり、艇が boat_condition を満たす
+// V-S1 形（鍵・id の重複なし・値段は正の整数・効きの形は 7 つだけ〔v0.9.1 で重い砲 boat_gun_heavy・機関 boat_engine〕・source は design。v0.9.0 IP3 から kind reward＝値段の代わりに reward_rule）・V-S2 名指した艇・任務・魚雷・キャンペーンが data にあり、艇が boat_condition を満たす
 // （燃料は満タンを超えない）・V-S3 2 つの品が同じ鍵を触らない・V-S4 自艇の記録を自艇以外も読む所（us_01 の僚艇・jp_03 の 18 隻・us_07 の味方の艇の "player_full"）の読む鍵に
 // 品が触るなら、その品の shared_ok に名がある。全任務の組み立ては Boot ではしない（tests/custom-loadout が 13 任務×ハード×品で組む）。window を読まない（tests と scripts から読める）。
 import type { GameData } from './game-data';
 import { playableMissionIds } from './campaign-data';
+import { fuelCurveFromData, fuelHoursFullKeepingExponent, isBoatFuelDataRecord } from '../core/fuel';
 import type { StoreAccrual, StoreCatalogue, StoreEffect, StoreEffectKind, StoreItem } from '../core/store';
 
 type Rec = Record<string, unknown>;
@@ -18,14 +19,20 @@ const ITEM_OPTIONAL_KEYS = ['boat_condition', 'shared_ok'] as const;
 const ITEM_KIND_KEYS = { equipment: 'price', reward: 'reward_rule' } as const;
 const REWARD_RULES = ['hard_historical_default_all'] as const;
 
-/** 効きの形ごとの鍵（effect の中。kind を除く）と、触る data の鍵（V-S3・V-S4。boat. は自艇の記録、mission. は任務の記録） */
-export const STORE_EFFECT_SPEC: Readonly<Record<StoreEffectKind, { readonly keys: readonly string[]; readonly touches: readonly string[] }>> = {
+/**
+ * 効きの形ごとの鍵（effect の中。kind を除く）と、触る data の鍵（V-S3・V-S4。boat. は自艇の記録、mission. は任務の記録）。
+ * additive（v0.9.1。重い砲）は同じ形の品どうしなら同じ鍵を触ってよい（組と弾倉を足し合わせる＝spec-v0900 §4.3「37mm と 40mm は両方効く」）
+ */
+export const STORE_EFFECT_SPEC: Readonly<Record<StoreEffectKind, { readonly keys: readonly string[]; readonly touches: readonly string[]; readonly additive?: true }>> = {
   mission_torpedo: { keys: ['torpedo_id'], touches: ['mission.torpedo_type'] },
   boat_torpedo_count: { keys: ['count'], touches: ['boat.torpedoes.count'] },
   boat_smoke: { keys: ['duration_s', 'cooldown_s'], touches: ['boat.smoke.duration_s', 'boat.smoke.cooldown_s'] },
   mission_fuel_factor: { keys: ['factor'], touches: ['mission.v0_1_prototype.fuel_allotment_gal'] },
   boat_crew: { keys: ['reload_s', 'extinguish_hold_s'], touches: ['boat.gun_battery.magazine.reload_s', 'boat.damage.extinguish_hold_s'] },
+  boat_gun_heavy: { keys: ['group', 'merge_into', 'magazine_add', 'label_ja'], touches: ['boat.gun_battery.groups', 'boat.gun_battery.magazine.rounds', 'boat.gun_battery.label_ja'], additive: true },
+  boat_engine: { keys: ['speed_add_kt', 'accel_factor'], touches: ['boat.speed_max_kt', 'boat.accel_mps2', 'boat.fuel_hours_full'] },
 };
+const GUN_GROUP_KEYS = ['id', 'rounds_per_min', 'damage', 'shell_speed_mps', 'dispersion_m', 'splash_radius_m'] as const;
 
 /** 自艇の記録を自艇以外も読む所（V-S4。コードの事実＝どこが何を読むか。'*' は記録の全部） */
 export const SHARED_BOAT_READERS: readonly { readonly id: string; readonly reads: readonly string[]; readonly applies: (proto: Rec, playerBoat: string) => boolean }[] = [
@@ -40,6 +47,7 @@ export const SHARED_BOAT_READERS: readonly { readonly id: string; readonly reads
 const isObj = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isStr = (v: unknown): v is string => typeof v === 'string' && v !== '';
 const isPos = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
+const isNonNeg = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 const isIdList = (v: unknown, nonEmpty: boolean): v is string[] => Array.isArray(v) && (!nonEmpty || v.length > 0) && v.every(isStr) && new Set(v).size === v.length;
 
 function bad(code: string, msg: string): never {
@@ -76,6 +84,25 @@ function readEffect(raw: unknown, label: string): StoreEffect {
     case 'boat_crew':
       if (!isPos(raw['reload_s']) || !isPos(raw['extinguish_hold_s'])) bad('V-S1', `${label}.effect.reload_s・extinguish_hold_s は正の数`);
       return { kind: 'boat_crew', reloadS: raw['reload_s'] as number, extinguishHoldS: raw['extinguish_hold_s'] as number };
+    case 'boat_gun_heavy': {
+      const g = raw['group'];
+      if (!isObj(g) || Object.keys(g).length !== GUN_GROUP_KEYS.length || !GUN_GROUP_KEYS.every((k) => k in g)) return bad('V-S1', `${label}.effect.group の鍵はちょうど ${GUN_GROUP_KEYS.join('・')}`);
+      if (!isStr(g['id']) || !isPos(g['rounds_per_min']) || !isPos(g['damage']) || !isPos(g['shell_speed_mps']) || !isNonNeg(g['dispersion_m']) || !isNonNeg(g['splash_radius_m'])) bad('V-S1', `${label}.effect.group: id は空でない文字列、rounds_per_min・damage・shell_speed_mps は正、dispersion_m・splash_radius_m は 0 以上`);
+      const mi = raw['merge_into'];
+      if (!(mi === null || isStr(mi))) bad('V-S1', `${label}.effect.merge_into は組の id か null`);
+      if (!(Number.isInteger(raw['magazine_add']) && (raw['magazine_add'] as number) >= 0)) bad('V-S1', `${label}.effect.magazine_add は 0 以上の整数（弾倉に足す発）`);
+      if (!isStr(raw['label_ja'])) bad('V-S1', `${label}.effect.label_ja は空でない文字列（砲の名の頭）`);
+      return {
+        kind: 'boat_gun_heavy',
+        group: { id: g['id'] as string, roundsPerMin: g['rounds_per_min'] as number, damage: g['damage'] as number, shellSpeedMps: g['shell_speed_mps'] as number, dispersionM: g['dispersion_m'] as number, splashRadiusM: g['splash_radius_m'] as number },
+        mergeInto: mi as string | null,
+        magazineAdd: raw['magazine_add'] as number,
+        labelJa: raw['label_ja'] as string,
+      };
+    }
+    case 'boat_engine':
+      if (!isPos(raw['speed_add_kt']) || !isPos(raw['accel_factor'])) bad('V-S1', `${label}.effect.speed_add_kt・accel_factor は正の数`);
+      return { kind: 'boat_engine', speedAddKt: raw['speed_add_kt'] as number, accelFactor: raw['accel_factor'] as number };
   }
 }
 
@@ -98,6 +125,28 @@ function boatRecord(data: GameData, id: string): Rec | undefined {
 /** 品が狙う任務の記録（v0_1_prototype を持ち、player_boat が品の boats にあり、除く任務でない） */
 export function itemTargetMissions(data: GameData, item: StoreItem): Rec[] {
   return missionRecords(data).filter((m) => item.boats.includes(m['player_boat'] as string) && !item.excludeMissions.includes(m['id'] as string));
+}
+
+/** V-S2（v0.9.1）: 重い砲の品が触る艇の砲（組・弾倉・名）があり、足す組の id が無く、merge_into の組を持たない艇は同じ被害以上の組を持たない（Elco 80・Higgins は史実で既に積む） */
+function checkGunHeavy(rec: Rec, e: Extract<StoreEffect, { kind: 'boat_gun_heavy' }>, at: string): void {
+  const gb = rec['gun_battery'];
+  const groups = isObj(gb) ? gb['groups'] : undefined;
+  if (!isObj(gb) || !Array.isArray(groups) || !isStr(gb['label_ja']) || typeof pathValue(gb, 'magazine.rounds') !== 'number') return bad('V-S2', `${at} に gun_battery（groups・label_ja・magazine.rounds）が無い`);
+  const ids = (groups as Rec[]).map((g) => g['id']);
+  if (ids.includes(e.group.id)) bad('V-S2', `${at} の gun_battery.groups に ${e.group.id} が既にある`);
+  if ((e.mergeInto === null || !ids.includes(e.mergeInto)) && (groups as Rec[]).some((g) => (g['damage'] as number) >= e.group.damage)) bad('V-S2', `${at} は被害 ${e.group.damage} 以上の組を既に積む（merge_into の組でもない）`);
+}
+
+/** V-S2（v0.9.1）: 機関の品の艇は燃料曲線を持ち、速くした後も静音の上限より速く、燃料曲線が組める（fuel_hours_full は指数を保つ値） */
+function checkEngine(rec: Rec, e: Extract<StoreEffect, { kind: 'boat_engine' }>, at: string): void {
+  if (!isBoatFuelDataRecord(rec)) return bad('V-S2', `${at} に燃料曲線（fuel_capacity_gal・fuel_hours_*・fuel_idle_ratio・速力）が無い`);
+  const maxKt = rec.speed_max_kt + e.speedAddKt;
+  if (!(maxKt > (pathValue(rec, 'speed_bands_kt.silent_max') as number))) bad('V-S2', `${at} の速くした最大速力 ${maxKt} kt は静音の上限より速い`);
+  try {
+    fuelCurveFromData({ ...rec, speed_max_kt: maxKt, fuel_hours_full: fuelHoursFullKeepingExponent(rec, maxKt) });
+  } catch (err) {
+    bad('V-S2', `${at} の燃料曲線が組めない（${err instanceof Error ? err.message : String(err)}）`);
+  }
 }
 
 function readItem(data: GameData, raw: unknown, i: number, seen: Set<string>): StoreItem {
@@ -150,6 +199,8 @@ function readItem(data: GameData, raw: unknown, i: number, seen: Set<string>): S
     if (e.kind === 'boat_torpedo_count' && typeof pathValue(rec, 'torpedoes.count') !== 'number') bad('V-S2', `${L}: 艇 ${b} に torpedoes.count が無い`);
     if (e.kind === 'boat_smoke' && (rec['smoke_generator'] !== true || !isObj(rec['smoke']))) bad('V-S2', `${L}: 艇 ${b} に煙幕（smoke_generator・smoke）が無い`);
     if (e.kind === 'boat_crew') for (const path of ['gun_battery.magazine.reload_s', 'damage.extinguish_hold_s']) if (typeof pathValue(rec, path) !== 'number') bad('V-S2', `${L}: 艇 ${b} に ${path} が無い`);
+    if (e.kind === 'boat_gun_heavy') checkGunHeavy(rec, e, `${L}: 艇 ${b}`);
+    if (e.kind === 'boat_engine') checkEngine(rec, e, `${L}: 艇 ${b}`);
   }
   if (e.kind === 'mission_torpedo' && !(data.torpedoes.torpedoes as readonly Rec[]).some((t) => t['id'] === e.torpedoId)) bad('V-S2', `${L}.effect.torpedo_id（${e.torpedoId}）が torpedoes.json に無い`);
   const targets = itemTargetMissions(data, item);
@@ -162,6 +213,8 @@ function readItem(data: GameData, raw: unknown, i: number, seen: Set<string>): S
       const cap = boatRecord(data, boatId)?.['fuel_capacity_gal'];
       if (!(typeof cap === 'number' && gal <= cap)) bad('V-S2', `${L}: ${String(m['id'])} の燃料 ${gal} gal が艇 ${boatId} の fuel_capacity_gal（${String(cap)}）を超える`);
     }
+    // V-S2（v0.9.1）: 米PT・S ボートの隊は「突撃・追撃の速さ＞自艇の最大速力」（config/pt-mission-data）＝機関の品は隊のいる任務（us_07）に効かせない
+    if (e.kind === 'boat_engine' && proto['pt_boats'] !== undefined) bad('V-S2', `${L}: ${String(m['id'])} には米PT・S ボートの隊（pt_boats）がいる（追撃は自艇の最大速力より速い＝振り切れない設計。boats か exclude_missions で外す）`);
     // V-S4: 自艇の記録を自艇以外も読む所
     const boatKeys = STORE_EFFECT_SPEC[e.kind].touches.filter((t) => t.startsWith('boat.')).map((t) => t.slice('boat.'.length));
     for (const r of SHARED_BOAT_READERS) {
@@ -197,13 +250,13 @@ export function getStoreCatalogue(data: GameData): StoreCatalogue {
   if (!Array.isArray(itemsRaw)) return bad('V-S1', 'items は配列');
   const seen = new Set<string>();
   const items = itemsRaw.map((x, i) => readItem(data, x, i, seen));
-  // V-S3: 2 つの品が同じ鍵を触らない
-  const owner = new Map<string, string>();
+  // V-S3: 2 つの品が同じ鍵を触らない（additive の同じ形どうし＝重い砲の 2 品は足し合わせるので別扱い）
+  const owner = new Map<string, StoreItem>();
   for (const it of items) {
     for (const t of STORE_EFFECT_SPEC[it.effect.kind].touches) {
       const o = owner.get(t);
-      if (o !== undefined) bad('V-S3', `items.${it.id} と items.${o} が同じ鍵 ${t} を触る`);
-      owner.set(t, it.id);
+      if (o !== undefined && !(STORE_EFFECT_SPEC[it.effect.kind].additive && o.effect.kind === it.effect.kind)) bad('V-S3', `items.${it.id} と items.${o.id} が同じ鍵 ${t} を触る`);
+      owner.set(t, it);
     }
   }
   const cat: StoreCatalogue = { items, accrual, openMissionIds, grantPoints: open['grant_points'] as number };

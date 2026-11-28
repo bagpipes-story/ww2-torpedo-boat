@@ -14,6 +14,8 @@ import { buildWorldSetup } from '../src/systems/world-setup';
 type Rec = Record<string, unknown>;
 const MISSIONS = [...playableMissionIds(gameData, 'us_pt'), ...playableMissionIds(gameData, 'jp_hard')];
 const ITEMS = getStoreCatalogue(gameData).items.map((x) => x.id);
+/** v0.9.0 の 5 品（数の 4 品＋ご褒美）。v0.9.1 の砲と機関を除いた効きの tests に */
+const V090 = ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran'];
 const VARIANTS = MISSIONS.flatMap((id) => [false, ...(hasHardVariant(gameData, id) ? [true] : [])].map((hard) => ({ id, hard })));
 const clone = (): GameData => JSON.parse(JSON.stringify(gameData)) as GameData;
 function deepFreeze<T>(o: T): T {
@@ -27,11 +29,14 @@ const FROZEN = deepFreeze(clone());
 const custom = (id: string, items: string[], hard = false, historical = false) => ({ ...directSortie(id, 1, 'none', hard, historical), custom: { items } });
 
 describe('デフォルトは base そのもの（ビット同一の芯）', () => {
-  it('条件の任務は 13（data の open.campaigns の遊べる任務）・品は v0.9.0 の数の 4 つ＋ご褒美 1 つ（IP3。歴戦の乗員）', () => {
+  it('条件の任務は 13（data の open.campaigns の遊べる任務）・品は v0.9.0 の数の 4 つ＋v0.9.1 の砲と機関の 3 つ＋ご褒美 1 つ（IP3。歴戦の乗員＝最後の枠）', () => {
     expect(MISSIONS).toHaveLength(13);
     expect(getStoreCatalogue(gameData).openMissionIds).toEqual(MISSIONS);
-    expect(ITEMS).toEqual(['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran']);
-    expect(getStoreCatalogue(gameData).items.map((x) => [x.id, x.reward, x.price])).toEqual([['fuel_tank', false, 3000], ['smoke_large', false, 4000], ['torp_mk13', false, 4000], ['torp_rack6', false, 8000], ['crew_veteran', true, 0]]);
+    expect(ITEMS).toEqual(['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'gun_37mm', 'gun_40mm', 'engine_tuned', 'crew_veteran']);
+    expect(getStoreCatalogue(gameData).items.map((x) => [x.id, x.reward, x.price])).toEqual([
+      ['fuel_tank', false, 3000], ['smoke_large', false, 4000], ['torp_mk13', false, 4000], ['torp_rack6', false, 8000],
+      ['gun_37mm', false, 3000], ['gun_40mm', false, 5000], ['engine_tuned', false, 6000], ['crew_veteran', true, 0],
+    ]);
   });
   it.each(VARIANTS)('$id hard=$hard: デフォルトの出撃（custom の鍵なし）は史実モードでも toBe。史実モードのカスタムは史実オフのカスタムと同じ data・同じ印（v0.9.0 IP1）', ({ id, hard }) => {
     for (const hist of [false, true]) {
@@ -59,22 +64,23 @@ describe('デフォルトは base そのもの（ビット同一の芯）', () =
 });
 
 describe('効く品と効き', () => {
-  it('任務ごとに効く品（表の順）: 燃料・煙幕は米の 7 任務、Mk 13 は Mk 8 の Elco 80 の任務（us_02・us_04）、架台 6 は Elco 80・Higgins（us_02〜us_07）', () => {
+  it('任務ごとに効く品（表の順）: 燃料・煙幕・40mm は米の 7 任務、Mk 13 は Mk 8 の Elco 80 の任務（us_02・us_04）、架台 6 は Elco 80・Higgins（us_02〜us_07）、37mm は Elco 77（us_01）、機関は us_07 を除く 6 任務', () => {
     const got = Object.fromEntries(MISSIONS.filter((m) => m.startsWith('us_')).map((id) => [id, effectiveStoreItems(gameData, id, ITEMS)]));
+    const G = ['gun_40mm', 'engine_tuned', 'crew_veteran'];
     expect(got).toEqual({
-      us_01: ['fuel_tank', 'smoke_large', 'crew_veteran'],
-      us_02: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran'],
-      us_03: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
-      us_04: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', 'crew_veteran'],
-      us_05: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
-      us_06: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
-      us_07: ['fuel_tank', 'smoke_large', 'torp_rack6', 'crew_veteran'],
+      us_01: ['fuel_tank', 'smoke_large', 'gun_37mm', ...G],
+      us_02: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', ...G],
+      us_03: ['fuel_tank', 'smoke_large', 'torp_rack6', ...G],
+      us_04: ['fuel_tank', 'smoke_large', 'torp_mk13', 'torp_rack6', ...G],
+      us_05: ['fuel_tank', 'smoke_large', 'torp_rack6', ...G],
+      us_06: ['fuel_tank', 'smoke_large', 'torp_rack6', ...G],
+      us_07: ['fuel_tank', 'smoke_large', 'torp_rack6', 'gun_40mm', 'crew_veteran'],
     });
     expect(effectiveStoreItems(gameData, 'us_02', ['nope', 'torp_mk13'])).toEqual(['torp_mk13']);
   });
-  it('us_02 の全部: 魚雷 Mk 13・6 本・煙幕 8 s／15 s・燃料 38 × 1.25。ほかの艇・任務の記録は同じ物（参照）・base は変わらない', () => {
+  it('us_02 の v0.9.0 の全部: 魚雷 Mk 13・6 本・煙幕 8 s／15 s・燃料 38 × 1.25。ほかの艇・任務の記録は同じ物（参照）・base は変わらない', () => {
     const before = JSON.stringify(gameData);
-    const d = applyStoreItems(FROZEN, 'us_02', ITEMS);
+    const d = applyStoreItems(FROZEN, 'us_02', V090);
     const s = buildWorldSetup(d, 'us_02');
     const b = buildWorldSetup(FROZEN, 'us_02');
     expect(getPrototypeMission(d, 'us_02').torpedoId).toBe('us_mk13');
@@ -95,8 +101,8 @@ describe('効く品と効き', () => {
     expect(JSON.stringify(gameData)).toBe(before);
   });
   it('us_01 の僚艇（同じ us_elco77）は燃料・煙幕・乗員では変わらない（V-S4: 僚艇が読む鍵に触らない）', () => {
-    const a = buildWorldSetup(applyStoreItems(FROZEN, 'us_01', ITEMS), 'us_01');
-    expect(a.escort).toEqual(buildWorldSetup(FROZEN, 'us_01').escort);
+    const a = buildWorldSetup(applyStoreItems(FROZEN, 'us_01', [...V090, 'gun_37mm', 'gun_40mm']), 'us_01');
+    expect(a.escort).toEqual(buildWorldSetup(FROZEN, 'us_01').escort); // 砲の 2 品も僚艇の読む鍵に触らない
     expect(a.smokeParams?.durationS).toBe(8);
     expect(a.damageParams.extinguishHoldS).toBe(0.6);
   });
@@ -160,6 +166,7 @@ describe('Boot の検査（validateStore の V-S1〜V-S4）', () => {
     return d;
   };
   const items = (s: Rec): Rec[] => s['items'] as Rec[];
+  const byId = (s: Rec, id: string): Rec => items(s).find((x) => x['id'] === id)!;
   it('今の data は通る', () => expect(() => validateStore(gameData)).not.toThrow());
   it.each([
     ['V-S1', 'id の重複', (s: Rec) => items(s).push({ ...items(s)[0]! })],
@@ -179,16 +186,16 @@ describe('Boot の検査（validateStore の V-S1〜V-S4）', () => {
     ['V-S3', '2 つの品が同じ鍵', (s: Rec) => items(s).push({ ...items(s)[0]!, id: 'fuel_tank_2' })],
     ['V-S4', '日本の jp_03 の 18 隻が読む艇に触る', (s: Rec) => items(s).push({ ...items(s)[3]!, id: 'jp_rack', boats: ['jp_t38'], boat_condition: {} })],
     // v0.9.0 IP3: ご褒美（kind reward）と boat_crew
-    ['V-S1', 'ご褒美に値段がある', (s: Rec) => (items(s)[4]!['price'] = 100)],
-    ['V-S1', 'ご褒美に reward_rule が無い', (s: Rec) => delete items(s)[4]!['reward_rule']],
-    ['V-S1', 'ご褒美の reward_rule が表に無い', (s: Rec) => (items(s)[4]!['reward_rule'] = 'all_hard')],
+    ['V-S1', 'ご褒美に値段がある', (s: Rec) => (byId(s, 'crew_veteran')['price'] = 100)],
+    ['V-S1', 'ご褒美に reward_rule が無い', (s: Rec) => delete byId(s, 'crew_veteran')['reward_rule']],
+    ['V-S1', 'ご褒美の reward_rule が表に無い', (s: Rec) => (byId(s, 'crew_veteran')['reward_rule'] = 'all_hard')],
     ['V-S1', '交換の品に reward_rule がある', (s: Rec) => (items(s)[0]!['reward_rule'] = 'hard_historical_default_all')],
     ['V-S1', '交換の品に値段が無い', (s: Rec) => delete items(s)[0]!['price']],
-    ['V-S1', '乗員の効きが 0', (s: Rec) => ((items(s)[4]!['effect'] as Rec)['reload_s'] = 0)],
-    ['V-S1', '乗員の効きの鍵が欠ける', (s: Rec) => delete (items(s)[4]!['effect'] as Rec)['extinguish_hold_s']],
-    ['V-S2', '乗員の艇に弾倉が無い（英の艇）', (s: Rec) => (items(s)[4]!['boats'] = ['us_elco80', 'uk_vosper73'])],
-    ['V-S3', '2 つの品が乗員の鍵を触る', (s: Rec) => items(s).push({ ...items(s)[4]!, id: 'crew_2' })],
-    ['V-S4', '日本の jp_03 の 18 隻の艇に乗員', (s: Rec) => (items(s)[4]!['boats'] = ['us_elco80', 'jp_t38'])],
+    ['V-S1', '乗員の効きが 0', (s: Rec) => ((byId(s, 'crew_veteran')['effect'] as Rec)['reload_s'] = 0)],
+    ['V-S1', '乗員の効きの鍵が欠ける', (s: Rec) => delete (byId(s, 'crew_veteran')['effect'] as Rec)['extinguish_hold_s']],
+    ['V-S2', '乗員の艇に弾倉が無い（英の艇）', (s: Rec) => (byId(s, 'crew_veteran')['boats'] = ['us_elco80', 'uk_vosper73'])],
+    ['V-S3', '2 つの品が乗員の鍵を触る', (s: Rec) => items(s).push({ ...byId(s, 'crew_veteran'), id: 'crew_2' })],
+    ['V-S4', '日本の jp_03 の 18 隻の艇に乗員', (s: Rec) => (byId(s, 'crew_veteran')['boats'] = ['us_elco80', 'jp_t38'])],
   ])('%s: %s → 例外', (code, _label, f) => {
     expect(() => validateStore(broken(f as (s: Rec) => void))).toThrow(code);
   });

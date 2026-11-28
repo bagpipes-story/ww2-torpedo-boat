@@ -15,12 +15,15 @@ describe('文（ui/store-texts）', () => {
     expect([0, 999, 1000, 12345, 1234567].map(formatPoints)).toEqual(['0', '999', '1,000', '12,345', '1,234,567']);
     expect(walletJa(20000)).toBe('所持 20,000 点');
   });
-  it('効きの短い文は data の値から（4 品＋ご褒美。v0.9.0 IP3）', () => {
+  it('効きの短い文は data の値から（4 品＋v0.9.1 の砲と機関 3 品＋ご褒美。v0.9.0 IP3）', () => {
     expect(cat.items.map((x) => [x.id, storeEffectJa(gameData, x)])).toEqual([
       ['fuel_tank', '燃料の割当 ×1.25'],
       ['smoke_large', '煙幕 8 秒 ・ 次まで 15 秒'],
       ['torp_mk13', '米 Mk 13魚雷を積む'],
       ['torp_rack6', '魚雷 6 本'],
+      ['gun_37mm', '37mm +75 発/分 ・ 弾倉 +30 発'],
+      ['gun_40mm', '40mm +75 発/分 ・ 弾倉 +30 発'],
+      ['engine_tuned', '最大速力 +2 kt ・ 加速 ×1.1'],
       ['crew_veteran', '弾倉交換 2.0 秒 ・ 消火 0.6 秒'],
     ]);
   });
@@ -29,6 +32,10 @@ describe('文（ui/store-texts）', () => {
     expect(storeItemMissionIds(gameData, item('torp_mk13'))).toEqual(['us_02', 'us_04']);
     expect(storeItemMissionIds(gameData, item('torp_rack6'))).toEqual(['us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07']);
     expect(storeItemMissionsJa(gameData, item('torp_mk13'))).toBe('効く任務: us_02・us_04');
+    // v0.9.1: 37mm は Elco 77（us_01）だけ・40mm は米の 7 任務・機関は us_07（Higgins・S ボートの追撃）を除く 6 任務
+    expect(storeItemMissionIds(gameData, item('gun_37mm'))).toEqual(['us_01']);
+    expect(storeItemMissionIds(gameData, item('gun_40mm'))).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06', 'us_07']);
+    expect(storeItemMissionIds(gameData, item('engine_tuned'))).toEqual(['us_01', 'us_02', 'us_03', 'us_04', 'us_05', 'us_06']);
   });
   it('枠の状態: 持っていなければ値段（足りなければ short）・持っていれば「装着中」／「外している」', () => {
     const s = { ...emptyStoreState(), points: 3500 };
