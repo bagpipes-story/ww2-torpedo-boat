@@ -10,7 +10,20 @@ export type StoreEffect =
   | { readonly kind: 'boat_smoke'; readonly durationS: number; readonly cooldownS: number }
   | { readonly kind: 'mission_fuel_factor'; readonly factor: number }
   /** 艇の乗員（v0.9.0 IP3 のご褒美「歴戦の乗員」）: 機銃の弾倉交換 gun_battery.magazine.reload_s と消火の長押し damage.extinguish_hold_s（乗員が減った時の倍率 crew_effects は今のまま） */
-  | { readonly kind: 'boat_crew'; readonly reloadS: number; readonly extinguishHoldS: number };
+  | { readonly kind: 'boat_crew'; readonly reloadS: number; readonly extinguishHoldS: number }
+  /**
+   * 艇の重い砲（v0.9.1。37mm M4・40mm Bofors）: 艇の gun_battery に組 group を足す。mergeInto の組（Elco 80・Higgins の 40mm_37mm）を持つ艇はその組の発射速度に足し、
+   * 持たない艇（Elco 77）は組を頭に足して label_ja の頭に labelJa を付ける。どちらも弾倉 magazine.rounds に magazineAdd 発を足す。2 つの砲の品は足し合わせる（V-S3 の additive）
+   */
+  | {
+      readonly kind: 'boat_gun_heavy';
+      readonly group: { readonly id: string; readonly roundsPerMin: number; readonly damage: number; readonly shellSpeedMps: number; readonly dispersionM: number; readonly splashRadiusM: number };
+      readonly mergeInto: string | null;
+      readonly magazineAdd: number;
+      readonly labelJa: string;
+    }
+  /** 艇の機関（v0.9.1。機関の整備）: speed_max_kt に speedAddKt・accel_mps2 に accelFactor を掛け、fuel_hours_full は燃料曲線の指数が同じ値へ（core/fuel の fuelHoursFullKeepingExponent） */
+  | { readonly kind: 'boat_engine'; readonly speedAddKt: number; readonly accelFactor: number };
 
 export type StoreEffectKind = StoreEffect['kind'];
 

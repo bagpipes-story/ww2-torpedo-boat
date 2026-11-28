@@ -40,6 +40,10 @@ export function storeEffectJa(data: GameData, item: StoreItem): string {
       return `魚雷 ${e.count} 本`;
     case 'boat_crew':
       return `弾倉交換 ${e.reloadS.toFixed(1)} 秒 ・ 消火 ${e.extinguishHoldS} 秒`;
+    case 'boat_gun_heavy':
+      return `${e.labelJa} +${e.group.roundsPerMin} 発/分 ・ 弾倉 +${e.magazineAdd} 発`;
+    case 'boat_engine':
+      return `最大速力 +${e.speedAddKt} kt ・ 加速 ×${e.accelFactor}`;
   }
 }
 

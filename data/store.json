@@ -1,6 +1,6 @@
 {
-  "$schema_note": "ストア（v0.9.0。spec-v0900 §4.2・§4.5）。任務の得点をストアの点として貯め、13 任務（open.campaigns の遊べる任務）をすべて達成した端末で開く店の品と貯め方。数値はすべて design（史実の値ではない）。品の効きは data の鍵を写して直す（config/custom-loadout の copy-on-write。base の data は書き換えない）。効きの形は effect.kind の 5 つだけ（config/store-data の V-S1）: mission_torpedo（任務の torpedo_type を替える）・boat_torpedo_count（艇の torpedoes.count）・boat_smoke（艇の smoke.duration_s・cooldown_s）・mission_fuel_factor（任務の v0_1_prototype.fuel_allotment_gal に掛ける）。boats は効く艇の id（任務の player_boat）、boat_condition は艇の記録が満たす条件（点で区切った鍵 → 値）、exclude_missions は効かない任務、shared_ok は自艇の記録を自艇以外も読む所（escort・evac・rescue_player_full）のうち、触ってよい物（V-S4）。日本の艇には品を置かない（ユーザーの決め Q2 の設計の既定＝弱者視点）。kind は equipment（点で交換）と reward（v0.9.0 IP3 のご褒美。price を持たず reward_rule の条件で渡す）（v0.10 の殴り込みの味方は ally の予約）。効きの形 boat_crew（v0.9.0 IP3）は艇の gun_battery.magazine.reload_s と damage.extinguish_hold_s。",
-  "version": "0.9.0",
+  "$schema_note": "ストア（v0.9.0。spec-v0900 §4.2・§4.5）。任務の得点をストアの点として貯め、13 任務（open.campaigns の遊べる任務）をすべて達成した端末で開く店の品と貯め方。数値はすべて design（史実の値ではない）。品の効きは data の鍵を写して直す（config/custom-loadout の copy-on-write。base の data は書き換えない）。効きの形は effect.kind の 7 つだけ（config/store-data の V-S1）: mission_torpedo（任務の torpedo_type を替える）・boat_torpedo_count（艇の torpedoes.count）・boat_smoke（艇の smoke.duration_s・cooldown_s）・mission_fuel_factor（任務の v0_1_prototype.fuel_allotment_gal に掛ける）・boat_crew・boat_gun_heavy（v0.9.1。艇の gun_battery に重い組を足す。merge_into の組を持つ艇はその発射速度に足す。弾倉 magazine.rounds に magazine_add 発。2 つの砲の品は足し合わせる）・boat_engine（v0.9.1。艇の speed_max_kt と accel_mps2。fuel_hours_full は燃料曲線の指数を保つ値へ）。boats は効く艇の id（任務の player_boat）、boat_condition は艇の記録が満たす条件（点で区切った鍵 → 値）、exclude_missions は効かない任務、shared_ok は自艇の記録を自艇以外も読む所（escort・evac・rescue_player_full）のうち、触ってよい物（V-S4）。日本の艇には品を置かない（ユーザーの決め Q2 の設計の既定＝弱者視点）。kind は equipment（点で交換）と reward（v0.9.0 IP3 のご褒美。price を持たず reward_rule の条件で渡す）（v0.10 の殴り込みの味方は ally の予約）。効きの形 boat_crew（v0.9.0 IP3）は艇の gun_battery.magazine.reload_s と damage.extinguish_hold_s。",
+  "version": "0.9.1",
   "open": {
     "campaigns": ["us_pt", "jp_hard"],
     "grant_points": 3000,
@@ -64,6 +64,43 @@
       "exclude_missions": [],
       "effect": { "kind": "boat_torpedo_count", "count": 6 },
       "source": "design (spec-v0900 §4.2。史実の根拠は無い。日本の艇は jp_03 の座席で 2 本を分け合う規則（CLAUDE.md §2）なので対象外)"
+    },
+    {
+      "id": "gun_37mm",
+      "kind": "equipment",
+      "name_ja": "37mm M4 機関砲",
+      "short_ja": "37mm",
+      "desc_ja": "艇首に 37mm M4 を積む（75 発/分・1 発の被害 8）。弾倉 50 → 80 発。重い砲の無い Elco 77（us_01）。艦には効かない（機は 1 発の撃墜の確率のまま発が増える）",
+      "price": 3000,
+      "boats": ["us_elco77"],
+      "exclude_missions": [],
+      "effect": { "kind": "boat_gun_heavy", "group": { "id": "37mm_m4", "rounds_per_min": 75, "damage": 8, "shell_speed_mps": 400, "dispersion_m": 30, "splash_radius_m": 2.5 }, "merge_into": null, "magazine_add": 30, "label_ja": "37mm" },
+      "source": "design (v0.9.1・spec-v0900 §4.2 の設計の既定。組の値は Elco 80 の 40mm_37mm の組（150 発/分・被害 8・400 m/s・散布 30・水柱 2.5＝40mm と 37mm の 2 門）の 1 門ぶん＝75 発/分。史実では 1943 年から前線で P-39 の 37mm M4 を艇首に載せた艇がある（us_01 の 1942 年 8 月の Elco 77 には無い＝ストアの品）。Elco 80・Higgins は既に積む（boats に入れない。V-S2 は被害 8 以上の組を持つ艇を止める）。組は頭に足す（0 番が重い組＝us_03 の砲弾の絵の作法）。magazine_add 30: 1 弾倉を撃ち切る秒が下がらない（50 発 ÷ 400 発/分 7.5 秒 → 80 ÷ 475 で 10.1 秒）。艦には今どおり効かない（systems/ship-gun）。us_01 の僚艇は砲を読まない（V-S4）)"
+    },
+    {
+      "id": "gun_40mm",
+      "kind": "equipment",
+      "name_ja": "40mm Bofors",
+      "short_ja": "40mm",
+      "desc_ja": "40mm Bofors を足す（75 発/分・被害 8）。Elco 77 は重い砲の組を足し、Elco 80・Higgins は重い組 150 → 225 発/分。弾倉 +30 発。大発・S ボート・機に効き、艦には効かない",
+      "price": 5000,
+      "boats": ["us_elco77", "us_elco80", "us_higgins78"],
+      "exclude_missions": [],
+      "effect": { "kind": "boat_gun_heavy", "group": { "id": "40mm_bofors", "rounds_per_min": 75, "damage": 8, "shell_speed_mps": 400, "dispersion_m": 30, "splash_radius_m": 2.5 }, "merge_into": "40mm_37mm", "magazine_add": 30, "label_ja": "40mm" },
+      "source": "design (v0.9.1・spec-v0900 §4.2 の設計の既定。Elco 80・Higgins は重い組 40mm_37mm に 75 発/分を足す（150 → 225）・弾倉 120 → 150（撃ち切る秒 11.4 → 12.8 秒）。Elco 77 は組 40mm_bofors を頭に足す（37mm と両方で重い組 150 発/分＝Elco 80 と同じ・名は「40mm・37mm・12.7mm連装×2」）。弾倉は spec の表では Elco 77 は 37mm の品だけが 50 → 80 だったが、40mm だけを積むと撃ち切る秒が 7.5 → 6.3 秒に下がるので、どの艇も重い砲 1 門で +30 発に揃えた（両方で 110 発・撃ち切る 12.0 秒）。効くのは大発（us_03）・S ボート（us_07）・機（全任務の対空。1 発 0.5% は変えない＝発の数が増えるだけ）。艦には今どおり効かない（systems/ship-gun）。命中率の設計（魚雷）には触れない)"
+    },
+    {
+      "id": "engine_tuned",
+      "kind": "equipment",
+      "name_ja": "機関の整備（高オクタン）",
+      "short_ja": "機関",
+      "desc_ja": "最大速力 39 → 41 kt・加速 ×1.1。同じ速さなら燃料の減りは同じ、静音の上限 18 kt も同じ。Elco 77・Elco 80（us_01〜us_06）。us_01 の僚艇も一緒に速くなる",
+      "price": 6000,
+      "boats": ["us_elco77", "us_elco80"],
+      "exclude_missions": [],
+      "shared_ok": ["escort"],
+      "effect": { "kind": "boat_engine", "speed_add_kt": 2, "accel_factor": 1.1 },
+      "source": "design (v0.9.1・spec-v0900 §4.2 の設計の既定。fuel_hours_full は core/fuel の fuelHoursFullKeepingExponent で燃料曲線の指数が変わらない値へ（Elco 80 6 → 5.487 h・Elco 77 5.5 → 5.021 h。最大速力だけ上げると指数が変わり巡航でも減り方が変わる）。静音の上限と速力帯は変えない（見つかりにくさの芯）。us_07 は対象外（Higgins は boats に無い。S ボートの追撃 40 kt は自艇の最大速力より速い＝config/pt-mission-data。V-S2 は pt_boats のいる任務に機関の品が効くと止める）。us_01 の要人の僚艇（escort.boat＝同じ us_elco77）は同じ記録の速さと加速を読むので一緒に速くなる（shared_ok escort。遅れない）)"
     },
     {
       "id": "crew_veteran",

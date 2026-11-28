@@ -106,3 +106,15 @@ export function economySpeedMps(c: FuelCurve): number {
   const vn = (c.idleGph * Math.pow(c.cruiseMps, c.exponent)) / ((c.cruiseGph - c.idleGph) * (c.exponent - 1));
   return Math.pow(vn, 1 / c.exponent);
 }
+
+/**
+ * 最大速力を speedMaxKt に替えても燃料曲線の指数 n（と巡航・アイドルの消費）が同じになる fuel_hours_full（v0.9.1 ストアの機関の整備＝config/custom-loadout）。
+ * 全速の消費を今の曲線の延長 burn(v') = idle + (cruise − idle) × (v' / v_cruise)^n に置く＝同じ速さなら同じ gal/h（最大速力だけ上げると n が変わり、巡航でも減り方が変わる）。
+ * speedMaxKt は speed_cruise_kt より大きい（でなければ例外）
+ */
+export function fuelHoursFullKeepingExponent(r: BoatFuelDataRecord, speedMaxKt: number): number {
+  if (!(speedMaxKt > r.speed_cruise_kt)) throw new Error('speedMaxKt は speed_cruise_kt より大きい');
+  const c = fuelCurveFromData(r);
+  const fullGph = c.idleGph + (c.cruiseGph - c.idleGph) * Math.pow(ktToMps(speedMaxKt) / c.cruiseMps, c.exponent);
+  return r.fuel_capacity_gal / fullGph;
+}

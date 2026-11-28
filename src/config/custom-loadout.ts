@@ -6,7 +6,8 @@
 // 呼ぶのは Mission・Hud・Briefing の create だけ（出撃ごとに 1 回。同じ出撃の 2 回目からは覚えた物を返す）。Result の配点は base のまま。window を読まない（tests と scripts から読める）。
 import type { GameData } from './game-data';
 import { getStoreCatalogue, itemTargetMissions, pathValue, storeItemById } from './store-data';
-import type { StoreItem } from '../core/store';
+import { fuelHoursFullKeepingExponent, type BoatFuelDataRecord } from '../core/fuel';
+import type { StoreEffect, StoreItem } from '../core/store';
 import type { Sortie } from '../core/sortie';
 
 type Rec = Record<string, unknown>;
@@ -31,7 +32,32 @@ function itemChanges(data: GameData, item: StoreItem, m: Rec): boolean {
       return e.factor !== 1;
     case 'boat_crew':
       return pathValue(boat, 'gun_battery.magazine.reload_s') !== e.reloadS || pathValue(boat, 'damage.extinguish_hold_s') !== e.extinguishHoldS;
+    case 'boat_gun_heavy':
+      return true; // 組を足すか発射速度を足す（検査 V-S2 で艇に砲がある）
+    case 'boat_engine':
+      return e.speedAddKt !== 0 || e.accelFactor !== 1;
   }
+}
+
+/**
+ * 重い砲（v0.9.1）: 艇の砲の記録を写して、merge_into の組があればその発射速度に足し、無ければ組を頭に足して名の頭に付ける（重い組が 0 番＝us_03 の砲弾の絵の作法）。
+ * 弾倉は magazine_add 発を足す。2 つの砲の品は表の順に重ねる（Elco 77 の両方で「40mm・37mm・12.7mm連装×2」・組 3 つ）
+ */
+function withHeavyGun(gun: Rec, e: Extract<StoreEffect, { kind: 'boat_gun_heavy' }>): Rec {
+  const groups = gun['groups'] as readonly Rec[];
+  const g = e.group;
+  const merge = e.mergeInto === null ? -1 : groups.findIndex((x) => x['id'] === e.mergeInto);
+  const nextGroups =
+    merge >= 0
+      ? groups.map((x, i) => (i === merge ? { ...x, rounds_per_min: (x['rounds_per_min'] as number) + g.roundsPerMin } : x))
+      : [{ id: g.id, rounds_per_min: g.roundsPerMin, damage: g.damage, shell_speed_mps: g.shellSpeedMps, dispersion_m: g.dispersionM, splash_radius_m: g.splashRadiusM }, ...groups];
+  const mag = gun['magazine'] as Rec;
+  return {
+    ...gun,
+    label_ja: merge >= 0 ? gun['label_ja'] : `${e.labelJa}・${String(gun['label_ja'])}`,
+    groups: nextGroups,
+    magazine: { ...mag, rounds: (mag['rounds'] as number) + e.magazineAdd },
+  };
 }
 
 /** その任務で効く品の id（表の順。表に無い id・効かない品は落とす）。史実モードかどうかは見ない（v0.9.0 IP1 から史実モードでも同じ品が効く） */
@@ -59,19 +85,31 @@ export function applyStoreItems(base: GameData, missionId: string, ids: readonly
         m['torpedo_type'] = e.torpedoId;
         break;
       case 'boat_torpedo_count':
-        boat['torpedoes'] = { ...(b0['torpedoes'] as Rec), count: e.count };
+        boat['torpedoes'] = { ...(boat['torpedoes'] as Rec), count: e.count };
         break;
       case 'boat_smoke':
-        boat['smoke'] = { ...(b0['smoke'] as Rec), duration_s: e.durationS, cooldown_s: e.cooldownS };
+        boat['smoke'] = { ...(boat['smoke'] as Rec), duration_s: e.durationS, cooldown_s: e.cooldownS };
         break;
       case 'mission_fuel_factor':
         proto['fuel_allotment_gal'] = (proto['fuel_allotment_gal'] as number) * e.factor;
         break;
       case 'boat_crew': {
-        // ご褒美「歴戦の乗員」（v0.9.0 IP3）: 砲・弾倉・被害の記録を写して 2 つの値だけ（乗員の減りの倍率 crew_effects と他の値は同じ物を指す）
-        const gun = b0['gun_battery'] as Rec;
+        // ご褒美「歴戦の乗員」（v0.9.0 IP3）: 砲・弾倉・被害の記録を写して 2 つの値だけ（乗員の減りの倍率 crew_effects と他の値は同じ物を指す）。
+        // v0.9.1 から今の写し（boat）から読む＝先に当てた重い砲の組・弾倉の発を消さない（v0.9.0 の 5 品では b0 と同じ物）
+        const gun = boat['gun_battery'] as Rec;
         boat['gun_battery'] = { ...gun, magazine: { ...(gun['magazine'] as Rec), reload_s: e.reloadS } };
-        boat['damage'] = { ...(b0['damage'] as Rec), extinguish_hold_s: e.extinguishHoldS };
+        boat['damage'] = { ...(boat['damage'] as Rec), extinguish_hold_s: e.extinguishHoldS };
+        break;
+      }
+      case 'boat_gun_heavy':
+        boat['gun_battery'] = withHeavyGun(boat['gun_battery'] as Rec, e);
+        break;
+      case 'boat_engine': {
+        // 機関の整備（v0.9.1）: 最大速力と加速。fuel_hours_full は燃料曲線の指数が同じ値へ（同じ速さなら同じ gal/h。静音の上限・速力帯・巡航は変えない）
+        const maxKt = (boat['speed_max_kt'] as number) + e.speedAddKt;
+        boat['fuel_hours_full'] = fuelHoursFullKeepingExponent(boat as unknown as BoatFuelDataRecord, maxKt);
+        boat['speed_max_kt'] = maxKt;
+        boat['accel_mps2'] = (boat['accel_mps2'] as number) * e.accelFactor;
         break;
       }
     }
